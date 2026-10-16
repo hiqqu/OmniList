@@ -132,13 +132,17 @@ export default function MediaDetailPage() {
     }
 
     if (totalProgress > 0 && currentProgress >= totalProgress) return;
-    const step = customAmount || incrementInfo.amount;
+    const step = customAmount || 1;
     const nextCurrent = currentProgress + step;
     const newCurrent = totalProgress > 0 ? Math.min(totalProgress, nextCurrent) : nextCurrent;
     const isNowCompleted = totalProgress > 0 && newCurrent >= totalProgress;
     const updated = updateMediaItem(item.id, {
       progress: { ...item.progress, current: newCurrent },
-      status: isNowCompleted ? 'completed' : item.status,
+      status: isNowCompleted
+        ? 'completed'
+        : item.status === 'planned'
+        ? 'in_progress'
+        : item.status,
     });
     if (updated) setItem(updated);
   };
@@ -158,12 +162,13 @@ export default function MediaDetailPage() {
     }
 
     if (currentProgress <= 0) return;
-    const step = customAmount || incrementInfo.amount;
+    const step = customAmount || 1;
     const newCurrent = Math.max(0, currentProgress - step);
     const updated = updateMediaItem(item.id, {
       progress: { ...item.progress, current: newCurrent },
       status:
-        item.status === 'completed' && totalProgress > 0 && newCurrent < totalProgress
+        item.status === 'completed' &&
+        ((totalProgress > 0 && newCurrent < totalProgress) || totalProgress === 0)
           ? 'in_progress'
           : item.status,
     });
@@ -437,28 +442,53 @@ export default function MediaDetailPage() {
               <div className="pt-4 flex flex-wrap items-center justify-center md:justify-start gap-3">
                 {isGame ? (
                   <>
-                    {/* Game: Add 1 Hour */}
-                    <button
-                      onClick={() => handleIncrement(1)}
-                      className={cn(
-                        'flex items-center gap-1.5 px-5 py-2.5 rounded-full font-bold text-xs shadow-lg transition-all active:scale-95',
-                        typeAccentBg.game
-                      )}
-                      title={`Spielzeit um 1 Stunde erhöhen (aktuell: ${gamePlaytime} Std.)`}
-                    >
-                      <Plus className="w-4 h-4 stroke-[2.5]" />
-                      <span>+1 Std. Spielzeit</span>
-                    </button>
+                    {/* Game Playtime: -10, -1, +1, +10 */}
+                    <div className="inline-flex items-center bg-[#181B22] border border-[#282D37] rounded-full p-1 shadow-lg">
+                      <div className="px-3 py-1 text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-purple-400" />
+                        <span className="text-white font-extrabold">{gamePlaytime}</span>
+                        <span className="text-zinc-400 font-medium">Std.</span>
+                      </div>
 
-                    {gamePlaytime > 0 && (
+                      <div className="w-px h-4 bg-[#282D37]" />
+
+                      <button
+                        onClick={() => handleDecrement(10)}
+                        disabled={gamePlaytime <= 0}
+                        className="px-2.5 py-1 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                        title="-10 Stunden Spielzeit"
+                      >
+                        -10
+                      </button>
                       <button
                         onClick={() => handleDecrement(1)}
-                        className="flex items-center justify-center w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all active:scale-95"
-                        title="1 Stunde abziehen"
+                        disabled={gamePlaytime <= 0}
+                        className="px-2.5 py-1 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                        title="-1 Stunde Spielzeit"
                       >
-                        <Minus className="w-4 h-4" />
+                        -1
                       </button>
-                    )}
+
+                      <div className="w-px h-4 bg-[#282D37]" />
+
+                      <button
+                        onClick={() => handleIncrement(1)}
+                        className="px-2.5 py-1 rounded-full text-xs font-bold text-zinc-200 hover:text-white hover:bg-zinc-800 transition-all active:scale-95"
+                        title="+1 Stunde Spielzeit"
+                      >
+                        +1
+                      </button>
+                      <button
+                        onClick={() => handleIncrement(10)}
+                        className={cn(
+                          'px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm',
+                          typeAccentBg.game
+                        )}
+                        title="+10 Stunden Spielzeit"
+                      >
+                        +10
+                      </button>
+                    </div>
 
                     {/* Game: Story Toggle */}
                     <button
@@ -485,79 +515,115 @@ export default function MediaDetailPage() {
                       )}
                     >
                       <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{isGame100Done ? '100% Gemeistert 🏆' : '100% offen'}</span>
+                      <span>{isGame100Done ? '100% Gemeistert' : '100% offen'}</span>
                     </button>
                   </>
                 ) : isMovie ? (
                   <>
-                    {/* Movie: Increment or Finished */}
-                    <button
-                      onClick={() => handleIncrement(15)}
-                      disabled={isCompleted}
-                      className={cn(
-                        'flex items-center gap-1.5 px-5 py-2.5 rounded-full font-bold text-xs shadow-lg transition-all',
-                        isCompleted
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default'
-                          : `active:scale-95 ${typeAccentBg.movie}`
-                      )}
-                    >
-                      {isCompleted ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
-                          <span>Film angesehen ({totalProgress || currentProgress} Min.)</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4 stroke-[2.5]" />
-                          <span>+15 Min. weiterschauen</span>
-                        </>
-                      )}
-                    </button>
+                    {/* Movie: Runtime Progress */}
+                    <div className="inline-flex items-center bg-[#181B22] border border-[#282D37] rounded-full p-1 shadow-lg">
+                      <div className="px-3 py-1 text-xs font-bold text-zinc-300">
+                        <span className="text-white font-extrabold">{currentProgress}</span>
+                        {totalProgress > 0 && <span className="text-zinc-500"> / {totalProgress}</span>}{' '}
+                        <span className="text-zinc-400 font-medium">Min.</span>
+                      </div>
 
-                    {currentProgress > 0 && !isCompleted && (
+                      <div className="w-px h-4 bg-[#282D37]" />
+
                       <button
                         onClick={() => handleDecrement(15)}
-                        className="flex items-center justify-center w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all active:scale-95"
-                        title="15 Minuten zurückspulen"
+                        disabled={currentProgress <= 0}
+                        className="px-2.5 py-1 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                        title="-15 Minuten zurückspulen"
                       >
-                        <Minus className="w-4 h-4" />
+                        -15
                       </button>
+
+                      <div className="w-px h-4 bg-[#282D37]" />
+
+                      <button
+                        onClick={() => handleIncrement(15)}
+                        disabled={isCompleted}
+                        className={cn(
+                          'px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm',
+                          isCompleted
+                            ? 'opacity-30 cursor-default bg-zinc-800 text-zinc-500'
+                            : typeAccentBg.movie
+                        )}
+                        title="+15 Minuten weiterschauen"
+                      >
+                        +15
+                      </button>
+                    </div>
+
+                    {isCompleted && (
+                      <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                        <span>Film angesehen</span>
+                      </div>
                     )}
                   </>
                 ) : (
                   <>
-                    {/* Shows / Anime / Books */}
-                    <button
-                      onClick={() => handleIncrement()}
-                      disabled={isCompleted}
-                      className={cn(
-                        'flex items-center gap-1.5 px-5 py-2.5 rounded-full font-bold text-xs shadow-lg transition-all',
-                        isCompleted
-                          ? 'bg-zinc-800 text-zinc-400 border border-zinc-700 cursor-default opacity-80'
-                          : `active:scale-95 ${typeAccentBg[item.type]}`
-                      )}
-                    >
-                      {isCompleted ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
-                          <span>Alle {getProgressUnitLabel(item.type, item.progress.unit)} beendet</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4 stroke-[2.5]" />
-                          <span>Fortschritt {incrementInfo.label}</span>
-                        </>
-                      )}
-                    </button>
+                    {/* Shows / Anime / Books: Progress -10, -1, +1, +10 */}
+                    <div className="inline-flex items-center bg-[#181B22] border border-[#282D37] rounded-full p-1 shadow-lg">
+                      <div className="px-3 py-1 text-xs font-bold text-zinc-300">
+                        <span className="text-white font-extrabold">{currentProgress}</span>
+                        {totalProgress > 0 && <span className="text-zinc-500"> / {totalProgress}</span>}{' '}
+                        <span className="text-zinc-400 font-medium">
+                          {getProgressUnitLabel(item.type, item.progress.unit)}
+                        </span>
+                      </div>
 
-                    {currentProgress > 0 && (
+                      <div className="w-px h-4 bg-[#282D37]" />
+
                       <button
-                        onClick={() => handleDecrement()}
-                        className="flex items-center justify-center w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all active:scale-95"
-                        title="1 Einheit zurücknehmen"
+                        onClick={() => handleDecrement(10)}
+                        disabled={currentProgress <= 0}
+                        className="px-2.5 py-1 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                        title={`-10 ${getProgressUnitLabel(item.type, item.progress.unit)}`}
                       >
-                        <Minus className="w-4 h-4" />
+                        -10
                       </button>
+                      <button
+                        onClick={() => handleDecrement(1)}
+                        disabled={currentProgress <= 0}
+                        className="px-2.5 py-1 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                        title={`-1 ${getProgressUnitLabel(item.type, item.progress.unit)}`}
+                      >
+                        -1
+                      </button>
+
+                      <div className="w-px h-4 bg-[#282D37]" />
+
+                      <button
+                        onClick={() => handleIncrement(1)}
+                        disabled={isCompleted}
+                        className="px-2.5 py-1 rounded-full text-xs font-bold text-zinc-200 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                        title={`+1 ${getProgressUnitLabel(item.type, item.progress.unit)}`}
+                      >
+                        +1
+                      </button>
+                      <button
+                        onClick={() => handleIncrement(10)}
+                        disabled={isCompleted}
+                        className={cn(
+                          'px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm',
+                          isCompleted
+                            ? 'opacity-30 cursor-default bg-zinc-800 text-zinc-500'
+                            : typeAccentBg[item.type]
+                        )}
+                        title={`+10 ${getProgressUnitLabel(item.type, item.progress.unit)}`}
+                      >
+                        +10
+                      </button>
+                    </div>
+
+                    {isCompleted && (
+                      <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                        <span>Alle {getProgressUnitLabel(item.type, item.progress.unit)} beendet</span>
+                      </div>
                     )}
                   </>
                 )}
@@ -897,29 +963,39 @@ export default function MediaDetailPage() {
 
                   {/* Playtime Quick Adjust Buttons */}
                   <div className="flex items-center gap-2 pt-1 flex-wrap">
-                    <button
-                      onClick={() => handleIncrement(1)}
-                      className="px-4 py-2 rounded-full font-bold text-xs bg-purple-500 hover:bg-purple-400 text-white shadow-md transition-all active:scale-95 flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>+1 Std.</span>
-                    </button>
-                    <button
-                      onClick={() => handleIncrement(5)}
-                      className="px-4 py-2 rounded-full font-bold text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 transition-all active:scale-95 flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>+5 Std.</span>
-                    </button>
-                    {gamePlaytime > 0 && (
+                    <div className="inline-flex items-center bg-[#0F1117] border border-[#282D37] rounded-full p-1 shadow-md">
+                      <button
+                        onClick={() => handleDecrement(10)}
+                        disabled={gamePlaytime <= 0}
+                        className="px-3 py-1.5 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                        title="-10 Stunden Spielzeit"
+                      >
+                        -10 Std.
+                      </button>
                       <button
                         onClick={() => handleDecrement(1)}
-                        className="px-4 py-2 rounded-full font-semibold text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all active:scale-95 flex items-center gap-1.5"
+                        disabled={gamePlaytime <= 0}
+                        className="px-3 py-1.5 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                        title="-1 Stunde Spielzeit"
                       >
-                        <Minus className="w-3.5 h-3.5" />
-                        <span>-1 Std.</span>
+                        -1 Std.
                       </button>
-                    )}
+                      <div className="w-px h-4 bg-[#282D37] mx-1" />
+                      <button
+                        onClick={() => handleIncrement(1)}
+                        className="px-3 py-1.5 rounded-full text-xs font-bold text-zinc-200 hover:text-white hover:bg-zinc-800 transition-all active:scale-95"
+                        title="+1 Stunde Spielzeit"
+                      >
+                        +1 Std.
+                      </button>
+                      <button
+                        onClick={() => handleIncrement(10)}
+                        className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-purple-500 hover:bg-purple-400 text-white shadow-sm transition-all active:scale-95"
+                        title="+10 Stunden Spielzeit"
+                      >
+                        +10 Std.
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -979,7 +1055,7 @@ export default function MediaDetailPage() {
                           ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                           : "bg-zinc-800 text-zinc-500 border border-zinc-700"
                       )}>
-                        <span>{isGame100Done ? "100% 🏆" : "Offen"}</span>
+                        <span>{isGame100Done ? "100% Meister" : "Offen"}</span>
                       </span>
                     </div>
                     <p className="text-xs text-zinc-400">
@@ -995,7 +1071,7 @@ export default function MediaDetailPage() {
                       )}
                     >
                       <Trophy className="w-4 h-4" />
-                      <span>{isGame100Done ? "100% Status aufheben" : "Als 100% gemeistert markieren 🏆"}</span>
+                      <span>{isGame100Done ? "100% Status aufheben" : "Als 100% gemeistert markieren"}</span>
                     </button>
                   </div>
                 </div>
@@ -1017,7 +1093,7 @@ export default function MediaDetailPage() {
 
                     {achievements && achievements.total > 0 && (
                       <span className="text-sm font-bold text-[#F1F3F7]">
-                        {achievements.current} / {achievements.total} 🏆
+                        {achievements.current} / {achievements.total} Erfolge
                       </span>
                     )}
                   </div>
@@ -1141,36 +1217,53 @@ export default function MediaDetailPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    onClick={() => handleIncrement()}
-                    disabled={isCompleted}
-                    className={cn(
-                      'flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-xs shadow-md transition-all',
-                      isCompleted
-                        ? 'bg-zinc-800 text-zinc-400 border border-zinc-700 cursor-default opacity-80'
-                        : `active:scale-95 ${typeAccentBg[item.type]}`
-                    )}
-                  >
-                    {isCompleted ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
-                        <span>Alle Folgen abgeschlossen</span>
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Fortschritt erhöhen ({incrementInfo.label})</span>
-                      </>
-                    )}
-                  </button>
-                  {currentProgress > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <div className="inline-flex items-center bg-[#0F1117] border border-[#282D37] rounded-full p-1 shadow-md">
                     <button
-                      onClick={() => handleDecrement()}
-                      className="px-4 py-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700 transition-all active:scale-95"
+                      onClick={() => handleDecrement(10)}
+                      disabled={currentProgress <= 0}
+                      className="px-3 py-1.5 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                      title={`-10 ${getProgressUnitLabel(item.type, item.progress.unit)}`}
                     >
-                      Minus 1
+                      -10
                     </button>
+                    <button
+                      onClick={() => handleDecrement(1)}
+                      disabled={currentProgress <= 0}
+                      className="px-3 py-1.5 rounded-full text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                      title={`-1 ${getProgressUnitLabel(item.type, item.progress.unit)}`}
+                    >
+                      -1
+                    </button>
+                    <div className="w-px h-4 bg-[#282D37] mx-1" />
+                    <button
+                      onClick={() => handleIncrement(1)}
+                      disabled={isCompleted}
+                      className="px-3 py-1.5 rounded-full text-xs font-bold text-zinc-200 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95"
+                      title={`+1 ${getProgressUnitLabel(item.type, item.progress.unit)}`}
+                    >
+                      +1
+                    </button>
+                    <button
+                      onClick={() => handleIncrement(10)}
+                      disabled={isCompleted}
+                      className={cn(
+                        'px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm',
+                        isCompleted
+                          ? 'opacity-30 cursor-default bg-zinc-800 text-zinc-500'
+                          : typeAccentBg[item.type]
+                      )}
+                      title={`+10 ${getProgressUnitLabel(item.type, item.progress.unit)}`}
+                    >
+                      +10
+                    </button>
+                  </div>
+
+                  {isCompleted && (
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                      <span>Alle {getProgressUnitLabel(item.type, item.progress.unit)} beendet</span>
+                    </span>
                   )}
                 </div>
               </div>

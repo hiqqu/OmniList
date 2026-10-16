@@ -445,7 +445,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 title="Klicken zum Umschalten: 100% Meisterung"
               >
                 <span>100%</span>
-                <span>{isGame100Done ? '🏆' : '—'}</span>
+                <span className={isGame100Done ? "text-amber-400 font-extrabold" : "text-zinc-500"}>
+                  {isGame100Done ? '✓' : '—'}
+                </span>
               </button>
 
               {achievements && achievements.total > 0 && (
@@ -453,7 +455,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   className="text-[10px] font-medium text-zinc-400 ml-auto flex items-center gap-1"
                   title={`${achievements.current} von ${achievements.total} Erfolgen (${achievementPercentage}%)`}
                 >
-                  <span>🏆</span>
+                  <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
                   <span className="font-bold text-zinc-200">{achievements.current}</span>
                   <span className="text-zinc-500">/{achievements.total}</span>
                 </span>

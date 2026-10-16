@@ -171,7 +171,7 @@ export default function Home() {
       addToast(
         'info',
         item.title,
-        new100 ? '100% Completionist Meisterung erreicht! 🏆' : '100% Status zurückgesetzt'
+        new100 ? '100% Completionist Meisterung erreicht!' : '100% Status zurückgesetzt'
       );
     }
   };

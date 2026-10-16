@@ -300,7 +300,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                     onChange={(e) => setGameCompletionist100(e.target.checked)}
                     className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 cursor-pointer"
                   />
-                  <span className="text-xs font-bold text-zinc-300">100% Meisterung 🏆</span>
+                  <span className="text-xs font-bold text-zinc-300">100% Meisterung</span>
                 </label>
               </div>
 
