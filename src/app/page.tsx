@@ -178,10 +178,27 @@ export default function Home() {
 
   // Status Change Handler
   const handleUpdateStatus = (id: string, newStatus: MediaStatus) => {
-    const updated = updateMediaItem(id, { status: newStatus });
+    const item = media.find((m) => m.id === id);
+    if (!item) return;
+
+    const isCompleted = newStatus === 'completed';
+    const total = item.progress?.total;
+
+    const updated = updateMediaItem(id, {
+      status: newStatus,
+      progress:
+        isCompleted && total && total > 0
+          ? { ...item.progress, current: total }
+          : item.progress,
+    });
+
     if (updated) {
       setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
-      addToast('info', `Status aktualisiert: ${updated.title}`);
+      addToast(
+        'info',
+        `Status aktualisiert: ${updated.title}`,
+        isCompleted && total ? `Alle ${total} Einheiten als abgeschlossen markiert.` : undefined
+      );
     }
   };
 

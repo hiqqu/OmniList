@@ -127,8 +127,12 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
     const updatedExternalId = item.type === 'book' && cleanIsbn ? `isbn:${cleanIsbn}` : item.external_id;
 
     const totalNum = isGame ? undefined : (Number(totalProgress) || undefined);
-    const currentNum = totalNum && totalNum > 0 ? Math.min(Number(currentProgress), totalNum) : Number(currentProgress);
+    let currentNum = totalNum && totalNum > 0 ? Math.min(Number(currentProgress), totalNum) : Number(currentProgress);
     const resolvedStatus = totalNum && currentNum >= totalNum && status !== 'owned' ? 'completed' : status;
+
+    if (resolvedStatus === 'completed' && totalNum && totalNum > 0) {
+      currentNum = totalNum;
+    }
 
     onSave(item.id, {
       title,
@@ -200,7 +204,13 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
               <label className="block text-xs font-bold text-zinc-400 mb-1">Status</label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as MediaStatus)}
+                onChange={(e) => {
+                  const newStatus = e.target.value as MediaStatus;
+                  setStatus(newStatus);
+                  if (newStatus === 'completed' && totalProgress) {
+                    setCurrentProgress(totalProgress);
+                  }
+                }}
                 className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none cursor-pointer"
               >
                 <option value="in_progress">Gerade dabei</option>

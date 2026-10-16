@@ -227,7 +227,17 @@ export default function MediaDetailPage() {
 
   // Update Status
   const handleStatusChange = (newStatus: MediaStatus) => {
-    const updated = updateMediaItem(item.id, { status: newStatus });
+    if (!item) return;
+    const isCompleted = newStatus === 'completed';
+    const total = item.progress?.total;
+
+    const updated = updateMediaItem(item.id, {
+      status: newStatus,
+      progress:
+        isCompleted && total && total > 0
+          ? { ...item.progress, current: total }
+          : item.progress,
+    });
     if (updated) setItem(updated);
   };
 

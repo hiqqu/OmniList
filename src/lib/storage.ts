@@ -61,6 +61,18 @@ export function getStoredMedia(): MediaItem[] {
         };
       }
 
+      // Auto-set current to total if status is completed and total exists
+      if (item.status === 'completed' && item.progress?.total && item.progress.total > 0 && item.progress.current < item.progress.total) {
+        hasMigrated = true;
+        return {
+          ...item,
+          progress: {
+            ...item.progress,
+            current: item.progress.total,
+          },
+        };
+      }
+
       // Auto-clamp progress to total if it exceeds total
       if (item.progress?.total && item.progress.total > 0 && item.progress.current > item.progress.total) {
         hasMigrated = true;
@@ -236,7 +248,21 @@ export function updateMediaItem(
   const index = current.findIndex((m) => m.id === id);
   if (index === -1) return null;
 
-  let sanitizedProgress = updates.progress || current[index].progress;
+  const existing = current[index];
+  const newStatus = updates.status !== undefined ? updates.status : existing.status;
+
+  let sanitizedProgress = updates.progress ? { ...updates.progress } : { ...existing.progress };
+
+  // If status is completed (or changed to completed), ensure all units/pages are marked as finished
+  if (newStatus === 'completed' && sanitizedProgress && sanitizedProgress.total && sanitizedProgress.total > 0) {
+    if (!updates.progress || sanitizedProgress.current < sanitizedProgress.total) {
+      sanitizedProgress = {
+        ...sanitizedProgress,
+        current: sanitizedProgress.total,
+      };
+    }
+  }
+
   if (
     sanitizedProgress &&
     sanitizedProgress.total &&
@@ -250,7 +276,7 @@ export function updateMediaItem(
   }
 
   const updatedItem: MediaItem = {
-    ...current[index],
+    ...existing,
     ...updates,
     progress: sanitizedProgress,
     updatedAt: new Date().toISOString(),
