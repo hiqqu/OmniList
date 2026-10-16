@@ -79,11 +79,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     <div
       className={cn(
         'group relative flex flex-col bg-[#181B22] rounded-2xl border border-[#282D37] hover:border-zinc-500/50 hover:shadow-2xl transition-all duration-300',
-        showMenu ? 'z-40 overflow-visible' : 'overflow-hidden'
+        showMenu ? 'z-50' : 'overflow-hidden'
       )}
     >
-      {/* 2:3 Aspect Ratio Poster Container */}
-      <div className={cn('relative aspect-poster w-full bg-[#0F1117]', showMenu ? 'overflow-visible' : 'overflow-hidden rounded-t-2xl')}>
+      {/* 2:3 Aspect Ratio Poster Container - always overflow-hidden so cover image never bleeds out */}
+      <div className="relative aspect-poster w-full bg-[#0F1117] overflow-hidden rounded-t-2xl">
         <Link href={`/media/${item.id}`} className="block w-full h-full cursor-pointer">
           <img
             src={item.coverUrl}
@@ -101,7 +101,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-[#181B22] via-[#0F1117]/40 to-black/30 pointer-events-none" />
 
         {/* Top Badges */}
-        <div className={cn('absolute top-3 left-3 right-3 flex items-center justify-between gap-2', showMenu ? 'z-50' : 'z-20')}>
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-20 pointer-events-auto">
           {/* Media Type Badge */}
           <span
             className={cn(
@@ -115,174 +115,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </span>
 
           {/* Menu Trigger */}
-          <div className={cn('relative', showMenu && 'z-50')}>
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="w-7 h-7 rounded-full bg-[#0F1117]/70 hover:bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center backdrop-blur transition-colors"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
-
-            {/* Dropdown Menu */}
-            {showMenu && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#181B22] border border-[#282D37] shadow-2xl py-1 z-50 text-xs">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                    Status ändern
-                  </div>
-                  <button
-                    onClick={() => {
-                      onUpdateStatus(item.id, 'in_progress');
-                      setShowMenu(false);
-                    }}
-                    className={cn(
-                      "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                      item.status === 'in_progress' ? "text-emerald-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <PlayCircle className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Gerade dabei</span>
-                    </div>
-                    {item.status === 'in_progress' && <span className="text-[10px] text-emerald-400">✓</span>}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onUpdateStatus(item.id, 'planned');
-                      setShowMenu(false);
-                    }}
-                    className={cn(
-                      "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                      item.status === 'planned' ? "text-sky-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <BookmarkCheck className="w-3.5 h-3.5 text-sky-400" />
-                      <span>Geplant</span>
-                    </div>
-                    {item.status === 'planned' && <span className="text-[10px] text-sky-400">✓</span>}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onUpdateStatus(item.id, 'completed');
-                      setShowMenu(false);
-                    }}
-                    className={cn(
-                      "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                      item.status === 'completed' ? "text-indigo-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Beendet</span>
-                    </div>
-                    {item.status === 'completed' && <span className="text-[10px] text-indigo-400">✓</span>}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onUpdateStatus(item.id, 'paused');
-                      setShowMenu(false);
-                    }}
-                    className={cn(
-                      "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                      item.status === 'paused' ? "text-amber-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <PauseCircle className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Pausiert</span>
-                    </div>
-                    {item.status === 'paused' && <span className="text-[10px] text-amber-400">✓</span>}
-                  </button>
-
-                  <div className="border-t border-[#282D37] my-1" />
-
-                  {onToggleOwned && (
-                    <button
-                      onClick={() => {
-                        onToggleOwned(item.id);
-                        setShowMenu(false);
-                      }}
-                      className={cn(
-                        "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                        item.isOwned ? "text-emerald-300 font-semibold" : "text-zinc-300"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <PackageCheck className={cn("w-3.5 h-3.5", item.isOwned ? "text-emerald-400" : "text-zinc-500")} />
-                        <span>Im Besitz</span>
-                      </div>
-                      <span className={cn(
-                        "text-[10px] px-1.5 py-0.5 rounded font-bold",
-                        item.isOwned ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-zinc-800 text-zinc-500"
-                      )}>
-                        {item.isOwned ? 'Ja ✓' : 'Nein'}
-                      </span>
-                    </button>
-                  )}
-
-                  {isGame && onToggleGameStory && (
-                    <button
-                      onClick={() => {
-                        onToggleGameStory(item.id);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-purple-300"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
-                      <span>{isGameStoryDone ? 'Story: Offen' : 'Story: Beendet ✓'}</span>
-                    </button>
-                  )}
-
-                  {isGame && onToggleGame100 && (
-                    <button
-                      onClick={() => {
-                        onToggleGame100(item.id);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-amber-300"
-                    >
-                      <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{isGame100Done ? '100%: Zurücksetzen' : '100% Meisterung 🏆'}</span>
-                    </button>
-                  )}
-
-                  <div className="my-1 border-t border-[#282D37]" />
-
-                  <Link
-                    href={`/media/${item.id}`}
-                    onClick={() => setShowMenu(false)}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
-                  >
-                    <Info className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>Details &amp; Besetzung</span>
-                  </Link>
-
-                  <button
-                    onClick={() => {
-                      onEdit(item);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-zinc-300"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Bearbeiten</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDelete(item.id);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-rose-500/20 text-left text-rose-400"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Löschen</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="w-7 h-7 rounded-full bg-[#0F1117]/70 hover:bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center backdrop-blur transition-colors"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Rating Badge at Bottom Left of Poster */}
@@ -296,7 +134,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           <span>{item.rating ? item.rating.toFixed(1) : '—'}</span>
         </div>
 
-        {/* Quick Increment Button Overlay (colored by category!) */}
+        {/* Quick Increment Button Overlay */}
         <div
           className={cn(
             'absolute bottom-3 right-3 z-10 transition-opacity duration-200',
@@ -337,6 +175,182 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Dropdown Menu - positioned neatly within card boundaries */}
+      {showMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+          <div className="absolute right-2 top-11 w-44 max-w-[calc(100%-16px)] rounded-xl bg-[#181B22] border border-[#282D37] shadow-2xl py-1 z-50 text-xs">
+            <div className="px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+              Status ändern
+            </div>
+            <button
+              onClick={() => {
+                onUpdateStatus(item.id, 'in_progress');
+                setShowMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                item.status === 'in_progress' ? "text-emerald-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+              )}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <PlayCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="truncate">Gerade dabei</span>
+              </div>
+              {item.status === 'in_progress' && <span className="text-[10px] text-emerald-400 ml-1">✓</span>}
+            </button>
+            <button
+              onClick={() => {
+                onUpdateStatus(item.id, 'planned');
+                setShowMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                item.status === 'planned' ? "text-sky-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+              )}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <BookmarkCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                <span className="truncate">Geplant</span>
+              </div>
+              {item.status === 'planned' && <span className="text-[10px] text-sky-400 ml-1">✓</span>}
+            </button>
+            <button
+              onClick={() => {
+                onUpdateStatus(item.id, 'completed');
+                setShowMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                item.status === 'completed' ? "text-indigo-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+              )}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="truncate">Beendet</span>
+              </div>
+              {item.status === 'completed' && <span className="text-[10px] text-indigo-400 ml-1">✓</span>}
+            </button>
+            <button
+              onClick={() => {
+                onUpdateStatus(item.id, 'paused');
+                setShowMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                item.status === 'paused' ? "text-amber-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+              )}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <PauseCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">Pausiert</span>
+              </div>
+              {item.status === 'paused' && <span className="text-[10px] text-amber-400 ml-1">✓</span>}
+            </button>
+
+            <div className="border-t border-[#282D37] my-1" />
+
+            {onToggleOwned && (
+              <button
+                onClick={() => {
+                  onToggleOwned(item.id);
+                  setShowMenu(false);
+                }}
+                className={cn(
+                  "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                  item.isOwned ? "text-emerald-300 font-semibold" : "text-zinc-300"
+                )}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <PackageCheck className={cn("w-3.5 h-3.5 shrink-0", item.isOwned ? "text-emerald-400" : "text-zinc-500")} />
+                  <span className="truncate">Im Besitz</span>
+                </div>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ml-1",
+                  item.isOwned ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-zinc-800 text-zinc-500"
+                )}>
+                  {item.isOwned ? 'Ja ✓' : 'Nein'}
+                </span>
+              </button>
+            )}
+
+            {isGame && onToggleGameStory && (
+              <button
+                onClick={() => {
+                  onToggleGameStory(item.id);
+                  setShowMenu(false);
+                }}
+                className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left text-purple-300"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                  <span className="truncate">Story</span>
+                </div>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ml-1",
+                  isGameStoryDone ? "bg-purple-500/20 text-purple-300" : "bg-zinc-800 text-zinc-500"
+                )}>
+                  {isGameStoryDone ? 'Fertig ✓' : 'Offen'}
+                </span>
+              </button>
+            )}
+
+            {isGame && onToggleGame100 && (
+              <button
+                onClick={() => {
+                  onToggleGame100(item.id);
+                  setShowMenu(false);
+                }}
+                className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left text-amber-300"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="truncate">100%</span>
+                </div>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ml-1",
+                  isGame100Done ? "bg-amber-500/20 text-amber-300" : "bg-zinc-800 text-zinc-500"
+                )}>
+                  {isGame100Done ? 'Meister' : 'Offen'}
+                </span>
+              </button>
+            )}
+
+            <div className="my-1 border-t border-[#282D37]" />
+
+            <Link
+              href={`/media/${item.id}`}
+              onClick={() => setShowMenu(false)}
+              className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
+            >
+              <Info className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <span className="truncate">Details &amp; Besetzung</span>
+            </Link>
+
+            <button
+              onClick={() => {
+                onEdit(item);
+                setShowMenu(false);
+              }}
+              className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-zinc-300"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Bearbeiten</span>
+            </button>
+            <button
+              onClick={() => {
+                onDelete(item.id);
+                setShowMenu(false);
+              }}
+              className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-rose-500/20 text-left text-rose-400"
+            >
+              <Trash2 className="w-3.5 h-3.5 shrink-0" />
+              <span>Löschen</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Card Body & Progress Section */}
       <div className="p-3.5 flex flex-col flex-1 justify-between gap-3 bg-[#181B22]">
