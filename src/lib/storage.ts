@@ -1,5 +1,6 @@
 import { MediaItem, SequelNotification, MediaStatus, ProgressUnit } from '@/types/media';
 import { INITIAL_MEDIA_ITEMS, INITIAL_SEQUEL_NOTIFICATIONS } from './seed-data';
+import { createBookSvgCover } from './book-cover';
 
 const MEDIA_STORAGE_KEY = 'omnilist_media_library_v1';
 const LEGACY_MEDIA_STORAGE_KEY = 'omnitrack_media_library_v1';
@@ -37,7 +38,24 @@ export function getStoredMedia(): MediaItem[] {
         };
       }
 
-      if (item.coverUrl && item.coverUrl.includes('images.unsplash.com')) {
+      if (item.type === 'book') {
+        if (item.coverUrl && item.coverUrl.includes('images.unsplash.com')) {
+          const matchingSeed = INITIAL_MEDIA_ITEMS.find(
+            (s) => s.external_id === item.external_id || s.title.toLowerCase() === item.title.toLowerCase()
+          );
+          if (matchingSeed) {
+            hasMigrated = true;
+            return { ...item, coverUrl: matchingSeed.coverUrl };
+          }
+          hasMigrated = true;
+          return { ...item, coverUrl: createBookSvgCover(item.title, item.creator, item.publisher) };
+        }
+        if (item.coverUrl && item.coverUrl.includes('covers.openlibrary.org') && !item.coverUrl.includes('default=false')) {
+          hasMigrated = true;
+          const sep = item.coverUrl.includes('?') ? '&' : '?';
+          return { ...item, coverUrl: `${item.coverUrl}${sep}default=false` };
+        }
+      } else if (item.coverUrl && item.coverUrl.includes('images.unsplash.com')) {
         const matchingSeed = INITIAL_MEDIA_ITEMS.find(
           (s) => s.external_id === item.external_id || s.title.toLowerCase() === item.title.toLowerCase()
         );

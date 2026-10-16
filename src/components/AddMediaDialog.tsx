@@ -23,6 +23,7 @@ import {
 import { MediaType, SearchResultItem, MediaStatus, MediaItem } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { BookEditionItem } from '@/app/api/book-editions/route';
+import { getMediaCoverFallback, createBookSvgCover } from '@/lib/book-cover';
 
 interface AddMediaDialogProps {
   isOpen: boolean;
@@ -498,8 +499,13 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                           alt={result.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
+                            (e.target as HTMLImageElement).src = getMediaCoverFallback(result);
+                          }}
+                          onLoad={(e) => {
+                            const img = e.currentTarget;
+                            if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+                              img.src = getMediaCoverFallback(result);
+                            }
                           }}
                         />
                       </div>
@@ -676,8 +682,13 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                                           alt={ed.title}
                                           className="w-full h-full object-cover"
                                           onError={(e) => {
-                                            (e.target as HTMLImageElement).src =
-                                              'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
+                                            (e.target as HTMLImageElement).src = createBookSvgCover(ed.title, undefined, ed.publisher);
+                                          }}
+                                          onLoad={(e) => {
+                                            const img = e.currentTarget;
+                                            if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+                                              img.src = createBookSvgCover(ed.title, undefined, ed.publisher);
+                                            }
                                           }}
                                         />
                                       </div>

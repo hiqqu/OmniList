@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchDnb } from '@/lib/dnb';
+import { searchDnb, GERMAN_PUBLISHER_REGEX } from '@/lib/dnb';
 import { formatIsbn } from '@/lib/api-adapters/googlebooks';
+import { createBookSvgCover, getOpenLibraryCoverUrl } from '@/lib/book-cover';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,9 +33,9 @@ export async function GET(request: NextRequest) {
     // 1. Fetch German Editions from Deutsche Nationalbibliothek (DNB)
     if (title) {
       const dnbSearchTerm = publisherQuery
-        ? `${title} and ${publisherQuery}`
+        ? `${title} ${publisherQuery}`
         : author
-        ? `${title} and ${author}`
+        ? `${title} ${author}`
         : title;
 
       const dnbRecords = await searchDnb(dnbSearchTerm, 12);
@@ -45,9 +46,9 @@ export async function GET(request: NextRequest) {
         if (cleanIsbn) seenIsbns.add(cleanIsbn);
 
         const publisherName = rec.publisher || 'Deutscher Verlag';
-        const coverUrl = cleanIsbn
-          ? `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`
-          : 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
+        const coverUrl =
+          getOpenLibraryCoverUrl(cleanIsbn) ||
+          createBookSvgCover(rec.title, rec.author || author, publisherName);
 
         editions.push({
           id: cleanIsbn ? `isbn:${cleanIsbn}` : `dnb:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`,
@@ -101,14 +102,12 @@ export async function GET(request: NextRequest) {
 
             const isGerLang =
               e.languages?.some((l: { key: string }) => l.key?.includes('ger') || l.key?.includes('deu')) ||
-              /carlsen|heyne|dtv|piper|fischer|klett|reclam|suhrkamp|goldmann|ullstein|kiwi|rowohlt|droemer/i.test(pubName);
+              GERMAN_PUBLISHER_REGEX.test(pubName);
 
             const coverId = e.covers?.[0];
-            const coverUrl = coverId
-              ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`
-              : cleanIsbn
-              ? `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`
-              : 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
+            const coverUrl =
+              getOpenLibraryCoverUrl(cleanIsbn, coverId) ||
+              createBookSvgCover(e.title || title, author, pubName);
 
             const yearMatch = (e.publish_date || '').match(/\b(19\d{2}|20\d{2})\b/);
             const year = yearMatch ? yearMatch[1] : undefined;

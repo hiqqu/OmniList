@@ -35,6 +35,7 @@ import { getStoredMedia, updateMediaItem, deleteMediaItem } from '@/lib/storage'
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, getProgressUnitLabel, cn } from '@/lib/utils';
 import { getEnrichedMediaDetails, EnrichedMediaDetails } from '@/lib/media-details';
 import { EditMediaModal } from '@/components/EditMediaModal';
+import { getMediaCoverFallback } from '@/lib/book-cover';
 
 export default function MediaDetailPage() {
   const params = useParams();
@@ -346,8 +347,13 @@ export default function MediaDetailPage() {
                 alt={item.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
+                  (e.target as HTMLImageElement).src = getMediaCoverFallback(item);
+                }}
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+                    img.src = getMediaCoverFallback(item);
+                  }
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />

@@ -1,29 +1,8 @@
 import { SearchResultItem, MediaItem, SequelNotification } from '@/types/media';
 import { MediaAdapter } from './types';
-import { lookupDnbByIsbn, searchDnb } from '@/lib/dnb';
+import { lookupDnbByIsbn, searchDnb, GERMAN_PUBLISHER_REGEX } from '@/lib/dnb';
+import { createBookSvgCover, getOpenLibraryCoverUrl } from '@/lib/book-cover';
 
-function createBookSvgCover(title: string, author?: string): string {
-  const safeTitle = title.replace(/[<>&"]/g, '').slice(0, 30);
-  const safeAuthor = (author || 'Autor').replace(/[<>&"]/g, '').slice(0, 24);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
-    <defs>
-      <linearGradient id="bookBg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#1e1b4b" />
-        <stop offset="50%" stop-color="#312e81" />
-        <stop offset="100%" stop-color="#0f172a" />
-      </linearGradient>
-    </defs>
-    <rect width="600" height="900" fill="url(#bookBg)"/>
-    <rect x="30" y="30" width="540" height="840" rx="16" fill="none" stroke="#f97316" stroke-opacity="0.4" stroke-width="2"/>
-    <rect x="50" y="50" width="500" height="800" rx="12" fill="none" stroke="#f97316" stroke-opacity="0.15" stroke-width="1"/>
-    <rect x="80" y="80" width="80" height="32" rx="8" fill="#f97316" fill-opacity="0.2"/>
-    <text x="120" y="102" fill="#f97316" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">BUCH</text>
-    <text x="300" y="440" fill="#ffffff" font-family="Georgia, serif" font-size="34" font-weight="bold" text-anchor="middle">${safeTitle}</text>
-    <text x="300" y="490" fill="#fdba74" font-family="system-ui, sans-serif" font-size="20" text-anchor="middle">${safeAuthor}</text>
-    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniList Library</text>
-  </svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
 
 export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
   {
@@ -163,7 +142,8 @@ export class GoogleBooksAdapter implements MediaAdapter {
           const coverUrl =
             item.cover?.large ||
             item.cover?.medium ||
-            `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+            getOpenLibraryCoverUrl(isbn) ||
+            createBookSvgCover(item.title, authorNames, publisher);
 
           const subtitle = item.subtitle ? `${item.subtitle}` : undefined;
           const editionLabel = publisher ? `${publisher} (${formatted})` : `ISBN ${formatted}`;
@@ -199,13 +179,17 @@ export class GoogleBooksAdapter implements MediaAdapter {
       if (dnbRec && dnbRec.title) {
         const publisher = dnbRec.publisher;
         const editionLabel = publisher ? `${publisher} (${formatted})` : `ISBN ${formatted}`;
+        const coverUrl =
+          getOpenLibraryCoverUrl(isbn) ||
+          createBookSvgCover(dnbRec.title, dnbRec.author, publisher);
+
         return {
           id: `isbn:${isbn}`,
           external_id: `isbn:${isbn}`,
           title: dnbRec.title,
           originalTitle: dnbRec.subtitle ? `${dnbRec.subtitle} • ${editionLabel}` : editionLabel,
           type: 'book',
-          coverUrl: `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+          coverUrl,
           releaseDate: dnbRec.year ? `${dnbRec.year}-01-01` : undefined,
           summary: undefined,
           genres: ['Literatur', 'Buch'],
@@ -230,10 +214,12 @@ export class GoogleBooksAdapter implements MediaAdapter {
         const sData = await searchRes.json();
         const doc = sData.docs?.[0];
         if (doc && doc.title) {
-          const coverUrl = doc.cover_i
-            ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
-            : `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
           const publisher = doc.publisher?.[0];
+          const author = doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor';
+          const coverUrl =
+            getOpenLibraryCoverUrl(isbn, doc.cover_i) ||
+            createBookSvgCover(doc.title, author, publisher);
+
           return {
             id: `isbn:${isbn}`,
             external_id: `isbn:${isbn}`,
@@ -244,7 +230,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
             releaseDate: doc.first_publish_year ? `${doc.first_publish_year}-01-01` : undefined,
             summary: undefined,
             genres: doc.subject ? doc.subject.slice(0, 3) : ['Literatur'],
-            creator: doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor',
+            creator: author,
             publisher: publisher || undefined,
             isbn,
             franchise_id: 'book:isbn',
@@ -259,14 +245,14 @@ export class GoogleBooksAdapter implements MediaAdapter {
       console.warn('Open Library search by ISBN failed:', e);
     }
 
-    // 4. Fallback direct Open Library ISBN cover
+    // 4. Fallback direct Open Library ISBN cover or SVG cover
     return {
       id: `isbn:${isbn}`,
       external_id: `isbn:${isbn}`,
       title: `Buch (ISBN ${formatted})`,
       originalTitle: `ISBN ${formatted}`,
       type: 'book',
-      coverUrl: `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+      coverUrl: getOpenLibraryCoverUrl(isbn) || createBookSvgCover(`Buch (ISBN ${formatted})`, 'Autor'),
       summary: undefined,
       genres: ['Buch'],
       creator: 'Autor',
@@ -296,9 +282,9 @@ export class GoogleBooksAdapter implements MediaAdapter {
     const items: SearchResultItem[] = [];
     const seenIsbns = new Set<string>();
 
-    // 1. DNB Live Search for German Publisher Editions (e.g. "Dune Heyne", "Percy Jackson Carlsen")
+    // 1. DNB Live Search for German Publisher Editions (e.g. "Faust Reclam", "Insel Klassik", "Dune Heyne")
     try {
-      const dnbMatches = await searchDnb(raw, 5);
+      const dnbMatches = await searchDnb(raw, 10);
       for (const dnb of dnbMatches) {
         if (!dnb.title) continue;
         const cleanIsbn = dnb.isbn ? dnb.isbn.replace(/[-\s]/g, '') : undefined;
@@ -306,9 +292,9 @@ export class GoogleBooksAdapter implements MediaAdapter {
         if (cleanIsbn) seenIsbns.add(cleanIsbn);
 
         const external_id = cleanIsbn ? `isbn:${cleanIsbn}` : `dnb:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`;
-        const coverUrl = cleanIsbn
-          ? `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`
-          : createBookSvgCover(dnb.title, dnb.author);
+        const coverUrl =
+          getOpenLibraryCoverUrl(cleanIsbn) ||
+          createBookSvgCover(dnb.title, dnb.author, dnb.publisher);
 
         items.push({
           id: external_id,
@@ -352,13 +338,18 @@ export class GoogleBooksAdapter implements MediaAdapter {
 
           // Find German publisher or matching publisher if available
           const germanPublisher = doc.publisher?.find((p: string) =>
-            /carlsen|heyne|dtv|piper|fischer|klett|reclam|suhrkamp|goldmann|ullstein|kiwi|rowohlt|droemer|blanvalet|loewe|arena|ravensburger/i.test(p)
+            GERMAN_PUBLISHER_REGEX.test(p)
           );
 
           const chosenPublisher = matchingPublisher || germanPublisher || doc.publisher?.[0];
 
-          // Pick primary ISBN
-          const primaryIsbn = doc.isbn?.[0];
+          // Pick German ISBN if available, otherwise first ISBN
+          const germanIsbn = doc.isbn?.find((i: string) => {
+            const c = i.replace(/[-\s]/g, '');
+            return c.startsWith('9783') || (c.length === 10 && c.startsWith('3'));
+          });
+          const primaryIsbn = (matchingPublisher || germanPublisher) ? (germanIsbn || doc.isbn?.[0]) : doc.isbn?.[0];
+
           if (primaryIsbn && seenIsbns.has(primaryIsbn)) continue;
           if (primaryIsbn) seenIsbns.add(primaryIsbn);
 
@@ -366,11 +357,10 @@ export class GoogleBooksAdapter implements MediaAdapter {
             ? `isbn:${primaryIsbn}`
             : `openlibrary:${doc.key?.replace('/works/', '') || doc.cover_edition_key || Math.random()}`;
 
-          const coverUrl = doc.cover_i
-            ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
-            : primaryIsbn
-            ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-L.jpg`
-            : createBookSvgCover(doc.title, doc.author_name?.[0]);
+          const author = doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor';
+          const coverUrl =
+            getOpenLibraryCoverUrl(primaryIsbn, doc.cover_i) ||
+            createBookSvgCover(doc.title, author, chosenPublisher);
 
           const editionLabel = chosenPublisher
             ? `${chosenPublisher}${primaryIsbn ? ` (${formatIsbn(primaryIsbn)})` : ''}`
@@ -388,7 +378,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
             releaseDate: doc.first_publish_year ? `${doc.first_publish_year}-01-01` : undefined,
             summary: undefined,
             genres: doc.subject ? doc.subject.slice(0, 3) : ['Literatur'],
-            creator: doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor',
+            creator: author,
             publisher: chosenPublisher,
             isbn: primaryIsbn,
             editionKey: doc.key,
@@ -426,7 +416,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
       return combined;
     }
 
-    // 3. Dynamic fallback with dedicated book artwork (Never shows the wrong cover!)
+    // 4. Dynamic fallback with dedicated book artwork (Never shows the wrong cover!)
     const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     return [
       {
@@ -434,14 +424,13 @@ export class GoogleBooksAdapter implements MediaAdapter {
         external_id: `custom:book:${Date.now()}`,
         title: capitalized,
         type: 'book',
-        coverUrl: createBookSvgCover(capitalized, 'Autor'),
+        coverUrl: createBookSvgCover(capitalized, 'Autor', 'OmniList Library'),
         releaseDate: new Date().toISOString().split('T')[0],
         summary: undefined,
         genres: ['Buch', 'Literatur'],
         creator: 'Autor',
         totalUnits: 350,
         unit: 'pages',
-        rating: undefined,
       },
     ];
   }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
+import { getMediaCoverFallback } from '@/lib/book-cover';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -91,8 +92,13 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             loading="lazy"
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
+              (e.target as HTMLImageElement).src = getMediaCoverFallback(item);
+            }}
+            onLoad={(e) => {
+              const img = e.currentTarget;
+              if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+                img.src = getMediaCoverFallback(item);
+              }
             }}
           />
         </Link>

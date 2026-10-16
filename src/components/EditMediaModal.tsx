@@ -6,6 +6,7 @@ import { MediaItem, MediaStatus, ProgressUnit } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { formatIsbn } from '@/lib/api-adapters/googlebooks';
 import { BookEditionItem } from '@/app/api/book-editions/route';
+import { createBookSvgCover, getMediaCoverFallback } from '@/lib/book-cover';
 
 interface EditMediaModalProps {
   item: MediaItem | null;
@@ -650,8 +651,13 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                                     alt={ed.title}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
-                                      (e.target as HTMLImageElement).src =
-                                        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
+                                      (e.target as HTMLImageElement).src = createBookSvgCover(ed.title, creator, ed.publisher);
+                                    }}
+                                    onLoad={(e) => {
+                                      const img = e.currentTarget;
+                                      if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+                                        img.src = createBookSvgCover(ed.title, creator, ed.publisher);
+                                      }
                                     }}
                                   />
                                 </div>
@@ -729,6 +735,15 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                     src={coverUrl || item.coverUrl}
                     alt={title}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = getMediaCoverFallback({ title, creator, publisher, type: item.type });
+                    }}
+                    onLoad={(e) => {
+                      const img = e.currentTarget;
+                      if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+                        img.src = getMediaCoverFallback({ title, creator, publisher, type: item.type });
+                      }
+                    }}
                   />
                 </div>
                 <div className="flex-1">
@@ -750,6 +765,15 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                   src={coverUrl || item.coverUrl}
                   alt={title}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = getMediaCoverFallback({ title, creator, publisher, type: item?.type });
+                  }}
+                  onLoad={(e) => {
+                    const img = e.currentTarget;
+                    if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+                      img.src = getMediaCoverFallback({ title, creator, publisher, type: item?.type });
+                    }
+                  }}
                 />
               </div>
               <div className="flex-1">
