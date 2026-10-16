@@ -62,11 +62,11 @@ export default function MediaDetailPage() {
         const active = clamped || found;
         setItem(active);
         setDetails(getEnrichedMediaDetails(active));
-        setPersonalNotes(active.summary || '');
+        setPersonalNotes(active.notes || '');
       } else {
         setItem(found);
         setDetails(getEnrichedMediaDetails(found));
-        setPersonalNotes(found.summary || '');
+        setPersonalNotes(found.notes || '');
       }
     }
     setIsLoaded(true);
@@ -248,7 +248,7 @@ export default function MediaDetailPage() {
 
   // Save Notes
   const handleSaveNotes = () => {
-    const updated = updateMediaItem(item.id, { summary: personalNotes });
+    const updated = updateMediaItem(item.id, { notes: personalNotes.trim() || undefined });
     if (updated) {
       setItem(updated);
       setSaveSuccess(true);
@@ -519,7 +519,7 @@ export default function MediaDetailPage() {
                       )}
                     >
                       <Check className="w-3.5 h-3.5 text-purple-400 stroke-[2.5]" />
-                      <span>{isGameStoryDone ? 'Story beendet ✓' : 'Story offen'}</span>
+                      <span>{isGameStoryDone ? 'Story beendet' : 'Story offen'}</span>
                     </button>
 
                     {/* Game: 100% Toggle */}
@@ -671,7 +671,7 @@ export default function MediaDetailPage() {
                   title="Im Besitz (mit jedem Status kombinierbar)"
                 >
                   <PackageCheck className={cn("w-4 h-4", item.isOwned ? "text-emerald-400" : "text-zinc-500")} />
-                  <span>{item.isOwned ? 'Im Besitz ✓' : '+ Als "Im Besitz" markieren'}</span>
+                  <span>{item.isOwned ? 'Im Besitz' : '+ Als "Im Besitz" markieren'}</span>
                 </button>
               </div>
 
@@ -1058,7 +1058,7 @@ export default function MediaDetailPage() {
                           ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
                           : "bg-zinc-800 text-zinc-500 border border-zinc-700"
                       )}>
-                        {isGameStoryDone ? "Beendet ✓" : "Noch offen"}
+                        {isGameStoryDone ? "Beendet" : "Noch offen"}
                       </span>
                     </div>
                     <p className="text-xs text-zinc-400">
@@ -1074,7 +1074,7 @@ export default function MediaDetailPage() {
                       )}
                     >
                       <Check className="w-4 h-4 stroke-[2.5]" />
-                      <span>{isGameStoryDone ? "Als offen markieren" : "Story als beendet markieren ✓"}</span>
+                      <span>{isGameStoryDone ? "Als offen markieren" : "Story als beendet markieren"}</span>
                     </button>
                   </div>
 

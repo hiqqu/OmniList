@@ -282,7 +282,7 @@ export class RAWGAdapter implements MediaAdapter {
         type: 'game',
         coverUrl: createGameSvgCover(capitalized),
         releaseDate: new Date().toISOString().split('T')[0],
-        summary: `Videospiel: ${capitalized}. Spielzeit und Trophäen in OmniList erfassen.`,
+        summary: undefined,
         genres: ['Action', 'Videospiel'],
         creator: 'Game Studio',
         totalUnits: 40,

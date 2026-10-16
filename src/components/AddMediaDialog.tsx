@@ -290,7 +290,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
           : 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80',
       rating: undefined,
       releaseDate: new Date().toISOString().split('T')[0],
-      summary: `Eigener Eintrag zu ${title}`,
+      summary: undefined,
       genres: [activeTab.toUpperCase()],
       progress: {
         current: selectedStatus === 'completed' ? (total || 0) : selectedStatus === 'in_progress' ? 1 : 0,
@@ -450,7 +450,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
               >
                 <PackageCheck className={cn('w-3.5 h-3.5', isOwned ? 'text-emerald-400' : 'text-zinc-500')} />
                 <span>+ Im Besitz</span>
-                {isOwned && <span className="text-[10px] text-emerald-400 font-extrabold">✓</span>}
+                {isOwned && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />}
               </button>
             </div>
           </div>

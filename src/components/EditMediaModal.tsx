@@ -31,6 +31,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   const [totalProgress, setTotalProgress] = useState<number>(0);
   const [unit, setUnit] = useState<ProgressUnit>('episodes');
   const [summary, setSummary] = useState('');
+  const [notes, setNotes] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
   const [publisher, setPublisher] = useState('');
   const [isbnInput, setIsbnInput] = useState('');
@@ -60,6 +61,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       setTotalProgress(item.progress.total || 0);
       setUnit(item.progress.unit);
       setSummary(item.summary || '');
+      setNotes(item.notes || '');
       setCoverUrl(item.coverUrl || '');
       setPublisher(item.publisher || '');
       setIsbnFeedback(null);
@@ -197,7 +199,8 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       status: resolvedStatus,
       isOwned,
       rating: typeof rating === 'number' ? rating : undefined,
-      summary,
+      summary: summary.trim() || undefined,
+      notes: notes.trim() || undefined,
       publisher: publisher.trim() || undefined,
       isbn: cleanIsbn || undefined,
       coverUrl: coverUrl || item.coverUrl,
@@ -395,7 +398,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                     onChange={(e) => setGameStoryCompleted(e.target.checked)}
                     className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-purple-500 focus:ring-purple-500 cursor-pointer"
                   />
-                  <span className="text-xs font-bold text-zinc-300">Story beendet ✓</span>
+                  <span className="text-xs font-bold text-zinc-300">Story beendet</span>
                 </label>
 
                 <label className="flex items-center gap-2 p-2.5 rounded-xl bg-[#181B22] border border-[#282D37] cursor-pointer hover:border-amber-500/40 transition-colors">
@@ -738,15 +741,30 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
             </div>
           )}
 
-          {/* Summary / Notes */}
+          {/* Summary */}
           <div>
             <label className="block text-xs font-bold text-zinc-400 mb-1">
-              Notiz / Zusammenfassung
+              Handlung / Zusammenfassung
             </label>
             <textarea
               rows={3}
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
+              placeholder="Offizielle Inhaltsangabe..."
+              className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl p-3 text-xs text-[#F1F3F7] focus:outline-none resize-none"
+            />
+          </div>
+
+          {/* Personal Notes */}
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 mb-1">
+              Persönliche Notizen
+            </label>
+            <textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Eigene Gedanken, Zitate oder Notizen..."
               className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl p-3 text-xs text-[#F1F3F7] focus:outline-none resize-none"
             />
           </div>

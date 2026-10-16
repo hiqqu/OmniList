@@ -139,6 +139,25 @@ export function getStoredMedia(): MediaItem[] {
         }
       }
 
+      // Clean up legacy auto-generated placeholder notes and summaries
+      if (
+        item.summary &&
+        (item.summary.startsWith('Exakte Buch-Ausgabe') ||
+          item.summary.startsWith('Buch-Ausgabe mit ISBN') ||
+          item.summary.startsWith('Buchausgabe für ISBN') ||
+          item.summary.startsWith('Eigener Eintrag zu') ||
+          item.summary.includes('in OmniList erfassen') ||
+          item.summary.includes('in OmniTrack erfassen') ||
+          item.summary.includes('Verfolge Staffeln und Episoden') ||
+          item.summary.includes('Jetzt zur Sammlung hinzufügen'))
+      ) {
+        hasMigrated = true;
+        return {
+          ...item,
+          summary: undefined,
+        };
+      }
+
       return item;
     });
 

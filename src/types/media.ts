@@ -34,6 +34,7 @@ export interface MediaItem {
   rating?: number; // 0 - 5 scale, e.g. 4.5
   releaseDate?: string;
   summary?: string;
+  notes?: string; // Persönliche Notizen & Gedanken des Nutzers
   genres?: string[];
   creator?: string; // Regisseur, Autor, Studio, Entwickler
   publisher?: string; // Buchverlag, Game Publisher, Studio
