@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PackageCheck, Info, Check, Clock, Trophy } from 'lucide-react';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 
@@ -127,7 +127,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 mt-2 w-44 rounded-xl bg-[#181B22] border border-[#282D37] shadow-2xl py-1 z-50 text-xs">
+                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#181B22] border border-[#282D37] shadow-2xl py-1 z-50 text-xs">
                   <div className="px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
                     Status ändern
                   </div>
@@ -136,41 +136,67 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       onUpdateStatus(item.id, 'in_progress');
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
+                    className={cn(
+                      "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                      item.status === 'in_progress' ? "text-emerald-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                    )}
                   >
-                    <PlayCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Gerade dabei</span>
+                    <div className="flex items-center gap-2">
+                      <PlayCircle className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Gerade dabei</span>
+                    </div>
+                    {item.status === 'in_progress' && <span className="text-[10px] text-emerald-400">✓</span>}
                   </button>
                   <button
                     onClick={() => {
                       onUpdateStatus(item.id, 'planned');
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
+                    className={cn(
+                      "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                      item.status === 'planned' ? "text-sky-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                    )}
                   >
-                    <BookmarkCheck className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Geplant</span>
+                    <div className="flex items-center gap-2">
+                      <BookmarkCheck className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Geplant</span>
+                    </div>
+                    {item.status === 'planned' && <span className="text-[10px] text-sky-400">✓</span>}
                   </button>
                   <button
                     onClick={() => {
                       onUpdateStatus(item.id, 'completed');
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
+                    className={cn(
+                      "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                      item.status === 'completed' ? "text-indigo-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                    )}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Beendet</span>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Beendet</span>
+                    </div>
+                    {item.status === 'completed' && <span className="text-[10px] text-indigo-400">✓</span>}
                   </button>
                   <button
                     onClick={() => {
-                      onUpdateStatus(item.id, 'owned');
+                      onUpdateStatus(item.id, 'paused');
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
+                    className={cn(
+                      "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                      item.status === 'paused' ? "text-amber-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                    )}
                   >
-                    <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Status: Im Besitz</span>
+                    <div className="flex items-center gap-2">
+                      <PauseCircle className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Pausiert</span>
+                    </div>
+                    {item.status === 'paused' && <span className="text-[10px] text-amber-400">✓</span>}
                   </button>
+
+                  <div className="border-t border-[#282D37] my-1" />
 
                   {onToggleOwned && (
                     <button
@@ -178,10 +204,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                         onToggleOwned(item.id);
                         setShowMenu(false);
                       }}
-                      className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-emerald-300"
+                      className={cn(
+                        "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                        item.isOwned ? "text-emerald-300 font-semibold" : "text-zinc-300"
+                      )}
                     >
-                      <PackageCheck className={cn("w-3.5 h-3.5", item.isOwned ? "text-emerald-400" : "text-zinc-500")} />
-                      <span>{item.isOwned ? 'Aus Besitz entfernen' : 'Als "Gekauft" markieren'}</span>
+                      <div className="flex items-center gap-2">
+                        <PackageCheck className={cn("w-3.5 h-3.5", item.isOwned ? "text-emerald-400" : "text-zinc-500")} />
+                        <span>Im Besitz</span>
+                      </div>
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded font-bold",
+                        item.isOwned ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-zinc-800 text-zinc-500"
+                      )}>
+                        {item.isOwned ? 'Ja ✓' : 'Nein'}
+                      </span>
                     </button>
                   )}
 
@@ -311,9 +348,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 {statusBadge.label}
               </span>
               {item.isOwned && item.status !== 'owned' && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm">
                   <PackageCheck className="w-3 h-3 text-emerald-400" />
-                  <span>Besitz</span>
+                  <span>Im Besitz</span>
                 </span>
               )}
             </div>

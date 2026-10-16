@@ -51,6 +51,16 @@ export function getStoredMedia(): MediaItem[] {
         }
       }
 
+      // Migrate legacy status 'owned' to regular status 'planned' with isOwned: true
+      if (item.status === 'owned') {
+        hasMigrated = true;
+        return {
+          ...item,
+          status: 'planned' as MediaStatus,
+          isOwned: true,
+        };
+      }
+
       // Auto-clamp progress to total if it exceeds total
       if (item.progress?.total && item.progress.total > 0 && item.progress.current > item.progress.total) {
         hasMigrated = true;
@@ -60,7 +70,7 @@ export function getStoredMedia(): MediaItem[] {
             ...item.progress,
             current: item.progress.total,
           },
-          status: (item.status !== 'owned' ? 'completed' : item.status) as MediaStatus,
+          status: 'completed' as MediaStatus,
         };
       }
 

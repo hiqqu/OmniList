@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, Trash2, Save, PackageCheck, BookOpen, Sparkles, Loader2, Image as ImageIcon, Gamepad2, Trophy, Clock } from 'lucide-react';
 import { MediaItem, MediaStatus, ProgressUnit } from '@/types/media';
-import { getMediaTypeBadge } from '@/lib/utils';
+import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { formatIsbn } from '@/lib/api-adapters/googlebooks';
 
 interface EditMediaModalProps {
@@ -208,7 +208,6 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                 <option value="completed">Beendet</option>
                 <option value="paused">Pausiert</option>
                 <option value="dropped">Abgebrochen</option>
-                <option value="owned">Im Besitz</option>
               </select>
             </div>
 
@@ -231,19 +230,24 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
             </div>
           </div>
 
-          {/* Im Besitz Toggle */}
-          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0F1117] border border-[#282D37]">
+          {/* Im Besitz Toggle (kombinierbar mit jedem Status) */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#0F1117] border border-[#282D37] hover:border-zinc-600 transition-colors">
+            <label htmlFor="isOwned" className="text-xs font-bold text-zinc-300 cursor-pointer flex items-center gap-2.5 select-none flex-1">
+              <PackageCheck className={cn("w-4 h-4", isOwned ? "text-emerald-400" : "text-zinc-500")} />
+              <div>
+                <span>Bereits gekauft / Im Besitz</span>
+                <span className="block text-[11px] font-normal text-zinc-400 mt-0.5">
+                  Kombinierbar mit jedem Status (z. B. Geplant + Im Besitz)
+                </span>
+              </div>
+            </label>
             <input
               type="checkbox"
               id="isOwned"
               checked={isOwned}
               onChange={(e) => setIsOwned(e.target.checked)}
-              className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+              className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500 ml-3"
             />
-            <label htmlFor="isOwned" className="text-xs font-bold text-zinc-300 cursor-pointer flex items-center gap-1.5 select-none">
-              <PackageCheck className="w-4 h-4 text-emerald-400" />
-              <span>Bereits gekauft / Im Besitz</span>
-            </label>
           </div>
 
           {/* Progress / Game Tracker / Movie Runtime */}

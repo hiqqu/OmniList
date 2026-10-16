@@ -554,7 +554,7 @@ export default function MediaDetailPage() {
 
                 {/* Status Switcher Dropdown */}
                 <select
-                  value={item.status}
+                  value={item.status === 'owned' ? 'planned' : item.status}
                   onChange={(e) => handleStatusChange(e.target.value as MediaStatus)}
                   className="bg-[#181B22] text-[#F1F3F7] border border-[#282D37] rounded-full px-4 py-2 text-xs font-bold focus:outline-none focus:border-zinc-500 cursor-pointer"
                 >
@@ -562,7 +562,6 @@ export default function MediaDetailPage() {
                   <option value="planned">Geplant</option>
                   <option value="completed">Beendet</option>
                   <option value="paused">Pausiert</option>
-                  <option value="owned">Im Besitz</option>
                   <option value="dropped">Abgebrochen</option>
                 </select>
 
@@ -572,12 +571,13 @@ export default function MediaDetailPage() {
                   className={cn(
                     'flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all active:scale-95',
                     item.isOwned
-                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
                       : 'bg-[#181B22] text-zinc-400 hover:text-white border-[#282D37]'
                   )}
+                  title="Im Besitz (mit jedem Status kombinierbar)"
                 >
-                  <PackageCheck className="w-4 h-4 text-emerald-400" />
-                  <span>{item.isOwned ? 'Im Besitz' : 'Als "Gekauft" markieren'}</span>
+                  <PackageCheck className={cn("w-4 h-4", item.isOwned ? "text-emerald-400" : "text-zinc-500")} />
+                  <span>{item.isOwned ? 'Im Besitz ✓' : '+ Als "Im Besitz" markieren'}</span>
                 </button>
               </div>
 

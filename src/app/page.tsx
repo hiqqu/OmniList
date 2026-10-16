@@ -25,8 +25,8 @@ import {
   acceptSequel,
   resetLibraryToDefault,
 } from '@/lib/storage';
-import { getUnitIncrement } from '@/lib/utils';
-import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2 } from 'lucide-react';
+import { getUnitIncrement, getMediaStatusBadge } from '@/lib/utils';
+import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck } from 'lucide-react';
 
 export default function Home() {
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -37,6 +37,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'sequel_radar'>('dashboard');
   const [selectedType, setSelectedType] = useState<MediaType | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<MediaStatus | 'all'>('all');
+  const [onlyOwned, setOnlyOwned] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('updated');
 
@@ -323,6 +324,11 @@ export default function Home() {
         }
       }
 
+      // Combinable ownership filter (e.g. Planned + Owned)
+      if (onlyOwned && !item.isOwned && item.status !== 'owned') {
+        return false;
+      }
+
       // Instant search filter
       if (q) {
         const matchTitle = item.title.toLowerCase().includes(q);
@@ -390,6 +396,8 @@ export default function Home() {
         onSelectType={setSelectedType}
         selectedStatus={selectedStatus}
         onSelectStatus={setSelectedStatus}
+        onlyOwned={onlyOwned}
+        onToggleOnlyOwned={() => setOnlyOwned((prev) => !prev)}
         sequelCount={sequels.length}
         totalMediaCount={media.length}
         isCheckingSequels={isCheckingSequels}
@@ -424,7 +432,7 @@ export default function Home() {
               />
 
               {/* Grid Header */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center">
                     {selectedType === 'all' && <Library className="w-4 h-4 text-zinc-300" />}
@@ -451,6 +459,33 @@ export default function Home() {
                     {filteredAndSortedMedia.length}
                   </span>
                 </div>
+
+                {/* Aktive Filter-Pills */}
+                {(selectedStatus !== 'all' || onlyOwned) && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedStatus !== 'all' && (
+                      <button
+                        onClick={() => setSelectedStatus('all')}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors"
+                        title="Status-Filter zurücksetzen"
+                      >
+                        <span>Status: {getMediaStatusBadge(selectedStatus).label}</span>
+                        <X className="w-3.5 h-3.5 text-zinc-400" />
+                      </button>
+                    )}
+                    {onlyOwned && (
+                      <button
+                        onClick={() => setOnlyOwned(false)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-colors shadow-sm"
+                        title="Besitz-Filter deaktivieren"
+                      >
+                        <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Nur im Besitz</span>
+                        <X className="w-3.5 h-3.5 text-emerald-400" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Media Card Grid (2:3 aspect ratio) */}

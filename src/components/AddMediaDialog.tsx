@@ -14,6 +14,7 @@ import {
   Star,
   Calendar,
   Flame,
+  PackageCheck,
 } from 'lucide-react';
 import { MediaType, SearchResultItem, MediaStatus, MediaItem } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [selectedStatus, setSelectedStatus] = useState<MediaStatus>('in_progress');
+  const [isOwned, setIsOwned] = useState<boolean>(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -173,7 +175,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       external_id: result.external_id,
       franchise_id: result.franchise_id,
       collection_name: result.collection_name,
-      isOwned: selectedStatus === 'owned',
+      isOwned: isOwned || selectedStatus === 'owned',
       last_sequel_check: new Date().toISOString(),
     });
 
@@ -216,7 +218,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
             playtimeHours: 0,
           }
         : undefined,
-      isOwned: selectedStatus === 'owned',
+      isOwned: isOwned || selectedStatus === 'owned',
       external_id: `custom:${activeTab}:${Date.now()}`,
     });
 
@@ -329,22 +331,41 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                 <span>Suchergebnisse für &quot;{searchQuery}&quot;</span>
               )}
             </span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-zinc-400 hidden sm:inline">Hinzufügen als:</span>
-              {(['in_progress', 'planned', 'completed', 'owned'] as MediaStatus[]).map((st) => (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] text-zinc-400 hidden sm:inline">Status:</span>
+              {(['in_progress', 'planned', 'completed'] as MediaStatus[]).map((st) => (
                 <button
                   key={st}
+                  type="button"
                   onClick={() => setSelectedStatus(st)}
                   className={cn(
                     'px-3 py-1 rounded-full font-bold transition-colors text-[11px]',
                     selectedStatus === st
-                      ? (st === 'owned' ? 'bg-emerald-400 text-zinc-950 shadow-sm' : 'bg-zinc-100 text-zinc-950')
+                      ? 'bg-zinc-100 text-zinc-950 shadow-sm'
                       : 'bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] border border-[#282D37]'
                   )}
                 >
-                  {st === 'in_progress' ? 'Gerade dabei' : st === 'planned' ? 'Geplant' : st === 'completed' ? 'Beendet' : 'Im Besitz'}
+                  {st === 'in_progress' ? 'Gerade dabei' : st === 'planned' ? 'Geplant' : 'Beendet'}
                 </button>
               ))}
+
+              <div className="h-4 w-[1px] bg-zinc-700 mx-1 hidden sm:block" />
+
+              <button
+                type="button"
+                onClick={() => setIsOwned((prev) => !prev)}
+                className={cn(
+                  'px-3 py-1 rounded-full font-bold transition-all text-[11px] flex items-center gap-1.5 border',
+                  isOwned
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm'
+                    : 'bg-[#0F1117] text-zinc-400 hover:text-zinc-200 border-[#282D37]'
+                )}
+                title="Im Besitz (kann mit jedem Status kombiniert werden)"
+              >
+                <PackageCheck className={cn('w-3.5 h-3.5', isOwned ? 'text-emerald-400' : 'text-zinc-500')} />
+                <span>+ Im Besitz</span>
+                {isOwned && <span className="text-[10px] text-emerald-400 font-extrabold">✓</span>}
+              </button>
             </div>
           </div>
         </div>

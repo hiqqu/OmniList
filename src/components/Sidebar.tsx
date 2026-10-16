@@ -28,6 +28,8 @@ interface SidebarProps {
   onSelectType: (type: MediaType | 'all') => void;
   selectedStatus: MediaStatus | 'all';
   onSelectStatus: (status: MediaStatus | 'all') => void;
+  onlyOwned?: boolean;
+  onToggleOnlyOwned?: () => void;
   sequelCount: number;
   totalMediaCount: number;
   isCheckingSequels: boolean;
@@ -44,6 +46,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectType,
   selectedStatus,
   onSelectStatus,
+  onlyOwned,
+  onToggleOnlyOwned,
   sequelCount,
   totalMediaCount,
   isCheckingSequels,
@@ -151,13 +155,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <PauseCircle className="w-3.5 h-3.5 text-amber-400" />,
       activeStyle: 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-sm font-semibold',
       hoverStyle: 'text-zinc-400 hover:bg-amber-500/10 hover:text-amber-300',
-    },
-    {
-      id: 'owned',
-      label: 'Im Besitz',
-      icon: <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />,
-      activeStyle: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-sm font-semibold',
-      hoverStyle: 'text-zinc-400 hover:bg-emerald-500/10 hover:text-emerald-300',
     },
   ];
 
@@ -299,6 +296,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 );
               })}
             </div>
+
+            {/* Kombinierbarer Besitz-Filter */}
+            {onToggleOnlyOwned && (
+              <div className="mt-4 pt-3 border-t border-[#282D37]">
+                <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center justify-between">
+                  <span>Besitz-Filter</span>
+                  {onlyOwned && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                      Aktiv
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={onToggleOnlyOwned}
+                  className={cn(
+                    'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium border transition-all',
+                    onlyOwned
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm font-semibold'
+                      : 'border-[#282D37] text-zinc-400 hover:bg-[#212631] hover:text-zinc-200'
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <PackageCheck className={cn('w-4 h-4', onlyOwned ? 'text-emerald-400' : 'text-zinc-500')} />
+                    <span>Nur im Besitz</span>
+                  </div>
+                  <div
+                    className={cn(
+                      'w-4 h-4 rounded border flex items-center justify-center transition-colors',
+                      onlyOwned
+                        ? 'bg-emerald-500 border-emerald-500 text-black'
+                        : 'border-zinc-600 bg-zinc-900'
+                    )}
+                  >
+                    {onlyOwned && <span className="text-[10px] font-black">✓</span>}
+                  </div>
+                </button>
+                <p className="px-3 mt-1.5 text-[10px] text-zinc-500 leading-tight">
+                  Kombinierbar mit jedem Status (z. B. Geplant + Im Besitz)
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
