@@ -4,6 +4,27 @@ import { MediaAdapter } from './types';
 const RAWG_API_KEY = process.env.RAWG_API_KEY;
 const RAWG_BASE_URL = 'https://api.rawg.io/api';
 
+function createGameSvgCover(title: string): string {
+  const safeTitle = title.replace(/[<>&"]/g, '').slice(0, 28);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+    <defs>
+      <linearGradient id="gameBg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#2e1065" />
+        <stop offset="50%" stop-color="#581c87" />
+        <stop offset="100%" stop-color="#0f172a" />
+      </linearGradient>
+    </defs>
+    <rect width="600" height="900" fill="url(#gameBg)"/>
+    <rect x="30" y="30" width="540" height="840" rx="20" fill="none" stroke="#a855f7" stroke-opacity="0.4" stroke-width="2"/>
+    <rect x="80" y="80" width="110" height="32" rx="8" fill="#a855f7" fill-opacity="0.25"/>
+    <text x="135" y="102" fill="#d8b4fe" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">VIDEOSPIEL</text>
+    <text x="300" y="450" fill="#ffffff" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle}</text>
+    <text x="300" y="500" fill="#c084fc" font-family="system-ui, sans-serif" font-size="18" text-anchor="middle">PC / Konsole</text>
+    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniTrack Library</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
   {
     id: 'rawg:eldenring',
@@ -215,7 +236,7 @@ export class RAWGAdapter implements MediaAdapter {
               external_id,
               title: game.name,
               type: 'game',
-              coverUrl: game.background_image || POPULAR_GAMES_CATALOG[0].coverUrl,
+              coverUrl: game.background_image || createGameSvgCover(game.name),
               releaseDate: game.released,
               summary: `Plattformen: ${game.platforms?.map((p: any) => p.platform.name).join(', ') || 'PC, Konsolen'}`,
               genres: game.genres?.map((g: any) => g.name) || ['Game'],
@@ -251,7 +272,7 @@ export class RAWGAdapter implements MediaAdapter {
       return combined;
     }
 
-    // Dynamic fallback for any game
+    // Dynamic fallback with dedicated game artwork (Never shows the wrong cover!)
     const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     return [
       {
@@ -259,7 +280,7 @@ export class RAWGAdapter implements MediaAdapter {
         external_id: `custom:game:${Date.now()}`,
         title: capitalized,
         type: 'game',
-        coverUrl: POPULAR_GAMES_CATALOG[0].coverUrl,
+        coverUrl: createGameSvgCover(capitalized),
         releaseDate: new Date().toISOString().split('T')[0],
         summary: `Videospiel: ${capitalized}. Spielzeit und Trophäen in OmniTrack erfassen.`,
         genres: ['Action', 'Videospiel'],

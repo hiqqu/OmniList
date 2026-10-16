@@ -1,6 +1,29 @@
 import { SearchResultItem, MediaItem, SequelNotification } from '@/types/media';
 import { MediaAdapter } from './types';
 
+function createBookSvgCover(title: string, author?: string): string {
+  const safeTitle = title.replace(/[<>&"]/g, '').slice(0, 30);
+  const safeAuthor = (author || 'Autor').replace(/[<>&"]/g, '').slice(0, 24);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+    <defs>
+      <linearGradient id="bookBg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#1e1b4b" />
+        <stop offset="50%" stop-color="#312e81" />
+        <stop offset="100%" stop-color="#0f172a" />
+      </linearGradient>
+    </defs>
+    <rect width="600" height="900" fill="url(#bookBg)"/>
+    <rect x="30" y="30" width="540" height="840" rx="16" fill="none" stroke="#f97316" stroke-opacity="0.4" stroke-width="2"/>
+    <rect x="50" y="50" width="500" height="800" rx="12" fill="none" stroke="#f97316" stroke-opacity="0.15" stroke-width="1"/>
+    <rect x="80" y="80" width="80" height="32" rx="8" fill="#f97316" fill-opacity="0.2"/>
+    <text x="120" y="102" fill="#f97316" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">BUCH</text>
+    <text x="300" y="440" fill="#ffffff" font-family="Georgia, serif" font-size="34" font-weight="bold" text-anchor="middle">${safeTitle}</text>
+    <text x="300" y="490" fill="#fdba74" font-family="system-ui, sans-serif" font-size="20" text-anchor="middle">${safeAuthor}</text>
+    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniTrack Library</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
   {
     id: 'googlebooks:dune1',
@@ -123,7 +146,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
           const external_id = `openlibrary:${doc.key?.replace('/works/', '') || doc.cover_edition_key || Math.random()}`;
           const coverUrl = doc.cover_i
             ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
-            : POPULAR_BOOKS_CATALOG[0].coverUrl;
+            : createBookSvgCover(doc.title, doc.author_name?.[0]);
 
           items.push({
             id: external_id,
@@ -166,7 +189,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
       return combined;
     }
 
-    // 3. Dynamic fallback with official book cover template
+    // 3. Dynamic fallback with dedicated book artwork (Never shows the wrong cover!)
     const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     return [
       {
@@ -174,7 +197,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
         external_id: `custom:book:${Date.now()}`,
         title: capitalized,
         type: 'book',
-        coverUrl: POPULAR_BOOKS_CATALOG[0].coverUrl,
+        coverUrl: createBookSvgCover(capitalized, 'Autor'),
         releaseDate: new Date().toISOString().split('T')[0],
         summary: `Buch: ${capitalized}. Seiten erfassen und Lesefortschritt tracken.`,
         genres: ['Buch', 'Literatur'],

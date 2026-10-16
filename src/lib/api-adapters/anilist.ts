@@ -3,6 +3,27 @@ import { MediaAdapter } from './types';
 
 const ANILIST_URL = 'https://graphql.anilist.co';
 
+function createAnimeSvgCover(title: string): string {
+  const safeTitle = title.replace(/[<>&"]/g, '').slice(0, 26);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+    <defs>
+      <linearGradient id="animeBg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0c4a6e" />
+        <stop offset="50%" stop-color="#0284c7" />
+        <stop offset="100%" stop-color="#0f172a" />
+      </linearGradient>
+    </defs>
+    <rect width="600" height="900" fill="url(#animeBg)"/>
+    <rect x="30" y="30" width="540" height="840" rx="20" fill="none" stroke="#38bdf8" stroke-opacity="0.4" stroke-width="2"/>
+    <rect x="80" y="80" width="90" height="32" rx="8" fill="#38bdf8" fill-opacity="0.25"/>
+    <text x="125" y="102" fill="#7dd3fc" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">ANIME</text>
+    <text x="300" y="450" fill="#ffffff" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle}</text>
+    <text x="300" y="500" fill="#bae6fd" font-family="system-ui, sans-serif" font-size="18" text-anchor="middle">Animation Studio</text>
+    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniTrack Library</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 const MOCK_ANILIST_CATALOG: SearchResultItem[] = [
   {
     id: 'anilist:154587',
@@ -189,7 +210,7 @@ export class AniListAdapter implements MediaAdapter {
               coverUrl:
                 m.coverImage?.extraLarge ||
                 m.coverImage?.large ||
-                'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80',
+                createAnimeSvgCover(title),
               releaseDate,
               summary: m.description ? m.description.replace(/<[^>]*>?/gm, '').slice(0, 300) : 'Keine Beschreibung.',
               genres: m.genres || ['Anime'],
@@ -233,7 +254,7 @@ export class AniListAdapter implements MediaAdapter {
         sequelTitle: "Frieren: Beyond Journey's End (Staffel 2)",
         sequelType: 'anime',
         sequelCoverUrl:
-          'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80',
+          'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx182255-butzrqd4I0aC.jpg',
         releaseDate: '2025-10-01',
         status: 'announced',
         badgeText: 'Neu angekündigt',
@@ -261,7 +282,7 @@ export class AniListAdapter implements MediaAdapter {
         sequelTitle: 'Solo Leveling: Arise from the Shadow (Staffel 2)',
         sequelType: 'anime',
         sequelCoverUrl:
-          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80',
+          'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx176274-P9a7sFzZf5cQ.jpg',
         releaseDate: '2025-01-05',
         status: 'releasing',
         badgeText: 'Staffel 2 verfügbar',

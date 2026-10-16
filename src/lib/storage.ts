@@ -15,9 +15,24 @@ export function getStoredMedia(): MediaItem[] {
     }
     const parsed: MediaItem[] = JSON.parse(raw);
     
-    // Auto-migrate legacy Unsplash covers to official posters
+    // Auto-migrate legacy Unsplash covers or mismatched placeholders to official posters
     let hasMigrated = false;
     const upgraded = parsed.map((item) => {
+      // Fix Spider-Man saved with old Dune/Severance placeholder from earlier searches
+      if (
+        item.title.toLowerCase().includes('spider-man') &&
+        (item.coverUrl.includes('d5NXSklXo0qyIYkgV94XAgMIckC') ||
+          item.coverUrl.includes('1553b93b') ||
+          item.coverUrl.includes('995400'))
+      ) {
+        hasMigrated = true;
+        return {
+          ...item,
+          coverUrl:
+            'https://m.media-amazon.com/images/M/MV5BZWM0OWVmNTEtNWVkOS00MzgyLTkyMzgtMmE2ZTZiNjY4MmFiXkEyXkFqcGc@._V1_QL75_UY562_CR0,0,380,562_.jpg',
+        };
+      }
+
       if (item.coverUrl && item.coverUrl.includes('images.unsplash.com')) {
         const matchingSeed = INITIAL_MEDIA_ITEMS.find(
           (s) => s.external_id === item.external_id || s.title.toLowerCase() === item.title.toLowerCase()

@@ -4,8 +4,81 @@ import { MediaAdapter } from './types';
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+const OMDB_KEY = 'trilogy';
+
+function createSvgPlaceholder(title: string, type: string): string {
+  const safeTitle = title.replace(/[<>&"]/g, '');
+  const color = type === 'show' ? '#f59e0b' : '#ef4444';
+  const label = type === 'show' ? 'SERIE' : 'FILM';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+    <defs>
+      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0f172a" />
+        <stop offset="100%" stop-color="#020617" />
+      </linearGradient>
+    </defs>
+    <rect width="600" height="900" fill="url(#bg)"/>
+    <rect x="40" y="40" width="520" height="820" rx="24" fill="none" stroke="${color}" stroke-opacity="0.3" stroke-width="3"/>
+    <rect x="70" y="80" width="80" height="32" rx="8" fill="${color}" fill-opacity="0.2"/>
+    <text x="110" y="102" fill="${color}" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">${label}</text>
+    <text x="300" y="450" fill="#ffffff" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle.slice(0, 24)}</text>
+    <text x="300" y="500" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="18" text-anchor="middle">OmniTrack Library</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
 
 export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
+  {
+    id: 'imdb:tt0145487',
+    external_id: 'imdb:tt0145487',
+    title: 'Spider-Man',
+    originalTitle: 'Spider-Man (2002)',
+    type: 'movie',
+    coverUrl: 'https://m.media-amazon.com/images/M/MV5BZWM0OWVmNTEtNWVkOS00MzgyLTkyMzgtMmE2ZTZiNjY4MmFiXkEyXkFqcGc@._V1_QL75_UY562_CR0,0,380,562_.jpg',
+    releaseDate: '2002-05-03',
+    summary: 'Ein schüchterner Teenager wird von einer genetisch veränderten Spinne gebissen und nutzt seine neuen Superkräfte, um als Maskenheld gegen das Verbrechen zu kämpfen.',
+    genres: ['Action', 'Sci-Fi'],
+    creator: 'Sam Raimi (mit Tobey Maguire)',
+    franchise_id: 'franchise:spiderman-raimi',
+    collection_name: 'Spider-Man Raimi Trilogie',
+    totalUnits: 121,
+    unit: 'hours',
+    rating: 4.8,
+  },
+  {
+    id: 'imdb:tt0316654',
+    external_id: 'imdb:tt0316654',
+    title: 'Spider-Man 2',
+    originalTitle: 'Spider-Man 2 (2004)',
+    type: 'movie',
+    coverUrl: 'https://m.media-amazon.com/images/M/MV5BNGQ0YTQyYTgtNWI2YS00NTE2LWJmNDEtM2E1NjlmY2VkY2E4XkEyXkFqcGc@._V1_QL75_UY562_CR0,0,380,562_.jpg',
+    releaseDate: '2004-06-30',
+    summary: 'Peter Parker hadert mit seinem Doppelleben als Superheld und Student, während Dr. Otto Octavius als Doc Ock New York bedroht.',
+    genres: ['Action', 'Sci-Fi'],
+    creator: 'Sam Raimi',
+    franchise_id: 'franchise:spiderman-raimi',
+    collection_name: 'Spider-Man Raimi Trilogie',
+    totalUnits: 127,
+    unit: 'hours',
+    rating: 4.9,
+  },
+  {
+    id: 'imdb:tt10872600',
+    external_id: 'imdb:tt10872600',
+    title: 'Spider-Man: No Way Home',
+    originalTitle: 'Spider-Man: No Way Home',
+    type: 'movie',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg',
+    releaseDate: '2021-12-17',
+    summary: 'Nachdem Peters Identität als Spider-Man enthüllt wurde, bittet er Doctor Strange um Hilfe – mit unvorhergesehenen Multiversums-Folgen.',
+    genres: ['Action', 'Sci-Fi', 'Abenteuer'],
+    creator: 'Jon Watts',
+    franchise_id: 'franchise:spiderman-mcu',
+    collection_name: 'Spider-Man MCU',
+    totalUnits: 148,
+    unit: 'hours',
+    rating: 4.9,
+  },
   {
     id: 'tmdb:movie:438631',
     external_id: 'tmdb:movie:438631',
@@ -193,24 +266,6 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     rating: 4.7,
   },
   {
-    id: 'tmdb:tv:1399',
-    external_id: 'tmdb:tv:1399',
-    title: 'Game of Thrones',
-    originalTitle: 'Game of Thrones',
-    type: 'show',
-    coverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/1/2668.jpg',
-    releaseDate: '2011-04-17',
-    summary: 'Neun Adelsfamilien kämpfen um die Kontrolle über das mythische Land Westeros, während sich eine uralte Bedrohung erhebt.',
-    genres: ['Fantasy', 'Drama', 'Abenteuer'],
-    creator: 'David Benioff, D.B. Weiss',
-    franchise_id: 'tmdb:franchise:got',
-    collection_name: 'Westeros Saga',
-    totalUnits: 73,
-    totalSeasons: 8,
-    unit: 'episodes',
-    rating: 4.7,
-  },
-  {
     id: 'tmdb:movie:569094',
     external_id: 'tmdb:movie:569094',
     title: 'Spider-Man: Across the Spider-Verse',
@@ -244,156 +299,163 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     unit: 'hours',
     rating: 4.8,
   },
-  {
-    id: 'tmdb:movie:550',
-    external_id: 'tmdb:movie:550',
-    title: 'Fight Club',
-    originalTitle: 'Fight Club',
-    type: 'movie',
-    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
-    releaseDate: '1999-10-15',
-    summary: 'Ein schlafloser Büroangestellter und ein charismatischer Seifenverkäufer gründen einen geheimen Untergrund-Club.',
-    genres: ['Drama', 'Thriller'],
-    creator: 'David Fincher',
-    totalUnits: 139,
-    unit: 'hours',
-    rating: 4.8,
-  },
-  {
-    id: 'tmdb:movie:680',
-    external_id: 'tmdb:movie:680',
-    title: 'Pulp Fiction',
-    originalTitle: 'Pulp Fiction',
-    type: 'movie',
-    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/vQWk5YBFWF4bZaofAbv0tShwBvQ.jpg',
-    releaseDate: '1994-09-10',
-    summary: 'Verflochtene Geschichten aus der Unterwelt von Los Angeles: Zwei Auftragskiller, eine Gangsterbraut und ein Boxer.',
-    genres: ['Krimi', 'Thriller'],
-    creator: 'Quentin Tarantino',
-    totalUnits: 154,
-    unit: 'hours',
-    rating: 4.9,
-  },
-  {
-    id: 'tmdb:movie:98',
-    external_id: 'tmdb:movie:98',
-    title: 'Gladiator',
-    originalTitle: 'Gladiator',
-    type: 'movie',
-    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg',
-    releaseDate: '2000-05-01',
-    summary: 'Der betrogene römische General Maximus wird zum Gladiator und kämpft im Kolosseum gegen den korrupten Kaiser Commodus.',
-    genres: ['Action', 'Drama', 'Historie'],
-    creator: 'Ridley Scott',
-    totalUnits: 155,
-    unit: 'hours',
-    rating: 4.8,
-  },
 ];
 
 export class TMDBAdapter implements MediaAdapter {
   async search(query: string): Promise<SearchResultItem[]> {
-    const q = query.trim().toLowerCase();
-    if (!q) {
+    const rawQ = query.trim().toLowerCase();
+    if (!rawQ) {
       return POPULAR_TMDB_CATALOG;
     }
 
+    // Clean search terms like "Spider-Man 1", "Dune Teil 1" -> "Spider-Man", "Dune"
+    const cleanedQ = rawQ.replace(/\s+(1|i|teil\s*1|part\s*1|staffel\s*1|season\s*1)$/i, '').trim();
+    const searchTerms = cleanedQ && cleanedQ !== rawQ ? [cleanedQ, rawQ] : [rawQ];
+
     const items: SearchResultItem[] = [];
+    const seenIds = new Set<string>();
 
-    // 1. Live TVmaze Search for TV shows (Completely FREE, public, returns official poster images!)
+    // 1. Live OMDB Search (Real movie & show posters from IMDb/Amazon for ANY title!)
+    // 1a. Try exact title first (e.g. "Spider-Man", "Inception")
     try {
-      const tvRes = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`);
-      if (tvRes.ok) {
-        const tvData = await tvRes.json();
-        for (const entry of tvData.slice(0, 6)) {
-          const show = entry.show;
-          if (!show) continue;
-
-          const external_id = `tvmaze:${show.id}`;
-          const coverUrl =
-            show.image?.original?.replace('http://', 'https://') ||
-            show.image?.medium?.replace('http://', 'https://') ||
-            POPULAR_TMDB_CATALOG[2].coverUrl;
-
-          const summaryText = show.summary
-            ? show.summary.replace(/<[^>]*>?/gm, '').slice(0, 250)
-            : 'Serie aus dem offiziellen TV-Katalog.';
-
+      const exactQ = cleanedQ || rawQ;
+      const exactRes = await fetch(
+        `https://www.omdbapi.com/?t=${encodeURIComponent(exactQ)}&apikey=${OMDB_KEY}`
+      );
+      if (exactRes.ok) {
+        const exact = await exactRes.json();
+        if (exact.Response !== 'False' && exact.Title && exact.Poster && exact.Poster !== 'N/A') {
+          const isMovie = exact.Type !== 'series';
+          const external_id = `omdb:${exact.imdbID}`;
+          seenIds.add(external_id);
           items.push({
             id: external_id,
             external_id,
-            title: show.name,
-            type: 'show',
-            coverUrl,
-            releaseDate: show.premiered,
-            summary: summaryText,
-            genres: show.genres || ['Drama', 'Serie'],
-            creator: show.network?.name || show.webChannel?.name || 'TV Production',
-            franchise_id: `tvmaze:franchise:${show.id}`,
-            totalUnits: 10,
-            totalSeasons: 1,
-            unit: 'episodes',
-            rating: show.rating?.average ? Math.round((show.rating.average / 2) * 10) / 10 : 4.5,
+            title: exact.Title,
+            originalTitle: exact.Title,
+            type: isMovie ? 'movie' : 'show',
+            coverUrl: exact.Poster,
+            releaseDate: exact.Year ? `${exact.Year.split('–')[0]}-01-01` : undefined,
+            summary: exact.Plot && exact.Plot !== 'N/A' ? exact.Plot : `${isMovie ? 'Spielfilm' : 'Serie'} (${exact.Year}).`,
+            genres: exact.Genre ? exact.Genre.split(', ') : [isMovie ? 'Film' : 'Serie'],
+            creator: exact.Director && exact.Director !== 'N/A' ? exact.Director : 'Filmindustrie',
+            franchise_id: `imdb:franchise:${exact.imdbID}`,
+            totalUnits: isMovie ? 120 : 10,
+            totalSeasons: isMovie ? undefined : (parseInt(exact.totalSeasons) || 1),
+            unit: isMovie ? 'hours' : 'episodes',
+            rating: exact.imdbRating && exact.imdbRating !== 'N/A' ? Math.round((parseFloat(exact.imdbRating) / 2) * 10) / 10 : 4.6,
           });
         }
       }
     } catch (e) {
-      console.warn('TVmaze query error:', e);
+      console.warn('OMDb exact query failed:', e);
     }
 
-    // 2. TMDB Live API if API Key is configured
-    if (TMDB_API_KEY) {
+    // 1b. Search list for terms
+    for (const term of searchTerms) {
       try {
-        const res = await fetch(
-          `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
-            q
-          )}&language=de-DE&include_adult=false`
+        const omdbRes = await fetch(
+          `https://www.omdbapi.com/?s=${encodeURIComponent(term)}&apikey=${OMDB_KEY}`
         );
-        if (res.ok) {
-          const data = await res.json();
-          for (const item of data.results || []) {
-            if (item.media_type !== 'movie' && item.media_type !== 'tv') continue;
-            const isMovie = item.media_type === 'movie';
-            const external_id = `tmdb:${item.media_type}:${item.id}`;
-            const coverUrl = item.poster_path
-              ? `${TMDB_IMAGE_BASE}${item.poster_path}`
-              : POPULAR_TMDB_CATALOG[0].coverUrl;
+        if (omdbRes.ok) {
+          const omdbData = await omdbRes.json();
+          if (omdbData.Search && Array.isArray(omdbData.Search)) {
+            for (const entry of omdbData.Search.slice(0, 6)) {
+              if (!entry.Title || entry.Poster === 'N/A') continue;
+              const external_id = `omdb:${entry.imdbID}`;
+              if (seenIds.has(external_id)) continue;
+              seenIds.add(external_id);
+
+              const isMovie = entry.Type !== 'series';
+              items.push({
+                id: external_id,
+                external_id,
+                title: entry.Title,
+                originalTitle: entry.Title,
+                type: isMovie ? 'movie' : 'show',
+                coverUrl: entry.Poster,
+                releaseDate: entry.Year ? `${entry.Year.split('–')[0]}-01-01` : undefined,
+                summary: `${isMovie ? 'Spielfilm' : 'Serie'} (${entry.Year}).`,
+                genres: [isMovie ? 'Film' : 'Serie'],
+                creator: 'Filmindustrie',
+                franchise_id: `imdb:franchise:${entry.imdbID}`,
+                totalUnits: isMovie ? 120 : 10,
+                totalSeasons: isMovie ? undefined : 1,
+                unit: isMovie ? 'hours' : 'episodes',
+                rating: 4.6,
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('OMDb query failed:', e);
+      }
+
+      if (items.length >= 4) break;
+    }
+
+    // 2. Live TVmaze Search for TV shows (Returns official series poster images)
+    for (const term of searchTerms) {
+      try {
+        const tvRes = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(term)}`);
+        if (tvRes.ok) {
+          const tvData = await tvRes.json();
+          for (const entry of tvData.slice(0, 4)) {
+            const show = entry.show;
+            if (!show || !show.image) continue;
+
+            const external_id = `tvmaze:${show.id}`;
+            const coverUrl =
+              show.image?.original?.replace('http://', 'https://') ||
+              show.image?.medium?.replace('http://', 'https://');
+
+            const summaryText = show.summary
+              ? show.summary.replace(/<[^>]*>?/gm, '').slice(0, 250)
+              : 'Offizielle Serie.';
 
             items.push({
               id: external_id,
               external_id,
-              title: isMovie ? item.title : item.name,
-              originalTitle: isMovie ? item.original_title : item.original_name,
-              type: isMovie ? 'movie' : 'show',
+              title: show.name,
+              type: 'show',
               coverUrl,
-              releaseDate: isMovie ? item.release_date : item.first_air_date,
-              summary: item.overview || 'Keine Beschreibung verfügbar.',
-              rating: item.vote_average ? Math.round((item.vote_average / 2) * 10) / 10 : 4.0,
-              totalUnits: isMovie ? 120 : 10,
-              totalSeasons: isMovie ? undefined : 1,
-              unit: isMovie ? 'hours' : 'episodes',
+              releaseDate: show.premiered,
+              summary: summaryText,
+              genres: show.genres || ['Drama', 'Serie'],
+              creator: show.network?.name || show.webChannel?.name || 'TV Studio',
+              franchise_id: `tvmaze:franchise:${show.id}`,
+              totalUnits: 10,
+              totalSeasons: 1,
+              unit: 'episodes',
+              rating: show.rating?.average ? Math.round((show.rating.average / 2) * 10) / 10 : 4.5,
             });
           }
         }
       } catch (e) {
-        console.warn('TMDB live search failed, falling back to catalog', e);
+        console.warn('TVmaze query error:', e);
       }
+
+      if (items.length >= 6) break;
     }
 
     // 3. Search in popular catalog
     const catalogMatches = POPULAR_TMDB_CATALOG.filter(
       (m) =>
-        m.title.toLowerCase().includes(q) ||
-        (m.originalTitle && m.originalTitle.toLowerCase().includes(q)) ||
-        (m.creator && m.creator.toLowerCase().includes(q)) ||
-        (m.genres && m.genres.some((g) => g.toLowerCase().includes(q)))
+        m.title.toLowerCase().includes(rawQ) ||
+        (cleanedQ && m.title.toLowerCase().includes(cleanedQ)) ||
+        (m.originalTitle && m.originalTitle.toLowerCase().includes(rawQ)) ||
+        (m.creator && m.creator.toLowerCase().includes(rawQ))
     );
 
-    // Merge without duplicate external_id
-    const combined = [...items];
-    for (const match of catalogMatches) {
-      if (!combined.some((x) => x.title.toLowerCase() === match.title.toLowerCase())) {
-        combined.push(match);
+    // Merge results without duplicate titles
+    const combined: SearchResultItem[] = [];
+    const seenTitles = new Set<string>();
+
+    for (const item of [...items, ...catalogMatches]) {
+      const norm = item.title.toLowerCase();
+      if (!seenTitles.has(norm)) {
+        seenTitles.add(norm);
+        combined.push(item);
       }
     }
 
@@ -401,7 +463,7 @@ export class TMDBAdapter implements MediaAdapter {
       return combined;
     }
 
-    // 4. Fallback with official poster template
+    // 4. Clean dynamic fallback with dedicated SVG artwork (Never shows the wrong poster!)
     const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     return [
       {
@@ -409,10 +471,10 @@ export class TMDBAdapter implements MediaAdapter {
         external_id: `custom:movie:${Date.now()}`,
         title: capitalized,
         type: 'movie',
-        coverUrl: POPULAR_TMDB_CATALOG[0].coverUrl,
+        coverUrl: createSvgPlaceholder(capitalized, 'movie'),
         releaseDate: new Date().toISOString().split('T')[0],
         summary: `Film: ${capitalized}. Jetzt zur Sammlung hinzufügen und Fortschritt erfassen.`,
-        genres: ['Film', 'Drama'],
+        genres: ['Film'],
         creator: 'Produktion',
         totalUnits: 120,
         unit: 'hours',
@@ -423,10 +485,10 @@ export class TMDBAdapter implements MediaAdapter {
         external_id: `custom:show:${Date.now()}`,
         title: `${capitalized} (Serie)`,
         type: 'show',
-        coverUrl: POPULAR_TMDB_CATALOG[2].coverUrl,
+        coverUrl: createSvgPlaceholder(capitalized, 'show'),
         releaseDate: new Date().toISOString().split('T')[0],
         summary: `Serie: ${capitalized}. Verfolge Staffeln und Episoden in OmniTrack.`,
-        genres: ['Serie', 'Action'],
+        genres: ['Serie'],
         creator: 'TV Studio',
         totalUnits: 10,
         totalSeasons: 1,
