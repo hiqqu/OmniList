@@ -94,7 +94,7 @@ const MOCK_ANILIST_CATALOG: SearchResultItem[] = [
 export class AniListAdapter implements MediaAdapter {
   async search(query: string): Promise<SearchResultItem[]> {
     const q = query.trim().toLowerCase();
-    if (!q) return [];
+    if (!q) return MOCK_ANILIST_CATALOG;
 
     try {
       const gqlQuery = `

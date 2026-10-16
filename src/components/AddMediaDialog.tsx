@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X,
   Search,
@@ -13,7 +13,7 @@ import {
   Check,
   Star,
   Calendar,
-  Layers,
+  Flame,
 } from 'lucide-react';
 import { MediaType, SearchResultItem, MediaStatus, MediaItem } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
@@ -39,20 +39,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<MediaStatus>('in_progress');
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Focus input when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    } else {
-      setSearchQuery('');
-      setResults([]);
-      setIsLoading(false);
-    }
-  }, [isOpen]);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Tab definitions
   const tabs: { id: MediaType; label: string; icon: React.ReactNode; color: string }[] = [
@@ -62,50 +49,65 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
     { id: 'game', label: 'Videospiel', icon: <Gamepad2 className="w-4 h-4" />, color: 'text-purple-400' },
   ];
 
-  // 300 ms Debounced search with AbortController
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setResults([]);
-      setIsLoading(false);
-      return;
-    }
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    setIsLoading(true);
-
-    const timer = setTimeout(async () => {
+  // Fetch search or trending items
+  const executeSearch = useCallback(
+    async (query: string, tab: MediaType) => {
+      setIsLoading(true);
       try {
-        const res = await fetch(
-          `/api/search?q=${encodeURIComponent(searchQuery)}&type=${activeTab}`,
-          { signal: controller.signal }
-        );
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&type=${tab}`);
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
         }
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error('Search request error:', err);
-        }
+      } catch (err) {
+        console.error('Search request error:', err);
       } finally {
         setIsLoading(false);
       }
-    }, 300);
+    },
+    []
+  );
 
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [searchQuery, activeTab]);
+  // Load recommendations when dialog opens or activeTab changes with empty query
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      executeSearch(searchQuery, activeTab);
+    } else {
+      setSearchQuery('');
+      setResults([]);
+      setIsLoading(false);
+    }
+  }, [isOpen, activeTab, executeSearch]);
+
+  // Debounced search when typing
+  const handleInputChange = (val: string) => {
+    setSearchQuery(val);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      executeSearch(val, activeTab);
+    }, 300);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      executeSearch(searchQuery, activeTab);
+    }
+  };
 
   const handleSelectTab = (tab: MediaType) => {
     setActiveTab(tab);
-    // If search query exists, it will automatically re-run via effect
+    executeSearch(searchQuery, tab);
   };
 
   const handleAdd = (result: SearchResultItem) => {
@@ -140,7 +142,43 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
     setAddedIds((prev) => new Set(prev).add(result.external_id));
   };
 
+  // Add custom queried title directly
+  const handleAddCustom = () => {
+    if (!searchQuery.trim()) return;
+    const title = searchQuery.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+    const unit = activeTab === 'book' ? 'pages' : activeTab === 'game' ? 'hours' : 'episodes';
+    const total = activeTab === 'book' ? 350 : activeTab === 'game' ? 40 : 12;
+
+    onAddMedia({
+      title,
+      type: activeTab,
+      status: selectedStatus,
+      coverUrl:
+        activeTab === 'movie'
+          ? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80'
+          : activeTab === 'anime'
+          ? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80'
+          : activeTab === 'book'
+          ? 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80'
+          : 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80',
+      rating: 4.5,
+      releaseDate: new Date().toISOString().split('T')[0],
+      summary: `Eigener Eintrag zu ${title}`,
+      genres: [activeTab.toUpperCase()],
+      progress: {
+        current: selectedStatus === 'completed' ? total : selectedStatus === 'in_progress' ? 1 : 0,
+        total,
+        unit,
+      },
+      external_id: `custom:${activeTab}:${Date.now()}`,
+    });
+
+    onClose();
+  };
+
   if (!isOpen) return null;
+
+  const isShowingRecommendations = !searchQuery.trim();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
@@ -154,7 +192,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
               Medium zur Sammlung hinzufügen
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Live-Suche über TMDB, AniList, Google Books & RAWG mit automatischem Mock-Fallback
+              Live-Suche über TMDB, AniList, Google Books &amp; RAWG mit automatischem Mock-Fallback
             </p>
           </div>
           <button
@@ -189,36 +227,63 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
           </div>
 
           {/* Search Input Bar */}
-          <div className="relative mt-4 mb-2">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Suche nach ${
-                activeTab === 'movie'
-                  ? 'Filmen oder Serien (z. B. Dune, Arcane, Severance)...'
-                  : activeTab === 'anime'
-                  ? 'Anime (z. B. Frieren, Solo Leveling, Jujutsu Kaisen)...'
-                  : activeTab === 'book'
-                  ? 'Büchern (z. B. Die drei Sonnen, Der Herr der Ringe, Atomic Habits)...'
-                  : 'Videospielen (z. B. Elden Ring, Cyberpunk 2077, The Witcher)...'
-              }`}
-              className="w-full bg-slate-950/80 border border-slate-700 focus:border-primary rounded-xl pl-10 pr-28 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-            />
-            {isLoading && (
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs text-primary font-medium">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Suche...</span>
-              </div>
-            )}
+          <div className="relative mt-4 mb-2 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Suche nach ${
+                  activeTab === 'movie'
+                    ? 'Filmen oder Serien (z. B. Dune, Arcane, Breaking Bad, Batman)...'
+                    : activeTab === 'anime'
+                    ? 'Anime (z. B. Frieren, Solo Leveling, One Piece, Jujutsu Kaisen)...'
+                    : activeTab === 'book'
+                    ? 'Büchern (z. B. Harry Potter, Die drei Sonnen, Der Herr der Ringe)...'
+                    : 'Videospielen (z. B. Elden Ring, Zelda, Cyberpunk 2077, GTA)...'
+                }`}
+                className="w-full bg-slate-950/80 border border-slate-700 focus:border-primary rounded-xl pl-10 pr-20 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    executeSearch('', activeTab);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => executeSearch(searchQuery, activeTab)}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition-colors flex items-center gap-1.5"
+            >
+              {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> : <Search className="w-3.5 h-3.5" />}
+              <span>Suchen</span>
+            </button>
           </div>
 
           {/* Add-with-status selector */}
           <div className="flex items-center justify-between text-xs text-slate-400 py-1.5">
-            <span>Hinzufügen als Status:</span>
+            <span className="flex items-center gap-1.5">
+              {isShowingRecommendations ? (
+                <>
+                  <Flame className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-slate-300 font-semibold">Beliebte Empfehlungen</span>
+                </>
+              ) : (
+                <span>Suchergebnisse für &quot;{searchQuery}&quot;</span>
+              )}
+            </span>
             <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-slate-500 hidden sm:inline">Hinzufügen als:</span>
               {(['in_progress', 'planned', 'completed'] as MediaStatus[]).map((st) => (
                 <button
                   key={st}
@@ -238,11 +303,11 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
         </div>
 
         {/* Results Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-[300px]">
+        <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-[320px]">
           {isLoading && results.length === 0 ? (
             /* Skeleton Loading State */
             <div className="space-y-3">
-              {[1, 2, 3].map((n) => (
+              {[1, 2, 3, 4].map((n) => (
                 <div
                   key={n}
                   className="flex gap-4 p-3 rounded-xl bg-slate-900/50 border border-slate-800 animate-pulse"
@@ -268,7 +333,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                   key={result.id}
                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all"
                 >
-                  <div className="flex items-center gap-3.5">
+                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     {/* Cover Thumbnail */}
                     <div className="w-14 h-20 rounded-lg overflow-hidden bg-slate-950 flex-shrink-0 border border-slate-800">
                       <img
@@ -283,7 +348,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                     </div>
 
                     {/* Metadata */}
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span
                           className={cn(
@@ -308,16 +373,16 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                         )}
                       </div>
 
-                      <h4 className="font-bold text-sm text-white line-clamp-1">{result.title}</h4>
+                      <h4 className="font-bold text-sm text-white truncate">{result.title}</h4>
 
-                      <p className="text-xs text-slate-400 line-clamp-1">
+                      <p className="text-xs text-slate-400 truncate">
                         {result.creator || result.originalTitle || '—'}
                       </p>
 
                       {result.genres && result.genres.length > 0 && (
                         <div className="flex flex-wrap gap-1 pt-0.5">
                           {result.genres.slice(0, 3).map((g) => (
-                            <span key={g} className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                            <span key={g} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
                               {g}
                             </span>
                           ))}
@@ -346,23 +411,23 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                 </div>
               );
             })
-          ) : searchQuery.trim().length > 0 ? (
-            /* No Results Found */
-            <div className="py-12 text-center text-slate-400">
-              <Search className="w-8 h-8 mx-auto mb-2 text-slate-600" />
-              <p className="text-sm font-semibold text-slate-300">Keine Treffer für &quot;{searchQuery}&quot; gefunden</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Versuche einen anderen Suchbegriff oder wechsle den Medien-Tab.
-              </p>
-            </div>
           ) : (
-            /* Initial Prompt / Popular Picks */
-            <div className="py-12 text-center text-slate-400">
-              <Layers className="w-8 h-8 mx-auto mb-2 text-slate-600" />
-              <p className="text-sm font-semibold text-slate-300">Gib einen Titel in die Suchleiste ein</p>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                Tippe z. B. auf &quot;Dune&quot;, &quot;Arcane&quot;, &quot;Frieren&quot;, &quot;Elden Ring&quot; oder &quot;Die drei Sonnen&quot;, um live zu suchen.
-              </p>
+            /* Custom Add Prompt if no result found */
+            <div className="py-12 text-center text-slate-400 space-y-4">
+              <Search className="w-8 h-8 mx-auto text-slate-600" />
+              <div>
+                <p className="text-sm font-semibold text-slate-300">Keine externen Treffer für &quot;{searchQuery}&quot;</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                  Du kannst diesen Titel trotzdem sofort als individuelles Medium mit Titel und Typ zu deiner Sammlung hinzufügen.
+                </p>
+              </div>
+              <button
+                onClick={handleAddCustom}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-md active:scale-95 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>&quot;{searchQuery}&quot; als {activeTab === 'movie' ? 'Film' : activeTab === 'anime' ? 'Anime' : activeTab === 'book' ? 'Buch' : 'Spiel'} hinzufügen</span>
+              </button>
             </div>
           )}
         </div>

@@ -7,12 +7,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q');
+    const query = searchParams.get('q') || '';
     const type = (searchParams.get('type') || 'movie') as MediaType;
-
-    if (!query || query.trim().length === 0) {
-      return NextResponse.json({ results: [], count: 0 });
-    }
 
     const validTypes: MediaType[] = ['movie', 'show', 'anime', 'book', 'game'];
     const selectedType = validTypes.includes(type) ? type : 'movie';

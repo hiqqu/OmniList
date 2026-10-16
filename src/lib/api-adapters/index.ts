@@ -1,9 +1,9 @@
 import { MediaType, SearchResultItem, MediaItem, SequelNotification } from '@/types/media';
 import { MediaAdapter } from './types';
-import { TMDBAdapter } from './tmdb';
+import { TMDBAdapter, POPULAR_TMDB_CATALOG } from './tmdb';
 import { AniListAdapter } from './anilist';
-import { GoogleBooksAdapter } from './googlebooks';
-import { RAWGAdapter } from './rawg';
+import { GoogleBooksAdapter, POPULAR_BOOKS_CATALOG } from './googlebooks';
+import { RAWGAdapter, POPULAR_GAMES_CATALOG } from './rawg';
 import { searchCache } from '../cache';
 
 const tmdbAdapter = new TMDBAdapter();
@@ -28,29 +28,36 @@ export function getAdapter(type: MediaType): MediaAdapter {
 }
 
 export async function searchMedia(query: string, type: MediaType): Promise<SearchResultItem[]> {
-  const cacheKey = `search:${type}:${query.toLowerCase().trim()}`;
+  const qClean = (query || '').toLowerCase().trim();
+
+  // If query is empty, return popular / trending recommendations
+  if (!qClean) {
+    if (type === 'movie' || type === 'show') {
+      return POPULAR_TMDB_CATALOG;
+    }
+    if (type === 'book') {
+      return POPULAR_BOOKS_CATALOG;
+    }
+    if (type === 'game') {
+      return POPULAR_GAMES_CATALOG;
+    }
+    if (type === 'anime') {
+      const adapter = getAdapter('anime');
+      return await adapter.search('');
+    }
+  }
+
+  const cacheKey = `search:${type}:${qClean}`;
   const cached = searchCache.get<SearchResultItem[]>(cacheKey);
   if (cached) {
     return cached;
   }
 
   const adapter = getAdapter(type);
-  const results = await adapter.search(query);
+  const results = await adapter.search(qClean);
 
-  // Filter results to match the requested type if movie vs show
-  const filtered = results.filter((item) => {
-    if (type === 'movie' || type === 'show') {
-      // allow movie adapter to return both if requested, or filter by specific type
-      return item.type === type;
-    }
-    return item.type === type;
-  });
-
-  // If filtered is empty because user searched movie under show or vice-versa, return results
-  const finalResults = filtered.length > 0 ? filtered : results;
-
-  searchCache.set(cacheKey, finalResults);
-  return finalResults;
+  searchCache.set(cacheKey, results);
+  return results;
 }
 
 export async function checkSequelsForLibrary(items: MediaItem[]): Promise<SequelNotification[]> {

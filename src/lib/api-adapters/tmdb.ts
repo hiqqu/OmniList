@@ -5,7 +5,7 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
-const MOCK_TMDB_CATALOG: SearchResultItem[] = [
+export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
   {
     id: 'tmdb:movie:438631',
     external_id: 'tmdb:movie:438631',
@@ -14,14 +14,14 @@ const MOCK_TMDB_CATALOG: SearchResultItem[] = [
     type: 'movie',
     coverUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
     releaseDate: '2021-09-15',
-    summary: 'Paul Atreides, ein brillanter und begabter junger Mann, der zu einem großen Schicksal geboren wurde, muss auf den gefährlichsten Planeten des Universums reisen.',
+    summary: 'Paul Atreides muss auf den gefährlichsten Wüstenplaneten Arrakis reisen, um die Zukunft seines Volkes zu sichern.',
     genres: ['Sci-Fi', 'Abenteuer'],
     creator: 'Denis Villeneuve',
     franchise_id: 'tmdb:collection:726871',
     collection_name: 'Dune Filmreihe',
     totalUnits: 155,
     unit: 'hours',
-    rating: 4.6,
+    rating: 4.7,
   },
   {
     id: 'tmdb:movie:693134',
@@ -31,14 +31,14 @@ const MOCK_TMDB_CATALOG: SearchResultItem[] = [
     type: 'movie',
     coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
     releaseDate: '2024-03-01',
-    summary: 'Die Reise von Paul Atreides geht weiter, als er sich mit Chani und den Fremen zusammenschließt, um Rache an den Verschwörern zu üben.',
+    summary: 'Die Reise von Paul Atreides geht weiter mit den Fremen auf Arrakis im Kampf gegen das Haus Harkonnen.',
     genres: ['Sci-Fi', 'Action', 'Abenteuer'],
     creator: 'Denis Villeneuve',
     franchise_id: 'tmdb:collection:726871',
     collection_name: 'Dune Filmreihe',
     totalUnits: 166,
     unit: 'hours',
-    rating: 4.8,
+    rating: 4.9,
   },
   {
     id: 'tmdb:tv:94605',
@@ -48,7 +48,7 @@ const MOCK_TMDB_CATALOG: SearchResultItem[] = [
     type: 'show',
     coverUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80',
     releaseDate: '2021-11-06',
-    summary: 'Inmitten des Konflikts zwischen den Zwillingsstädten Piltover und Zhaun kämpfen zwei Schwestern auf entgegengesetzten Seiten eines Krieges zwischen magischen Technologien.',
+    summary: 'Inmitten des Konflikts zwischen Piltover und Zhaun kämpfen zwei Schwestern auf entgegengesetzten Seiten.',
     genres: ['Animation', 'Sci-Fi', 'Action'],
     creator: 'Christian Linke, Alex Yee',
     franchise_id: 'tmdb:collection:arcane',
@@ -59,24 +59,6 @@ const MOCK_TMDB_CATALOG: SearchResultItem[] = [
     rating: 4.9,
   },
   {
-    id: 'tmdb:tv:100088',
-    external_id: 'tmdb:tv:100088',
-    title: 'The Last of Us',
-    originalTitle: 'The Last of Us',
-    type: 'show',
-    coverUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
-    releaseDate: '2023-01-15',
-    summary: 'Zwanzig Jahre nach dem Zusammenbruch der Zivilisation wird der abgebrühte Überlebende Joel angeheuert, um die 14-jährige Ellie aus einer bedrückenden Quarantänezone zu schmuggeln.',
-    genres: ['Drama', 'Sci-Fi', 'Horror'],
-    creator: 'Craig Mazin, Neil Druckmann',
-    franchise_id: 'tmdb:collection:tlou',
-    collection_name: 'The Last of Us Saga',
-    totalUnits: 9,
-    totalSeasons: 1,
-    unit: 'episodes',
-    rating: 4.7,
-  },
-  {
     id: 'tmdb:tv:95557',
     external_id: 'tmdb:tv:95557',
     title: 'Severance',
@@ -84,13 +66,31 @@ const MOCK_TMDB_CATALOG: SearchResultItem[] = [
     type: 'show',
     coverUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500&auto=format&fit=crop&q=80',
     releaseDate: '2022-02-18',
-    summary: 'Mark leitet ein Team bei Lumon Industries, dessen Angestellte sich einem chirurgischen Eingriff unterzogen haben, der ihre Erinnerungen zwischen Arbeit und Privatleben trennt.',
-    genres: ['Mystery', 'Sci-Fi', 'Thriller'],
+    summary: 'Mark leitet ein Team bei Lumon Industries, dessen Angestellte ihr Arbeits- und Privatgedächtnis getrennt haben.',
+    genres: ['Mystery', 'Sci-Fi', 'Psychothriller'],
     creator: 'Dan Erickson',
     franchise_id: 'tmdb:collection:severance',
     collection_name: 'Severance Universe',
     totalUnits: 19,
     totalSeasons: 2,
+    unit: 'episodes',
+    rating: 4.8,
+  },
+  {
+    id: 'tmdb:tv:100088',
+    external_id: 'tmdb:tv:100088',
+    title: 'The Last of Us',
+    originalTitle: 'The Last of Us',
+    type: 'show',
+    coverUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '2023-01-15',
+    summary: 'Zwanzig Jahre nach dem Zusammenbruch der Zivilisation muss Joel die 14-jährige Ellie quer durch die USA schmuggeln.',
+    genres: ['Drama', 'Sci-Fi', 'Postapokalypse'],
+    creator: 'Craig Mazin, Neil Druckmann',
+    franchise_id: 'tmdb:collection:tlou',
+    collection_name: 'The Last of Us Saga',
+    totalUnits: 9,
+    totalSeasons: 1,
     unit: 'episodes',
     rating: 4.8,
   },
@@ -102,12 +102,77 @@ const MOCK_TMDB_CATALOG: SearchResultItem[] = [
     type: 'movie',
     coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format&fit=crop&q=80',
     releaseDate: '2023-07-21',
-    summary: 'Die Geschichte des amerikanischen Wissenschaftlers J. Robert Oppenheimer und seiner Rolle bei der Entwicklung der Atombombe im Manhattan-Projekt.',
+    summary: 'Die Geschichte von J. Robert Oppenheimer und die Entwicklung der Atombombe im Manhattan-Projekt.',
     genres: ['Biografie', 'Drama', 'Historie'],
     creator: 'Christopher Nolan',
     totalUnits: 180,
     unit: 'hours',
     rating: 4.8,
+  },
+  {
+    id: 'tmdb:movie:157336',
+    external_id: 'tmdb:movie:157336',
+    title: 'Interstellar',
+    originalTitle: 'Interstellar',
+    type: 'movie',
+    coverUrl: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '2014-11-05',
+    summary: 'Ein Forscherteam reist durch ein Wurmloch, um eine neue Heimat für die bedrohte Menschheit zu finden.',
+    genres: ['Sci-Fi', 'Drama', 'Abenteuer'],
+    creator: 'Christopher Nolan',
+    totalUnits: 169,
+    unit: 'hours',
+    rating: 4.9,
+  },
+  {
+    id: 'tmdb:movie:27205',
+    external_id: 'tmdb:movie:27205',
+    title: 'Inception',
+    originalTitle: 'Inception',
+    type: 'movie',
+    coverUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '2010-07-16',
+    summary: 'Ein Dieb, der Geheimnisse aus Träumen stiehlt, erhält die umgekehrte Aufgabe: eine Idee in ein Unterbewusstsein einzupflanzen.',
+    genres: ['Sci-Fi', 'Action', 'Heist'],
+    creator: 'Christopher Nolan',
+    totalUnits: 148,
+    unit: 'hours',
+    rating: 4.8,
+  },
+  {
+    id: 'tmdb:movie:155',
+    external_id: 'tmdb:movie:155',
+    title: 'The Dark Knight',
+    originalTitle: 'The Dark Knight',
+    type: 'movie',
+    coverUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '2008-07-18',
+    summary: 'Batman verbündet sich mit Gordon und Dent gegen das Verbrechen in Gotham, als der Joker Chaos sät.',
+    genres: ['Action', 'Krimi', 'Drama'],
+    creator: 'Christopher Nolan',
+    franchise_id: 'tmdb:franchise:batman',
+    collection_name: 'The Dark Knight Trilogie',
+    totalUnits: 152,
+    unit: 'hours',
+    rating: 4.9,
+  },
+  {
+    id: 'tmdb:tv:1396',
+    external_id: 'tmdb:tv:1396',
+    title: 'Breaking Bad',
+    originalTitle: 'Breaking Bad',
+    type: 'show',
+    coverUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '2008-01-20',
+    summary: 'Ein krebskranker Chemielehrer beginnt Meth herzustellen, um die finanzielle Zukunft seiner Familie zu sichern.',
+    genres: ['Drama', 'Krimi', 'Thriller'],
+    creator: 'Vince Gilligan',
+    franchise_id: 'tmdb:franchise:bb',
+    collection_name: 'Breaking Bad Universe',
+    totalUnits: 62,
+    totalSeasons: 5,
+    unit: 'episodes',
+    rating: 5.0,
   },
   {
     id: 'tmdb:tv:66732',
@@ -117,7 +182,7 @@ const MOCK_TMDB_CATALOG: SearchResultItem[] = [
     type: 'show',
     coverUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80',
     releaseDate: '2016-07-15',
-    summary: 'Als ein kleiner Junge spurlos verschwindet, decken seine Freunde geheime Experimente und furchterregende übernatürliche Kräfte auf.',
+    summary: 'Nach dem Verschwinden eines Jungen deckt eine Kleinstadt geheime Experimente und übernatürliche Mächte auf.',
     genres: ['Sci-Fi', 'Mystery', 'Drama'],
     creator: 'The Duffer Brothers',
     franchise_id: 'tmdb:collection:strangerthings',
@@ -128,27 +193,111 @@ const MOCK_TMDB_CATALOG: SearchResultItem[] = [
     rating: 4.7,
   },
   {
-    id: 'tmdb:movie:157336',
-    external_id: 'tmdb:movie:157336',
-    title: 'Interstellar',
-    originalTitle: 'Interstellar',
+    id: 'tmdb:tv:1399',
+    external_id: 'tmdb:tv:1399',
+    title: 'Game of Thrones',
+    originalTitle: 'Game of Thrones',
+    type: 'show',
+    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '2011-04-17',
+    summary: 'Neun Adelsfamilien kämpfen um die Kontrolle über das mythische Land Westeros, während sich eine uralte Bedrohung erhebt.',
+    genres: ['Fantasy', 'Drama', 'Abenteuer'],
+    creator: 'David Benioff, D.B. Weiss',
+    franchise_id: 'tmdb:franchise:got',
+    collection_name: 'Westeros Saga',
+    totalUnits: 73,
+    totalSeasons: 8,
+    unit: 'episodes',
+    rating: 4.7,
+  },
+  {
+    id: 'tmdb:movie:569094',
+    external_id: 'tmdb:movie:569094',
+    title: 'Spider-Man: Across the Spider-Verse',
+    originalTitle: 'Spider-Man: Across the Spider-Verse',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=500&auto=format&fit=crop&q=80',
-    releaseDate: '2014-11-05',
-    summary: 'Ein Team von Forschern nutzt ein neu entdecktes Wurmloch, um die Grenzen der menschlichen Raumfahrt zu überwinden und das Überleben der Menschheit zu sichern.',
-    genres: ['Sci-Fi', 'Drama', 'Abenteuer'],
-    creator: 'Christopher Nolan',
-    totalUnits: 169,
+    coverUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '2023-06-02',
+    summary: 'Miles Morales reist durch das Multiversum und gerät in Konflikt mit einer Vereinigung von Spider-Helden.',
+    genres: ['Animation', 'Action', 'Sci-Fi'],
+    creator: 'Joaquim Dos Santos, Kemp Powers',
+    franchise_id: 'tmdb:franchise:spiderverse',
+    collection_name: 'Spider-Verse Saga',
+    totalUnits: 140,
     unit: 'hours',
     rating: 4.9,
+  },
+  {
+    id: 'tmdb:movie:603',
+    external_id: 'tmdb:movie:603',
+    title: 'Matrix',
+    originalTitle: 'The Matrix',
+    type: 'movie',
+    coverUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '1999-03-31',
+    summary: 'Ein Computerhacker erfährt von mysteriösen Rebellen die schockierende Natur seiner Realität.',
+    genres: ['Sci-Fi', 'Action'],
+    creator: 'Lana & Lilly Wachowski',
+    franchise_id: 'tmdb:franchise:matrix',
+    collection_name: 'Matrix Reihe',
+    totalUnits: 136,
+    unit: 'hours',
+    rating: 4.8,
   },
 ];
 
 export class TMDBAdapter implements MediaAdapter {
   async search(query: string): Promise<SearchResultItem[]> {
     const q = query.trim().toLowerCase();
-    if (!q) return [];
+    if (!q) {
+      // If query is empty, return popular trending recommendations!
+      return POPULAR_TMDB_CATALOG;
+    }
 
+    const items: SearchResultItem[] = [];
+
+    // 1. Live TVmaze Search for TV shows (Completely FREE, public, no API key required!)
+    try {
+      const tvRes = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`);
+      if (tvRes.ok) {
+        const tvData = await tvRes.json();
+        for (const entry of tvData.slice(0, 5)) {
+          const show = entry.show;
+          if (!show) continue;
+
+          const external_id = `tvmaze:${show.id}`;
+          const coverUrl =
+            show.image?.original?.replace('http://', 'https://') ||
+            show.image?.medium?.replace('http://', 'https://') ||
+            'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
+
+          const summaryText = show.summary
+            ? show.summary.replace(/<[^>]*>?/gm, '').slice(0, 250)
+            : 'Serie aus dem TV-Katalog.';
+
+          items.push({
+            id: external_id,
+            external_id,
+            title: show.name,
+            type: 'show',
+            coverUrl,
+            releaseDate: show.premiered,
+            summary: summaryText,
+            genres: show.genres || ['Drama', 'Serie'],
+            creator: show.network?.name || show.webChannel?.name || 'TV Production',
+            franchise_id: `tvmaze:franchise:${show.id}`,
+            totalUnits: 10,
+            totalSeasons: 1,
+            unit: 'episodes',
+            rating: show.rating?.average ? Math.round((show.rating.average / 2) * 10) / 10 : 4.4,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('TVmaze query error:', e);
+    }
+
+    // 2. TMDB Live API if API Key is configured
     if (TMDB_API_KEY) {
       try {
         const res = await fetch(
@@ -158,8 +307,6 @@ export class TMDBAdapter implements MediaAdapter {
         );
         if (res.ok) {
           const data = await res.json();
-          const items: SearchResultItem[] = [];
-
           for (const item of data.results || []) {
             if (item.media_type !== 'movie' && item.media_type !== 'tv') continue;
             const isMovie = item.media_type === 'movie';
@@ -183,22 +330,66 @@ export class TMDBAdapter implements MediaAdapter {
               unit: isMovie ? 'hours' : 'episodes',
             });
           }
-
-          if (items.length > 0) return items;
         }
       } catch (e) {
-        console.warn('TMDB live search failed, falling back to mock catalog', e);
+        console.warn('TMDB live search failed, falling back to catalog', e);
       }
     }
 
-    // Fallback: search in mock catalog
-    return MOCK_TMDB_CATALOG.filter(
+    // 3. Search in popular catalog
+    const catalogMatches = POPULAR_TMDB_CATALOG.filter(
       (m) =>
         m.title.toLowerCase().includes(q) ||
         (m.originalTitle && m.originalTitle.toLowerCase().includes(q)) ||
         (m.creator && m.creator.toLowerCase().includes(q)) ||
         (m.genres && m.genres.some((g) => g.toLowerCase().includes(q)))
     );
+
+    // Merge without duplicate external_id
+    const combined = [...items];
+    for (const match of catalogMatches) {
+      if (!combined.some((x) => x.title.toLowerCase() === match.title.toLowerCase())) {
+        combined.push(match);
+      }
+    }
+
+    if (combined.length > 0) {
+      return combined;
+    }
+
+    // 4. Intelligent dynamic fallback if no live API returned results
+    const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+    return [
+      {
+        id: `custom:movie:${Date.now()}`,
+        external_id: `custom:movie:${Date.now()}`,
+        title: capitalized,
+        type: 'movie',
+        coverUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80',
+        releaseDate: new Date().toISOString().split('T')[0],
+        summary: `Film: ${capitalized}. Jetzt zur Sammlung hinzufügen und Fortschritt erfassen.`,
+        genres: ['Film', 'Drama'],
+        creator: 'Produktion',
+        totalUnits: 120,
+        unit: 'hours',
+        rating: 4.5,
+      },
+      {
+        id: `custom:show:${Date.now()}`,
+        external_id: `custom:show:${Date.now()}`,
+        title: `${capitalized} (Serie)`,
+        type: 'show',
+        coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+        releaseDate: new Date().toISOString().split('T')[0],
+        summary: `Serie: ${capitalized}. Verfolge Staffeln und Episoden in OmniTrack.`,
+        genres: ['Serie', 'Action'],
+        creator: 'TV Studio',
+        totalUnits: 10,
+        totalSeasons: 1,
+        unit: 'episodes',
+        rating: 4.5,
+      },
+    ];
   }
 
   async checkSequels(item: MediaItem): Promise<SequelNotification | null> {
@@ -330,46 +521,6 @@ export class TMDBAdapter implements MediaAdapter {
         detectedAt: new Date().toISOString(),
         progressSuggestion: { current: 0, total: 8, unit: 'episodes', currentSeason: 5, totalSeasons: 5 },
       };
-    }
-
-    // If live API key is available, attempt live TMDB lookup
-    if (TMDB_API_KEY && item.external_id.startsWith('tmdb:tv:')) {
-      try {
-        const tvId = item.external_id.split(':')[2];
-        const res = await fetch(`${TMDB_BASE_URL}/tv/${tvId}?api_key=${TMDB_API_KEY}&language=de-DE`);
-        if (res.ok) {
-          const data = await res.json();
-          const currentSeason = item.progress.currentSeason || item.progress.totalSeasons || 1;
-          if (data.number_of_seasons > currentSeason) {
-            const nextSeason = currentSeason + 1;
-            return {
-              id: `seq-live-${item.id}-${nextSeason}`,
-              parentMediaId: item.id,
-              parentMediaTitle: item.title,
-              parentMediaType: 'show',
-              parentCoverUrl: item.coverUrl,
-              sequelTitle: `${item.title} (Staffel ${nextSeason})`,
-              sequelType: 'show',
-              sequelCoverUrl: item.coverUrl,
-              status: 'released',
-              badgeText: `Staffel ${nextSeason} verfügbar`,
-              external_id: `tmdb:tv:${tvId}:s${nextSeason}`,
-              franchise_id: item.franchise_id,
-              description: `Neue Staffel ${nextSeason} mit ${data.seasons?.[nextSeason]?.episode_count || 10} Episoden verfügbar!`,
-              detectedAt: new Date().toISOString(),
-              progressSuggestion: {
-                current: 0,
-                total: data.seasons?.[nextSeason]?.episode_count || 10,
-                unit: 'episodes',
-                currentSeason: nextSeason,
-                totalSeasons: data.number_of_seasons,
-              },
-            };
-          }
-        }
-      } catch (err) {
-        console.warn('Live TMDB sequel check failed', err);
-      }
     }
 
     return null;

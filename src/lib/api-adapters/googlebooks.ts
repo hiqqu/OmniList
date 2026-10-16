@@ -1,9 +1,7 @@
 import { SearchResultItem, MediaItem, SequelNotification } from '@/types/media';
 import { MediaAdapter } from './types';
 
-const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1/volumes';
-
-const MOCK_BOOKS_CATALOG: SearchResultItem[] = [
+export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
   {
     id: 'googlebooks:dune1',
     external_id: 'googlebooks:dune1',
@@ -70,65 +68,137 @@ const MOCK_BOOKS_CATALOG: SearchResultItem[] = [
     unit: 'pages',
     rating: 4.8,
   },
+  {
+    id: 'googlebooks:hp1',
+    external_id: 'googlebooks:hp1',
+    title: 'Harry Potter und der Stein der Weisen',
+    originalTitle: "Harry Potter and the Philosopher's Stone",
+    type: 'book',
+    coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '1997-06-26',
+    summary: 'An seinem elften Geburtstag erfährt der Waisenjunge Harry Potter, dass er ein Zauberer ist und nach Hogwarts eingeladen wird.',
+    genres: ['Fantasy', 'Jugendbuch'],
+    creator: 'J.K. Rowling',
+    franchise_id: 'googlebooks:franchise:hp',
+    collection_name: 'Harry Potter Saga',
+    totalUnits: 336,
+    unit: 'pages',
+    rating: 4.9,
+  },
+  {
+    id: 'googlebooks:1984',
+    external_id: 'googlebooks:1984',
+    title: '1984',
+    originalTitle: 'Nineteen Eighty-Four',
+    type: 'book',
+    coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '1949-06-08',
+    summary: 'Winston Smith lebt in einem totalitären Überwachungsstaat, in dem der Große Bruder jede Regung der Bürger kontrolliert.',
+    genres: ['Dystopie', 'Klassiker'],
+    creator: 'George Orwell',
+    totalUnits: 320,
+    unit: 'pages',
+    rating: 4.8,
+  },
+  {
+    id: 'googlebooks:martian',
+    external_id: 'googlebooks:martian',
+    title: 'Der Marsianer',
+    originalTitle: 'The Martian',
+    type: 'book',
+    coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format&fit=crop&q=80',
+    releaseDate: '2011-09-27',
+    summary: 'Nach einem Sandsturm bleibt der Astronaut Mark Watney allein auf dem Mars zurück und muss um sein Überleben kämpfen.',
+    genres: ['Science-Fiction', 'Hard Sci-Fi'],
+    creator: 'Andy Weir',
+    totalUnits: 512,
+    unit: 'pages',
+    rating: 4.8,
+  },
 ];
 
 export class GoogleBooksAdapter implements MediaAdapter {
   async search(query: string): Promise<SearchResultItem[]> {
     const q = query.trim().toLowerCase();
-    if (!q) return [];
+    if (!q) {
+      return POPULAR_BOOKS_CATALOG;
+    }
 
+    const items: SearchResultItem[] = [];
+
+    // 1. Live Open Library Search (Completely FREE, public, no API key required!)
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-      const res = await fetch(`${GOOGLE_BOOKS_BASE}?q=${encodeURIComponent(q)}&maxResults=8&langRestrict=de,en`, {
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const data = await res.json();
-        const items: SearchResultItem[] = [];
-
-        for (const item of data.items || []) {
-          const info = item.volumeInfo || {};
-          const external_id = `googlebooks:${item.id}`;
-          const coverUrl =
-            info.imageLinks?.thumbnail?.replace('http://', 'https://') ||
-            info.imageLinks?.smallThumbnail?.replace('http://', 'https://') ||
-            'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
+      const openLibRes = await fetch(
+        `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6`
+      );
+      if (openLibRes.ok) {
+        const data = await openLibRes.json();
+        for (const doc of data.docs || []) {
+          if (!doc.title) continue;
+          const external_id = `openlibrary:${doc.key?.replace('/works/', '') || doc.cover_edition_key || Math.random()}`;
+          const coverUrl = doc.cover_i
+            ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
+            : 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
 
           items.push({
             id: external_id,
             external_id,
-            title: info.title || 'Unbekanntes Buch',
-            originalTitle: info.subtitle,
+            title: doc.title,
+            originalTitle: doc.subtitle,
             type: 'book',
             coverUrl,
-            releaseDate: info.publishedDate,
-            summary: info.description ? info.description.slice(0, 300) : 'Keine Beschreibung verfügbar.',
-            genres: info.categories || ['Literatur'],
-            creator: info.authors ? info.authors.join(', ') : 'Unbekannter Autor',
-            franchise_id: `googlebooks:franchise:${info.authors?.[0] || 'book'}`,
-            totalUnits: info.pageCount || 300,
+            releaseDate: doc.first_publish_year ? `${doc.first_publish_year}-01-01` : undefined,
+            summary: `Buch von ${doc.author_name?.[0] || 'Unbekanntem Autor'}. Erschienen ca. ${doc.first_publish_year || 'k. A.'}.`,
+            genres: doc.subject ? doc.subject.slice(0, 3) : ['Literatur'],
+            creator: doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor',
+            franchise_id: `book:franchise:${doc.author_name?.[0] || 'general'}`,
+            totalUnits: doc.number_of_pages_median || 350,
             unit: 'pages',
-            rating: info.averageRating ? Number(info.averageRating) : 4.3,
+            rating: 4.6,
           });
         }
-
-        if (items.length > 0) return items;
       }
     } catch (e) {
-      console.warn('Google Books live search failed, falling back to mock catalog', e);
+      console.warn('Open Library search failed:', e);
     }
 
-    return MOCK_BOOKS_CATALOG.filter(
+    // 2. Search in local catalog
+    const catalogMatches = POPULAR_BOOKS_CATALOG.filter(
       (m) =>
         m.title.toLowerCase().includes(q) ||
         (m.creator && m.creator.toLowerCase().includes(q)) ||
         (m.genres && m.genres.some((g) => g.toLowerCase().includes(q)))
     );
+
+    const combined = [...items];
+    for (const match of catalogMatches) {
+      if (!combined.some((x) => x.title.toLowerCase() === match.title.toLowerCase())) {
+        combined.push(match);
+      }
+    }
+
+    if (combined.length > 0) {
+      return combined;
+    }
+
+    // 3. Dynamic fallback if no search hit
+    const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+    return [
+      {
+        id: `custom:book:${Date.now()}`,
+        external_id: `custom:book:${Date.now()}`,
+        title: capitalized,
+        type: 'book',
+        coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80',
+        releaseDate: new Date().toISOString().split('T')[0],
+        summary: `Buch: ${capitalized}. Seiten erfassen und Lesefortschritt tracken.`,
+        genres: ['Buch', 'Literatur'],
+        creator: 'Autor',
+        totalUnits: 350,
+        unit: 'pages',
+        rating: 4.5,
+      },
+    ];
   }
 
   async checkSequels(item: MediaItem): Promise<SequelNotification | null> {
