@@ -851,12 +851,38 @@ export default function MediaDetailPage() {
                   </div>
                 )}
 
-                {details.publisher && (
-                  <div>
-                    <span className="text-zinc-500 block">Publisher / Verlag:</span>
-                    <span className="font-bold text-zinc-200">{details.publisher}</span>
+                {(details.publisher || item.publisher) ? (
+                  <div className="flex items-center justify-between group">
+                    <div>
+                      <span className="text-zinc-500 block">
+                        {item.type === 'book' ? 'Verlag / Herausgeber:' : 'Publisher / Verlag:'}
+                      </span>
+                      <span className="font-bold text-zinc-200">{item.publisher || details.publisher}</span>
+                    </div>
+                    <button
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="opacity-0 group-hover:opacity-100 px-2 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[11px] font-medium transition-all flex items-center gap-1"
+                      title="Verlag anpassen"
+                    >
+                      <Edit2 className="w-3 h-3 text-orange-400" />
+                      <span>Ändern</span>
+                    </button>
                   </div>
-                )}
+                ) : item.type === 'book' ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-zinc-500 block">Verlag / Herausgeber:</span>
+                      <span className="text-zinc-500 text-xs italic">Kein Verlag hinterlegt</span>
+                    </div>
+                    <button
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="px-2 py-0.5 rounded-md bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-xs font-semibold border border-orange-500/30 transition-all flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Verlag eintragen</span>
+                    </button>
+                  </div>
+                ) : null}
 
                 {details.writers && details.writers.length > 0 && (
                   <div>

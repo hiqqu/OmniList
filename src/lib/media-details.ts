@@ -437,13 +437,14 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
   const curated = CURATED_DETAILS[item.id];
   if (curated) {
     return {
+      ...curated,
+      publisher: item.publisher || curated.publisher,
       scores: {
         ...curated.scores,
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
       },
       cast: curated.cast || [],
       reviews: curated.reviews || [],
-      ...curated,
     } as EnrichedMediaDetails;
   }
 
@@ -542,9 +543,8 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       writers: [item.creator || 'Autor/in'],
       publisher:
         item.publisher ||
-        item.collection_name?.replace(' Ausgabe', '') ||
-        (item.originalTitle && item.originalTitle.includes('Verlag') ? item.originalTitle : undefined) ||
-        'Buchverlag',
+        (item.collection_name ? item.collection_name.replace(' Ausgabe', '') : undefined) ||
+        (item.originalTitle && item.originalTitle.includes('Verlag') ? item.originalTitle : undefined),
       pageCount: item.progress.total || 380,
       readingTime: `ca. ${Math.round((item.progress.total || 380) / 45)} Stunden`,
       isbn: item.isbn

@@ -202,6 +202,9 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       summary: summary.trim() || undefined,
       notes: notes.trim() || undefined,
       publisher: publisher.trim() || undefined,
+      collection_name: item.type === 'book'
+        ? (publisher.trim() ? `${publisher.trim()} Ausgabe` : undefined)
+        : item.collection_name,
       isbn: cleanIsbn || undefined,
       coverUrl: coverUrl || item.coverUrl,
       external_id: updatedExternalId,
@@ -280,6 +283,30 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
               />
             </div>
           </div>
+
+          {/* Publisher / Verlag Field (Prominently editable for Books & Games) */}
+          {(item.type === 'book' || item.type === 'game') && (
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-orange-400" />
+                  <span>{item.type === 'book' ? 'Verlag / Herausgeber' : 'Publisher'}</span>
+                </span>
+                {item.type === 'book' && (
+                  <span className="text-[10px] text-zinc-500 font-normal">
+                    Manuell anpassbar (z. B. Suhrkamp, dtv, Heyne, Carlsen...)
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                value={publisher}
+                onChange={(e) => setPublisher(e.target.value)}
+                placeholder={item.type === 'book' ? 'Verlag manuell eingeben oder korrigieren...' : 'Publisher angeben...'}
+                className="w-full bg-[#0F1117] border border-[#282D37] focus:border-orange-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] placeholder-zinc-600 focus:outline-none transition-colors"
+              />
+            </div>
+          )}
 
           {/* Status & Rating */}
           <div className="grid grid-cols-2 gap-3">
