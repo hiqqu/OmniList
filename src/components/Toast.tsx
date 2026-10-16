@@ -25,12 +25,12 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
         <div
           key={t.id}
           className={cn(
-            'pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl shadow-2xl border backdrop-blur-md text-xs animate-slideUp transition-all',
+            'pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl shadow-2xl border backdrop-blur-md text-xs animate-slideUp transition-all',
             t.type === 'success'
-              ? 'bg-slate-900/95 border-emerald-500/40 text-emerald-300'
+              ? 'bg-[#181B22]/95 border-emerald-500/40 text-emerald-400'
               : t.type === 'warning'
-              ? 'bg-slate-900/95 border-amber-500/40 text-amber-300'
-              : 'bg-slate-900/95 border-indigo-500/40 text-indigo-300'
+              ? 'bg-[#181B22]/95 border-amber-500/40 text-amber-300'
+              : 'bg-[#181B22]/95 border-zinc-700 text-zinc-200'
           )}
         >
           {t.type === 'success' ? (
@@ -38,17 +38,17 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
           ) : t.type === 'warning' ? (
             <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           ) : (
-            <Info className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+            <Info className="w-4 h-4 text-zinc-300 flex-shrink-0 mt-0.5" />
           )}
 
           <div className="flex-1">
-            <h5 className="font-bold text-white text-xs">{t.title}</h5>
-            {t.description && <p className="text-slate-400 mt-0.5">{t.description}</p>}
+            <h5 className="font-bold text-[#F1F3F7] text-xs">{t.title}</h5>
+            {t.description && <p className="text-zinc-400 mt-0.5">{t.description}</p>}
           </div>
 
           <button
             onClick={() => onDismiss(t.id)}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-zinc-400 hover:text-[#F1F3F7] transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>

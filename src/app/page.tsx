@@ -25,7 +25,7 @@ import {
   resetLibraryToDefault,
 } from '@/lib/storage';
 import { getUnitIncrement } from '@/lib/utils';
-import { Radar, Plus, Sparkles, RefreshCw, Layers } from 'lucide-react';
+import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2 } from 'lucide-react';
 
 export default function Home() {
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -72,9 +72,43 @@ export default function Home() {
     const item = media.find((m) => m.id === id);
     if (!item) return;
 
+    if (item.type === 'game') {
+      const currentHours = item.gameTracker?.playtimeHours ?? item.progress.current;
+      const nextHours = currentHours + 1;
+      const updated = updateMediaItem(id, {
+        progress: {
+          ...item.progress,
+          current: nextHours,
+          total: undefined,
+        },
+        gameTracker: {
+          ...(item.gameTracker || {}),
+          playtimeHours: nextHours,
+        },
+        status: item.status === 'planned' ? 'in_progress' : item.status,
+      });
+
+      if (updated) {
+        setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
+        addToast(
+          'success',
+          `${item.title}: +1 Std. Spielzeit`,
+          `${nextHours} Std. insgesamt geloggt`
+        );
+      }
+      return;
+    }
+
+    const total = item.progress.total;
+    if (total && total > 0 && item.progress.current >= total) {
+      addToast('info', item.title, 'Bereits alle Einheiten abgeschlossen!');
+      return;
+    }
+
     const { amount, label } = getUnitIncrement(item.type, item.progress.unit);
-    const newCurrent = item.progress.current + amount;
-    const isNowCompleted = item.progress.total ? newCurrent >= item.progress.total : false;
+    const nextCurrent = item.progress.current + amount;
+    const newCurrent = total && total > 0 ? Math.min(total, nextCurrent) : nextCurrent;
+    const isNowCompleted = total ? newCurrent >= total : false;
 
     const updated = updateMediaItem(id, {
       progress: {
@@ -94,12 +128,73 @@ export default function Home() {
     }
   };
 
+  // Toggle Game Story Handler
+  const handleToggleGameStory = (id: string) => {
+    const item = media.find((m) => m.id === id);
+    if (!item) return;
+    const newStory = !item.gameTracker?.storyCompleted;
+    const updated = updateMediaItem(id, {
+      gameTracker: {
+        ...(item.gameTracker || {}),
+        storyCompleted: newStory,
+      },
+      status: newStory && item.status !== 'owned' ? 'completed' : item.status,
+    });
+    if (updated) {
+      setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      addToast(
+        'info',
+        item.title,
+        newStory ? 'Hauptstory als beendet markiert ✓' : 'Story-Status auf offen gesetzt'
+      );
+    }
+  };
+
+  // Toggle Game 100% Handler
+  const handleToggleGame100 = (id: string) => {
+    const item = media.find((m) => m.id === id);
+    if (!item) return;
+    const new100 = !item.gameTracker?.completionist100;
+    const updated = updateMediaItem(id, {
+      gameTracker: {
+        ...(item.gameTracker || {}),
+        completionist100: new100,
+        storyCompleted: new100 ? true : item.gameTracker?.storyCompleted,
+      },
+      status: new100 && item.status !== 'owned' ? 'completed' : item.status,
+    });
+    if (updated) {
+      setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      addToast(
+        'info',
+        item.title,
+        new100 ? '100% Completionist Meisterung erreicht! 🏆' : '100% Status zurückgesetzt'
+      );
+    }
+  };
+
   // Status Change Handler
   const handleUpdateStatus = (id: string, newStatus: MediaStatus) => {
     const updated = updateMediaItem(id, { status: newStatus });
     if (updated) {
       setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
       addToast('info', `Status aktualisiert: ${updated.title}`);
+    }
+  };
+
+  // Toggle Owned Status
+  const handleToggleOwned = (id: string) => {
+    const item = media.find((m) => m.id === id);
+    if (!item) return;
+    const newOwned = !item.isOwned;
+    const updated = updateMediaItem(id, { isOwned: newOwned });
+    if (updated) {
+      setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      addToast(
+        'info',
+        newOwned ? 'Im Besitz' : 'Besitzstatus entfernt',
+        `${item.title} ${newOwned ? 'als gekauft markiert' : 'nicht mehr als gekauft markiert'}`
+      );
     }
   };
 
@@ -209,8 +304,14 @@ export default function Home() {
       }
 
       // Status filter
-      if (selectedStatus !== 'all' && item.status !== selectedStatus) {
-        return false;
+      if (selectedStatus !== 'all') {
+        if (selectedStatus === 'owned') {
+          if (!item.isOwned && item.status !== 'owned') {
+            return false;
+          }
+        } else if (item.status !== selectedStatus) {
+          return false;
+        }
       }
 
       // Instant search filter
@@ -303,8 +404,16 @@ export default function Home() {
 
               {/* Grid Header */}
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold text-white tracking-tight">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center">
+                    {selectedType === 'all' && <Library className="w-4 h-4 text-zinc-300" />}
+                    {selectedType === 'movie' && <Film className="w-4 h-4 text-rose-400" />}
+                    {selectedType === 'show' && <Film className="w-4 h-4 text-amber-400" />}
+                    {selectedType === 'anime' && <Sparkles className="w-4 h-4 text-sky-400" />}
+                    {selectedType === 'book' && <BookOpen className="w-4 h-4 text-orange-400" />}
+                    {selectedType === 'game' && <Gamepad2 className="w-4 h-4 text-purple-400" />}
+                  </div>
+                  <h2 className="text-lg font-bold text-[#F1F3F7] tracking-tight">
                     {selectedType === 'all'
                       ? 'Alle Medien'
                       : selectedType === 'movie'
@@ -317,7 +426,7 @@ export default function Home() {
                       ? 'Bücher'
                       : 'Videospiele'}
                   </h2>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-semibold border border-slate-700">
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-bold border border-zinc-700">
                     {filteredAndSortedMedia.length}
                   </span>
                 </div>
@@ -332,6 +441,9 @@ export default function Home() {
                       item={item}
                       onQuickIncrement={handleQuickIncrement}
                       onUpdateStatus={handleUpdateStatus}
+                      onToggleOwned={handleToggleOwned}
+                      onToggleGameStory={handleToggleGameStory}
+                      onToggleGame100={handleToggleGame100}
                       onEdit={setEditingItem}
                       onDelete={handleDeleteMedia}
                     />
@@ -339,21 +451,21 @@ export default function Home() {
                 </div>
               ) : (
                 /* Empty state */
-                <div className="py-20 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-surface/40 border border-dashed border-border">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mb-4">
+                <div className="py-20 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-[#181B22]/40 border border-dashed border-[#282D37]">
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-[#282D37] flex items-center justify-center text-zinc-400 mb-4">
                     <Layers className="w-8 h-8" />
                   </div>
-                  <h3 className="text-base font-bold text-white">Keine Medien gefunden</h3>
-                  <p className="text-xs text-slate-400 max-w-sm mt-1 mb-5">
+                  <h3 className="text-base font-bold text-[#F1F3F7]">Keine Medien gefunden</h3>
+                  <p className="text-xs text-zinc-400 max-w-sm mt-1 mb-5">
                     {searchQuery
                       ? `Keine Einträge für "${searchQuery}" mit den aktuellen Filtern.`
                       : 'In dieser Kategorie befinden sich noch keine Medien.'}
                   </p>
                   <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-md active:scale-95 transition-all"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-bold shadow-lg shadow-black/20 active:scale-95 transition-all"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4 stroke-[2.5]" />
                     <span>Jetzt erstes Medium hinzufügen</span>
                   </button>
                 </div>
@@ -363,17 +475,17 @@ export default function Home() {
             /* ================= SEQUEL RADAR VIEW ================= */
             <div className="space-y-6">
               {/* Radar Banner */}
-              <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-r from-rose-950/60 via-slate-900 to-indigo-950/60 border border-rose-500/30 shadow-2xl">
+              <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-r from-rose-950/40 via-[#181B22] to-[#0F1117] border border-rose-500/30 shadow-2xl">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                      <Radar className="w-4 h-4 animate-spin" style={{ animationDuration: '6s' }} />
+                      <Radar className="w-4 h-4 animate-spin text-rose-400" style={{ animationDuration: '6s' }} />
                       <span>Automatischer Sequel-Radar</span>
                     </div>
-                    <h2 className="text-2xl font-black text-white tracking-tight">
+                    <h2 className="text-2xl font-black text-[#F1F3F7] tracking-tight">
                       Fortsetzungen &amp; Neue Staffeln
                     </h2>
-                    <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+                    <p className="text-xs text-zinc-400 max-w-xl leading-relaxed">
                       Erkennt automatisch neue Veröffentlichungen, Folgestaffeln und Fortsetzungen zu Medien aus
                       deiner Sammlung (Status: &quot;Beendet&quot; oder &quot;Gerade dabei&quot;).
                     </p>
@@ -383,7 +495,7 @@ export default function Home() {
                     <button
                       onClick={handleCheckSequels}
                       disabled={isCheckingSequels}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-lg shadow-rose-950/50 transition-all active:scale-95 disabled:opacity-50"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-950/40 transition-all active:scale-95 disabled:opacity-50"
                     >
                       <RefreshCw className={`w-4 h-4 ${isCheckingSequels ? 'animate-spin' : ''}`} />
                       <span>{isCheckingSequels ? 'Überprüfe...' : 'Jetzt neu scannen'}</span>

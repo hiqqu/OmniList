@@ -125,38 +125,171 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
   },
 ];
 
+export function extractIsbn(query: string): string | null {
+  const clean = query.replace(/^isbn[:\s]*/i, '').replace(/[-\s]/g, '').trim().toUpperCase();
+  const isIsbn10 = /^[0-9]{9}[0-9X]$/.test(clean);
+  const isIsbn13 = /^(978|979)[0-9]{10}$/.test(clean);
+  return isIsbn10 || isIsbn13 ? clean : null;
+}
+
+export function formatIsbn(isbn: string): string {
+  const clean = isbn.replace(/[-\s]/g, '').trim().toUpperCase();
+  if (clean.length === 13) {
+    return `${clean.slice(0, 3)}-${clean.slice(3, 4)}-${clean.slice(4, 7)}-${clean.slice(7, 12)}-${clean.slice(12)}`;
+  }
+  if (clean.length === 10) {
+    return `${clean.slice(0, 1)}-${clean.slice(1, 4)}-${clean.slice(4, 9)}-${clean.slice(9)}`;
+  }
+  return isbn;
+}
+
 export class GoogleBooksAdapter implements MediaAdapter {
+  async lookupByIsbn(isbn: string): Promise<SearchResultItem | null> {
+    const formatted = formatIsbn(isbn);
+
+    // 1. Open Library Books Data API (Exact edition + high-res cover scan + publisher + pages)
+    try {
+      const res = await fetch(
+        `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
+        { headers: { 'User-Agent': 'OmniTrack/1.0 (https://github.com)' } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const item = data[`ISBN:${isbn}`];
+        if (item && item.title) {
+          const publisher = item.publishers?.[0]?.name;
+          const authorNames = item.authors ? item.authors.map((a: { name: string }) => a.name).join(', ') : 'Autor';
+          const coverUrl =
+            item.cover?.large ||
+            item.cover?.medium ||
+            `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+
+          const subtitle = item.subtitle ? `${item.subtitle}` : undefined;
+          const editionLabel = publisher ? `${publisher} (${formatted})` : `ISBN ${formatted}`;
+
+          return {
+            id: `isbn:${isbn}`,
+            external_id: `isbn:${isbn}`,
+            title: item.title,
+            originalTitle: subtitle ? `${subtitle} • ${editionLabel}` : editionLabel,
+            type: 'book',
+            coverUrl,
+            releaseDate: item.publish_date,
+            summary: `Exakte Buch-Ausgabe (${publisher || 'Verlag'}, ISBN: ${formatted}). ${
+              item.notes || `Gedruckte Ausgabe mit ${item.number_of_pages || 'mehreren'} Seiten.`
+            }`,
+            genres: item.subjects ? item.subjects.slice(0, 4).map((s: { name: string }) => s.name) : ['Literatur', 'Buch'],
+            creator: authorNames,
+            franchise_id: `book:publisher:${publisher ? publisher.toLowerCase().replace(/\s+/g, '-') : 'edition'}`,
+            collection_name: publisher ? `${publisher} Ausgabe` : 'Exakte Buch-Edition',
+            totalUnits: item.number_of_pages || 350,
+            unit: 'pages',
+            rating: 4.8,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Open Library ISBN lookup failed:', e);
+    }
+
+    // 2. Open Library Search by ISBN
+    try {
+      const searchRes = await fetch(`https://openlibrary.org/search.json?isbn=${isbn}`);
+      if (searchRes.ok) {
+        const sData = await searchRes.json();
+        const doc = sData.docs?.[0];
+        if (doc && doc.title) {
+          const coverUrl = doc.cover_i
+            ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+            : `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+          return {
+            id: `isbn:${isbn}`,
+            external_id: `isbn:${isbn}`,
+            title: doc.title,
+            originalTitle: `ISBN ${formatted}`,
+            type: 'book',
+            coverUrl,
+            releaseDate: doc.first_publish_year ? `${doc.first_publish_year}-01-01` : undefined,
+            summary: `Buch-Ausgabe mit ISBN ${formatted}. Verfasst von ${doc.author_name?.[0] || 'Autor'}.`,
+            genres: doc.subject ? doc.subject.slice(0, 3) : ['Literatur'],
+            creator: doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor',
+            franchise_id: 'book:isbn',
+            collection_name: 'Buch-Edition',
+            totalUnits: doc.number_of_pages_median || 350,
+            unit: 'pages',
+            rating: 4.7,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Open Library search by ISBN failed:', e);
+    }
+
+    // 3. Fallback direct Open Library ISBN cover
+    return {
+      id: `isbn:${isbn}`,
+      external_id: `isbn:${isbn}`,
+      title: `Buch (ISBN ${formatted})`,
+      originalTitle: `ISBN ${formatted}`,
+      type: 'book',
+      coverUrl: `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+      summary: `Buchausgabe für ISBN ${formatted}.`,
+      genres: ['Buch'],
+      creator: 'Autor',
+      totalUnits: 350,
+      unit: 'pages',
+      rating: 4.5,
+    };
+  }
+
   async search(query: string): Promise<SearchResultItem[]> {
-    const q = query.trim().toLowerCase();
-    if (!q) {
+    const raw = query.trim();
+    if (!raw) {
       return POPULAR_BOOKS_CATALOG;
     }
 
+    // Check if query is an ISBN (10- or 13-digit)
+    const detectedIsbn = extractIsbn(raw);
+    if (detectedIsbn) {
+      const isbnItem = await this.lookupByIsbn(detectedIsbn);
+      if (isbnItem) {
+        return [isbnItem];
+      }
+    }
+
+    const q = raw.toLowerCase();
     const items: SearchResultItem[] = [];
 
     // 1. Live Open Library Search (Completely FREE, public, returns real official book covers!)
     try {
       const openLibRes = await fetch(
-        `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6`
+        `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=8`
       );
       if (openLibRes.ok) {
         const data = await openLibRes.json();
         for (const doc of data.docs || []) {
           if (!doc.title) continue;
-          const external_id = `openlibrary:${doc.key?.replace('/works/', '') || doc.cover_edition_key || Math.random()}`;
+          const primaryIsbn = doc.isbn?.[0];
+          const external_id = primaryIsbn
+            ? `isbn:${primaryIsbn}`
+            : `openlibrary:${doc.key?.replace('/works/', '') || doc.cover_edition_key || Math.random()}`;
           const coverUrl = doc.cover_i
             ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+            : primaryIsbn
+            ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-L.jpg`
             : createBookSvgCover(doc.title, doc.author_name?.[0]);
 
           items.push({
             id: external_id,
             external_id,
             title: doc.title,
-            originalTitle: doc.subtitle,
+            originalTitle: doc.subtitle || (primaryIsbn ? `ISBN ${formatIsbn(primaryIsbn)}` : undefined),
             type: 'book',
             coverUrl,
             releaseDate: doc.first_publish_year ? `${doc.first_publish_year}-01-01` : undefined,
-            summary: `Buch von ${doc.author_name?.[0] || 'Unbekanntem Autor'}. Erschienen ca. ${doc.first_publish_year || 'k. A.'}.`,
+            summary: `Buch von ${doc.author_name?.[0] || 'Unbekanntem Autor'}. Erschienen ca. ${doc.first_publish_year || 'k. A.'}.${
+              primaryIsbn ? ` (ISBN ${formatIsbn(primaryIsbn)})` : ''
+            }`,
             genres: doc.subject ? doc.subject.slice(0, 3) : ['Literatur'],
             creator: doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor',
             franchise_id: `book:franchise:${doc.author_name?.[0] || 'general'}`,

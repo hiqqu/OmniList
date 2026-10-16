@@ -42,7 +42,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     franchise_id: 'franchise:spiderman-raimi',
     collection_name: 'Spider-Man Raimi Trilogie',
     totalUnits: 121,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.8,
   },
   {
@@ -59,7 +59,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     franchise_id: 'franchise:spiderman-raimi',
     collection_name: 'Spider-Man Raimi Trilogie',
     totalUnits: 127,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.9,
   },
   {
@@ -76,7 +76,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     franchise_id: 'franchise:spiderman-mcu',
     collection_name: 'Spider-Man MCU',
     totalUnits: 148,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.9,
   },
   {
@@ -93,7 +93,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     franchise_id: 'tmdb:collection:726871',
     collection_name: 'Dune Filmreihe',
     totalUnits: 155,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.7,
   },
   {
@@ -110,7 +110,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     franchise_id: 'tmdb:collection:726871',
     collection_name: 'Dune Filmreihe',
     totalUnits: 166,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.9,
   },
   {
@@ -179,7 +179,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     genres: ['Biografie', 'Drama', 'Historie'],
     creator: 'Christopher Nolan',
     totalUnits: 180,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.8,
   },
   {
@@ -194,7 +194,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     genres: ['Sci-Fi', 'Drama', 'Abenteuer'],
     creator: 'Christopher Nolan',
     totalUnits: 169,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.9,
   },
   {
@@ -209,7 +209,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     genres: ['Sci-Fi', 'Action', 'Heist'],
     creator: 'Christopher Nolan',
     totalUnits: 148,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.8,
   },
   {
@@ -226,7 +226,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     franchise_id: 'tmdb:franchise:batman',
     collection_name: 'The Dark Knight Trilogie',
     totalUnits: 152,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.9,
   },
   {
@@ -279,7 +279,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     franchise_id: 'tmdb:franchise:spiderverse',
     collection_name: 'Spider-Verse Saga',
     totalUnits: 140,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.9,
   },
   {
@@ -296,7 +296,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     franchise_id: 'tmdb:franchise:matrix',
     collection_name: 'Matrix Reihe',
     totalUnits: 136,
-    unit: 'hours',
+    unit: 'minutes',
     rating: 4.8,
   },
 ];
@@ -342,7 +342,7 @@ export class TMDBAdapter implements MediaAdapter {
             franchise_id: `imdb:franchise:${exact.imdbID}`,
             totalUnits: isMovie ? 120 : 10,
             totalSeasons: isMovie ? undefined : (parseInt(exact.totalSeasons) || 1),
-            unit: isMovie ? 'hours' : 'episodes',
+            unit: isMovie ? 'minutes' : 'episodes',
             rating: exact.imdbRating && exact.imdbRating !== 'N/A' ? Math.round((parseFloat(exact.imdbRating) / 2) * 10) / 10 : 4.6,
           });
         }
@@ -381,7 +381,7 @@ export class TMDBAdapter implements MediaAdapter {
                 franchise_id: `imdb:franchise:${entry.imdbID}`,
                 totalUnits: isMovie ? 120 : 10,
                 totalSeasons: isMovie ? undefined : 1,
-                unit: isMovie ? 'hours' : 'episodes',
+                unit: isMovie ? 'minutes' : 'episodes',
                 rating: 4.6,
               });
             }

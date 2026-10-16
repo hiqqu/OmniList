@@ -1,4 +1,4 @@
-import { MediaItem, SequelNotification, MediaStatus } from '@/types/media';
+import { MediaItem, SequelNotification, MediaStatus, ProgressUnit } from '@/types/media';
 import { INITIAL_MEDIA_ITEMS, INITIAL_SEQUEL_NOTIFICATIONS } from './seed-data';
 
 const MEDIA_STORAGE_KEY = 'omnitrack_media_library_v1';
@@ -42,6 +42,77 @@ export function getStoredMedia(): MediaItem[] {
           return { ...item, coverUrl: matchingSeed.coverUrl };
         }
       }
+
+      if (item.isOwned === undefined) {
+        const matchingSeed = INITIAL_MEDIA_ITEMS.find((s) => s.id === item.id);
+        if (matchingSeed?.isOwned) {
+          hasMigrated = true;
+          return { ...item, isOwned: true };
+        }
+      }
+
+      // Auto-clamp progress to total if it exceeds total
+      if (item.progress?.total && item.progress.total > 0 && item.progress.current > item.progress.total) {
+        hasMigrated = true;
+        return {
+          ...item,
+          progress: {
+            ...item.progress,
+            current: item.progress.total,
+          },
+          status: (item.status !== 'owned' ? 'completed' : item.status) as MediaStatus,
+        };
+      }
+
+      // Migrate movies from 'hours' to 'minutes'
+      if (item.type === 'movie' && item.progress?.unit === 'hours') {
+        hasMigrated = true;
+        return {
+          ...item,
+          progress: {
+            ...item.progress,
+            unit: 'minutes' as ProgressUnit,
+          },
+        };
+      }
+
+      // Migrate games: remove artificial max playtime and initialize gameTracker
+      if (item.type === 'game') {
+        let changed = false;
+        let tracker = item.gameTracker;
+        if (!tracker) {
+          changed = true;
+          const isComp = item.status === 'completed';
+          tracker = {
+            storyCompleted: isComp || item.id === 'media-cyberpunk-1' || item.id === 'media-eldenring-1',
+            completionist100: item.id === 'media-eldenring-1',
+            achievements:
+              item.id === 'media-eldenring-1'
+                ? { current: 42, total: 42 }
+                : item.id === 'media-cyberpunk-1'
+                ? { current: 34, total: 45 }
+                : undefined,
+            playtimeHours: item.progress.current,
+          };
+        }
+        let progressObj = item.progress;
+        if (progressObj?.total) {
+          changed = true;
+          progressObj = {
+            ...progressObj,
+            total: undefined,
+          };
+        }
+        if (changed) {
+          hasMigrated = true;
+          return {
+            ...item,
+            progress: progressObj,
+            gameTracker: tracker,
+          };
+        }
+      }
+
       return item;
     });
 
@@ -140,9 +211,23 @@ export function updateMediaItem(
   const index = current.findIndex((m) => m.id === id);
   if (index === -1) return null;
 
+  let sanitizedProgress = updates.progress || current[index].progress;
+  if (
+    sanitizedProgress &&
+    sanitizedProgress.total &&
+    sanitizedProgress.total > 0 &&
+    sanitizedProgress.current > sanitizedProgress.total
+  ) {
+    sanitizedProgress = {
+      ...sanitizedProgress,
+      current: sanitizedProgress.total,
+    };
+  }
+
   const updatedItem: MediaItem = {
     ...current[index],
     ...updates,
+    progress: sanitizedProgress,
     updatedAt: new Date().toISOString(),
   };
 

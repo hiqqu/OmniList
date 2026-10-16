@@ -10,32 +10,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#090d16",
-        surface: "#0f172a",
-        surfaceHover: "#1e293b",
-        card: "#111827",
-        border: "#1f293d",
+        background: "#0F1117",
+        surface: "#181B22",
+        surfaceHover: "#212631",
+        card: "#181B22",
+        border: "#282D37",
         primary: {
-          DEFAULT: "#6366f1",
-          hover: "#4f46e5",
-          glow: "rgba(99, 102, 241, 0.35)",
+          DEFAULT: "#E2E8F0",
+          hover: "#FFFFFF",
+          glow: "rgba(226, 232, 240, 0.2)",
+          foreground: "#0F1117",
+        },
+        text: {
+          primary: "#F1F3F7",
+          muted: "#8E96A4",
         },
         badge: {
-          movie: "#ef4444",    // Rot
-          show: "#f59e0b",     // Amber / Gelb
-          anime: "#3b82f6",    // Blau
-          book: "#f97316",     // Orange
-          game: "#a855f7",     // Violett
+          movie: "#fb7185",    // Rose
+          show: "#f59e0b",     // Amber
+          anime: "#38bdf8",    // Sky / Cyan
+          book: "#fb923c",     // Orange
+          game: "#c084fc",     // Purple
         },
       },
       aspectRatio: {
         "poster": "2/3",
-      },
-      boxShadow: {
-        "glow-purple": "0 0 25px -5px rgba(168, 85, 247, 0.4)",
-        "glow-blue": "0 0 25px -5px rgba(59, 130, 246, 0.4)",
-        "glow-amber": "0 0 25px -5px rgba(245, 158, 11, 0.4)",
-        "glow-radar": "0 0 20px 2px rgba(239, 68, 68, 0.45)",
       },
     },
   },

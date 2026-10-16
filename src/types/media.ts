@@ -1,8 +1,18 @@
 export type MediaType = 'movie' | 'show' | 'anime' | 'book' | 'game';
 
-export type MediaStatus = 'in_progress' | 'planned' | 'completed' | 'paused' | 'dropped';
+export type MediaStatus = 'in_progress' | 'planned' | 'completed' | 'paused' | 'dropped' | 'owned';
 
-export type ProgressUnit = 'episodes' | 'pages' | 'hours' | 'seasons' | 'chapters';
+export type ProgressUnit = 'episodes' | 'pages' | 'hours' | 'minutes' | 'seasons' | 'chapters';
+
+export interface GameTracker {
+  storyCompleted?: boolean;
+  completionist100?: boolean;
+  achievements?: {
+    current: number;
+    total: number;
+  };
+  playtimeHours?: number; // Offene Spielzeit ohne Maximalgrenze
+}
 
 export interface MediaProgress {
   current: number;
@@ -18,6 +28,7 @@ export interface MediaItem {
   originalTitle?: string;
   type: MediaType;
   status: MediaStatus;
+  isOwned?: boolean; // Gekauft / Im physischen oder digitalen Besitz
   coverUrl: string;
   bannerUrl?: string;
   rating?: number; // 0 - 5 scale, e.g. 4.5
@@ -26,6 +37,7 @@ export interface MediaItem {
   genres?: string[];
   creator?: string; // Regisseur, Autor, Studio, Entwickler
   progress: MediaProgress;
+  gameTracker?: GameTracker; // Spezieller Tracker für Videospiele (Story, 100%, Achievements, offene Spielzeit)
   external_id: string; // e.g. "tmdb:1234", "anilist:5678", "rawg:456", "googlebooks:abc"
   franchise_id?: string; // Grouping related works (e.g. "tmdb:collection:87118" or "dune-saga")
   collection_name?: string;

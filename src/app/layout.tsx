@@ -4,6 +4,11 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'OmniTrack – Modern All-in-One Medien-Tracker & Sequel Radar',
   description: 'Verwalte Filme, Serien, Anime, Bücher und Videospiele an einem Ort mit automatischem Sequel-Radar.',
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({

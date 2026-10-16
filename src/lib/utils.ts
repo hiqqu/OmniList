@@ -58,10 +58,15 @@ export function getMediaStatusBadge(status: MediaStatus): { label: string; color
       return { label: 'Pausiert', colorClass: 'text-amber-400', bgClass: 'bg-amber-500/15' };
     case 'dropped':
       return { label: 'Abgebrochen', colorClass: 'text-red-400', bgClass: 'bg-red-500/15' };
+    case 'owned':
+      return { label: 'Im Besitz', colorClass: 'text-emerald-300', bgClass: 'bg-emerald-500/15' };
   }
 }
 
 export function getUnitIncrement(type: MediaType, unit?: string): { amount: number; label: string } {
+  if (type === 'movie' || unit === 'minutes') {
+    return { amount: 15, label: '+15 Min.' };
+  }
   if (type === 'book' || unit === 'pages') {
     return { amount: 10, label: '+10 S.' };
   }
@@ -70,3 +75,13 @@ export function getUnitIncrement(type: MediaType, unit?: string): { amount: numb
   }
   return { amount: 1, label: '+1 Ep.' };
 }
+
+export function getProgressUnitLabel(type: MediaType, unit?: string): string {
+  if (type === 'movie' || unit === 'minutes') return 'Min.';
+  if (type === 'book' || unit === 'pages') return 'Seiten';
+  if (type === 'game' || unit === 'hours') return 'Std.';
+  if (unit === 'chapters') return 'Kapitel';
+  if (unit === 'seasons') return 'Staffeln';
+  return 'Episoden';
+}
+

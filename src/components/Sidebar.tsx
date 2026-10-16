@@ -13,6 +13,7 @@ import {
   BookmarkCheck,
   CheckCircle2,
   PauseCircle,
+  PackageCheck,
   RefreshCw,
   RotateCcw,
 } from 'lucide-react';
@@ -48,44 +49,133 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onResetLibrary,
   className,
 }) => {
-  const typeFilters: { id: MediaType | 'all'; label: string; icon: React.ReactNode; color: string }[] = [
-    { id: 'all', label: 'Alle Medien', icon: <Library className="w-4 h-4" />, color: 'text-slate-300' },
-    { id: 'movie', label: 'Filme', icon: <Film className="w-4 h-4" />, color: 'text-rose-400' },
-    { id: 'show', label: 'Serien', icon: <Tv className="w-4 h-4" />, color: 'text-amber-400' },
-    { id: 'anime', label: 'Anime', icon: <Sparkles className="w-4 h-4" />, color: 'text-blue-400' },
-    { id: 'book', label: 'Bücher', icon: <BookOpen className="w-4 h-4" />, color: 'text-orange-400' },
-    { id: 'game', label: 'Videospiele', icon: <Gamepad2 className="w-4 h-4" />, color: 'text-purple-400' },
+  const typeFilters: {
+    id: MediaType | 'all';
+    label: string;
+    icon: React.ReactNode;
+    color: string;
+    activeStyle: string;
+    hoverStyle: string;
+  }[] = [
+    {
+      id: 'all',
+      label: 'Alle Medien',
+      icon: <Library className="w-4 h-4" />,
+      color: 'text-slate-400',
+      activeStyle: 'bg-zinc-800 text-zinc-100 border-zinc-700 shadow-sm',
+      hoverStyle: 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200',
+    },
+    {
+      id: 'movie',
+      label: 'Filme',
+      icon: <Film className="w-4 h-4" />,
+      color: 'text-rose-400',
+      activeStyle: 'bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-sm shadow-rose-950/20 font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-rose-500/10 hover:text-rose-300',
+    },
+    {
+      id: 'show',
+      label: 'Serien',
+      icon: <Tv className="w-4 h-4" />,
+      color: 'text-amber-400',
+      activeStyle: 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-sm shadow-amber-950/20 font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-amber-500/10 hover:text-amber-300',
+    },
+    {
+      id: 'anime',
+      label: 'Anime',
+      icon: <Sparkles className="w-4 h-4" />,
+      color: 'text-sky-400',
+      activeStyle: 'bg-sky-500/15 text-sky-300 border-sky-500/30 shadow-sm shadow-sky-950/20 font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-sky-500/10 hover:text-sky-300',
+    },
+    {
+      id: 'book',
+      label: 'Bücher',
+      icon: <BookOpen className="w-4 h-4" />,
+      color: 'text-orange-400',
+      activeStyle: 'bg-orange-500/15 text-orange-300 border-orange-500/30 shadow-sm shadow-orange-950/20 font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-orange-500/10 hover:text-orange-300',
+    },
+    {
+      id: 'game',
+      label: 'Videospiele',
+      icon: <Gamepad2 className="w-4 h-4" />,
+      color: 'text-purple-400',
+      activeStyle: 'bg-purple-500/15 text-purple-300 border-purple-500/30 shadow-sm shadow-purple-950/20 font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-purple-500/10 hover:text-purple-300',
+    },
   ];
 
-  const statusFilters: { id: MediaStatus | 'all'; label: string; icon: React.ReactNode }[] = [
-    { id: 'all', label: 'Alle Status', icon: <Library className="w-3.5 h-3.5" /> },
-    { id: 'in_progress', label: 'Gerade dabei', icon: <Clock className="w-3.5 h-3.5 text-emerald-400" /> },
-    { id: 'planned', label: 'Geplant', icon: <BookmarkCheck className="w-3.5 h-3.5 text-sky-400" /> },
-    { id: 'completed', label: 'Beendet', icon: <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> },
-    { id: 'paused', label: 'Pausiert', icon: <PauseCircle className="w-3.5 h-3.5 text-amber-400" /> },
+  const statusFilters: {
+    id: MediaStatus | 'all';
+    label: string;
+    icon: React.ReactNode;
+    activeStyle: string;
+    hoverStyle: string;
+  }[] = [
+    {
+      id: 'all',
+      label: 'Alle Status',
+      icon: <Library className="w-3.5 h-3.5" />,
+      activeStyle: 'bg-zinc-800 text-zinc-100 border-zinc-700 shadow-sm',
+      hoverStyle: 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200',
+    },
+    {
+      id: 'in_progress',
+      label: 'Gerade dabei',
+      icon: <Clock className="w-3.5 h-3.5 text-emerald-400" />,
+      activeStyle: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-sm font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-emerald-500/10 hover:text-emerald-300',
+    },
+    {
+      id: 'planned',
+      label: 'Geplant',
+      icon: <BookmarkCheck className="w-3.5 h-3.5 text-sky-400" />,
+      activeStyle: 'bg-sky-500/15 text-sky-300 border-sky-500/30 shadow-sm font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-sky-500/10 hover:text-sky-300',
+    },
+    {
+      id: 'completed',
+      label: 'Beendet',
+      icon: <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />,
+      activeStyle: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 shadow-sm font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-indigo-500/10 hover:text-indigo-300',
+    },
+    {
+      id: 'paused',
+      label: 'Pausiert',
+      icon: <PauseCircle className="w-3.5 h-3.5 text-amber-400" />,
+      activeStyle: 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-sm font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-amber-500/10 hover:text-amber-300',
+    },
+    {
+      id: 'owned',
+      label: 'Im Besitz',
+      icon: <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />,
+      activeStyle: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-sm font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-emerald-500/10 hover:text-emerald-300',
+    },
   ];
 
   return (
     <aside
       className={cn(
-        'w-64 flex-shrink-0 bg-surface/95 backdrop-blur border-r border-border flex flex-col h-screen sticky top-0 select-none z-30',
+        'w-64 flex-shrink-0 bg-[#181B22]/95 backdrop-blur border-r border-[#282D37] flex flex-col h-screen sticky top-0 select-none z-30',
         className
       )}
     >
       {/* Brand Header */}
-      <div className="p-5 border-b border-border flex items-center justify-between">
+      <div className="p-5 border-b border-[#282D37] flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/30">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-zinc-700 to-zinc-500 flex items-center justify-center shadow-lg shadow-black/30 border border-zinc-600/50">
             <Radar className="w-5 h-5 text-white animate-pulse" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+            <h1 className="text-lg font-bold tracking-tight text-[#F1F3F7]">
               OmniTrack
-              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-primary/20 text-indigo-300 border border-primary/30">
-                PRO
-              </span>
             </h1>
-            <p className="text-xs text-slate-400">All-in-One Medien Hub</p>
+            <p className="text-xs text-zinc-400">All-in-One Medien Hub</p>
           </div>
         </div>
       </div>
@@ -94,17 +184,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {/* Hauptansichten */}
         <div>
-          <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
             Hauptmenü
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <button
               onClick={() => onSelectView('dashboard')}
               className={cn(
-                'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                'w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-sm font-bold transition-all',
                 currentView === 'dashboard'
-                  ? 'bg-primary text-white shadow-md shadow-primary/30'
-                  : 'text-slate-300 hover:bg-surfaceHover hover:text-white'
+                  ? 'bg-zinc-100 text-zinc-950 shadow-md shadow-black/20'
+                  : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
               )}
             >
               <div className="flex items-center gap-3">
@@ -113,8 +203,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <span
                 className={cn(
-                  'text-xs px-2 py-0.5 rounded-full font-semibold',
-                  currentView === 'dashboard' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                  'text-xs px-2 py-0.5 rounded-full font-bold',
+                  currentView === 'dashboard' ? 'bg-zinc-950/15 text-zinc-950' : 'bg-zinc-900 text-zinc-400'
                 )}
               >
                 {totalMediaCount}
@@ -124,15 +214,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={() => onSelectView('sequel_radar')}
               className={cn(
-                'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all group relative',
+                'w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-sm font-semibold transition-all group relative',
                 currentView === 'sequel_radar'
-                  ? 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white shadow-lg shadow-rose-900/30'
-                  : 'text-slate-300 hover:bg-surfaceHover hover:text-white'
+                  ? 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white font-bold shadow-md shadow-rose-950/30'
+                  : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
               )}
             >
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <Radar className={cn('w-4 h-4', sequelCount > 0 && 'text-rose-400 animate-spin')} style={{ animationDuration: '8s' }} />
+                  <Radar className={cn('w-4 h-4', sequelCount > 0 && (currentView === 'sequel_radar' ? 'text-white animate-spin' : 'text-rose-400 animate-spin'))} style={{ animationDuration: '8s' }} />
                   {sequelCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
                   )}
@@ -140,7 +230,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>Sequel Radar</span>
               </div>
               {sequelCount > 0 && (
-                <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-rose-500 text-white shadow-glow-radar">
+                <span className={cn(
+                  'text-xs px-2 py-0.5 rounded-full font-bold',
+                  currentView === 'sequel_radar' ? 'bg-white/20 text-white' : 'bg-rose-500 text-white'
+                )}>
                   {sequelCount} neu
                 </span>
               )}
@@ -151,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Medientypen Filter */}
         {currentView === 'dashboard' && (
           <div>
-            <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
               Medientypen
             </div>
             <div className="space-y-1">
@@ -162,10 +255,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     key={tf.id}
                     onClick={() => onSelectType(tf.id)}
                     className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium border transition-all',
                       isActive
-                        ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
-                        : 'text-slate-400 hover:bg-surfaceHover hover:text-slate-200'
+                        ? tf.activeStyle
+                        : `border-transparent ${tf.hoverStyle}`
                     )}
                   >
                     <span className={tf.color}>{tf.icon}</span>
@@ -180,7 +273,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Status Filter */}
         {currentView === 'dashboard' && (
           <div>
-            <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
               Status
             </div>
             <div className="space-y-1">
@@ -191,10 +284,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     key={sf.id}
                     onClick={() => onSelectStatus(sf.id)}
                     className={cn(
-                      'w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                      'w-full flex items-center gap-3 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all',
                       isActive
-                        ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
-                        : 'text-slate-400 hover:bg-surfaceHover hover:text-slate-200'
+                        ? sf.activeStyle
+                        : `border-transparent ${sf.hoverStyle}`
                     )}
                   >
                     {sf.icon}
@@ -208,19 +301,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="p-3 border-t border-border space-y-2 bg-surface/50">
+      <div className="p-3 border-t border-[#282D37] space-y-2 bg-[#181B22]/50">
         <button
           onClick={onCheckSequels}
           disabled={isCheckingSequels}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs font-semibold bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-all disabled:opacity-50"
         >
-          <RefreshCw className={cn('w-3.5 h-3.5', isCheckingSequels && 'animate-spin text-primary')} />
+          <RefreshCw className={cn('w-3.5 h-3.5', isCheckingSequels && 'animate-spin text-zinc-300')} />
           <span>{isCheckingSequels ? 'Prüfe Fortsetzungen...' : 'Sequel Radar prüfen'}</span>
         </button>
 
         <button
           onClick={onResetLibrary}
-          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-300 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
           title="Setzt die Mediensammlung auf die interaktive Demo-Standard-Sammlung zurück"
         >
           <RotateCcw className="w-3 h-3" />

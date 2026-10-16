@@ -1,14 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle } from 'lucide-react';
-import { MediaItem, MediaStatus } from '@/types/media';
+import Link from 'next/link';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PackageCheck, Info, Check, Clock, Trophy } from 'lucide-react';
+import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 
 interface MediaCardProps {
   item: MediaItem;
   onQuickIncrement: (id: string) => void;
   onUpdateStatus: (id: string, newStatus: MediaStatus) => void;
+  onToggleOwned?: (id: string) => void;
+  onToggleGameStory?: (id: string) => void;
+  onToggleGame100?: (id: string) => void;
   onEdit: (item: MediaItem) => void;
   onDelete: (id: string) => void;
 }
@@ -17,6 +21,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   item,
   onQuickIncrement,
   onUpdateStatus,
+  onToggleOwned,
+  onToggleGameStory,
+  onToggleGame100,
   onEdit,
   onDelete,
 }) => {
@@ -25,36 +32,80 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const statusBadge = getMediaStatusBadge(item.status);
   const incrementInfo = getUnitIncrement(item.type, item.progress.unit);
 
+  const isGame = item.type === 'game';
+  const isMovie = item.type === 'movie';
+  const gamePlaytime = item.gameTracker?.playtimeHours ?? item.progress.current;
+  const isGameStoryDone = Boolean(item.gameTracker?.storyCompleted);
+  const isGame100Done = Boolean(item.gameTracker?.completionist100);
+  const achievements = item.gameTracker?.achievements;
+  const achievementPercentage =
+    achievements && achievements.total > 0
+      ? Math.min(100, Math.round((achievements.current / achievements.total) * 100))
+      : 0;
+
   const currentProgress = item.progress.current;
   const totalProgress = item.progress.total || 0;
   const percentage = totalProgress > 0 ? Math.min(100, Math.round((currentProgress / totalProgress) * 100)) : 0;
-  const isCompleted = item.status === 'completed' || (totalProgress > 0 && currentProgress >= totalProgress);
+  const isCompleted =
+    item.status === 'completed' ||
+    (isGame ? isGame100Done || isGameStoryDone : totalProgress > 0 && currentProgress >= totalProgress);
+
+  // Category specific accent styles
+  const typeButtonStyles: Record<MediaType, string> = {
+    movie: 'bg-rose-500 hover:bg-rose-400 text-white shadow-rose-950/40',
+    show: 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-950/40',
+    anime: 'bg-sky-500 hover:bg-sky-400 text-zinc-950 shadow-sky-950/40',
+    book: 'bg-orange-500 hover:bg-orange-400 text-white shadow-orange-950/40',
+    game: 'bg-purple-500 hover:bg-purple-400 text-white shadow-purple-950/40',
+  };
+
+  const typeProgressColors: Record<MediaType, string> = {
+    movie: 'bg-rose-500',
+    show: 'bg-amber-500',
+    anime: 'bg-sky-500',
+    book: 'bg-orange-500',
+    game: 'bg-purple-500',
+  };
+
+  const typeTextHover: Record<MediaType, string> = {
+    movie: 'group-hover:text-rose-400',
+    show: 'group-hover:text-amber-400',
+    anime: 'group-hover:text-sky-400',
+    book: 'group-hover:text-orange-400',
+    game: 'group-hover:text-purple-400',
+  };
 
   return (
-    <div className="group relative flex flex-col bg-card rounded-2xl overflow-hidden border border-border/80 hover:border-slate-700 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300">
+    <div
+      className={cn(
+        'group relative flex flex-col bg-[#181B22] rounded-2xl border border-[#282D37] hover:border-zinc-500/50 hover:shadow-2xl transition-all duration-300',
+        showMenu ? 'z-40 overflow-visible' : 'overflow-hidden'
+      )}
+    >
       {/* 2:3 Aspect Ratio Poster Container */}
-      <div className="relative aspect-poster w-full overflow-hidden bg-slate-950">
-        <img
-          src={item.coverUrl}
-          alt={item.title}
-          loading="lazy"
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => {
-            // Fallback placeholder image if external link is broken
-            (e.target as HTMLImageElement).src =
-              'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
-          }}
-        />
+      <div className={cn('relative aspect-poster w-full bg-[#0F1117]', showMenu ? 'overflow-visible' : 'overflow-hidden rounded-t-2xl')}>
+        <Link href={`/media/${item.id}`} className="block w-full h-full cursor-pointer">
+          <img
+            src={item.coverUrl}
+            alt={item.title}
+            loading="lazy"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
+            }}
+          />
+        </Link>
 
         {/* Gradient Shadow Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-card via-slate-950/40 to-black/30 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#181B22] via-[#0F1117]/40 to-black/30 pointer-events-none" />
 
         {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
+        <div className={cn('absolute top-3 left-3 right-3 flex items-center justify-between gap-2', showMenu ? 'z-50' : 'z-20')}>
           {/* Media Type Badge */}
           <span
             className={cn(
-              'px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase shadow-md backdrop-blur border',
+              'px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-md backdrop-blur border',
               typeBadge.bgClass,
               typeBadge.colorClass,
               typeBadge.borderClass
@@ -64,10 +115,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </span>
 
           {/* Menu Trigger */}
-          <div className="relative">
+          <div className={cn('relative', showMenu && 'z-50')}>
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="w-7 h-7 rounded-full bg-black/60 hover:bg-black/90 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur transition-colors"
+              className="w-7 h-7 rounded-full bg-[#0F1117]/70 hover:bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center backdrop-blur transition-colors"
             >
               <MoreVertical className="w-4 h-4" />
             </button>
@@ -75,9 +126,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             {/* Dropdown Menu */}
             {showMenu && (
               <>
-                <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 mt-2 w-44 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 z-30 text-xs">
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 mt-2 w-44 rounded-xl bg-[#181B22] border border-[#282D37] shadow-2xl py-1 z-50 text-xs">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
                     Status ändern
                   </div>
                   <button
@@ -85,7 +136,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       onUpdateStatus(item.id, 'in_progress');
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-slate-800 text-left text-slate-300 hover:text-white"
+                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
                   >
                     <PlayCircle className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Gerade dabei</span>
@@ -95,7 +146,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       onUpdateStatus(item.id, 'planned');
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-slate-800 text-left text-slate-300 hover:text-white"
+                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
                   >
                     <BookmarkCheck className="w-3.5 h-3.5 text-sky-400" />
                     <span>Geplant</span>
@@ -105,23 +156,81 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                       onUpdateStatus(item.id, 'completed');
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-slate-800 text-left text-slate-300 hover:text-white"
+                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
                     <span>Beendet</span>
                   </button>
+                  <button
+                    onClick={() => {
+                      onUpdateStatus(item.id, 'owned');
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
+                  >
+                    <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Status: Im Besitz</span>
+                  </button>
 
-                  <div className="my-1 border-t border-slate-800" />
+                  {onToggleOwned && (
+                    <button
+                      onClick={() => {
+                        onToggleOwned(item.id);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-emerald-300"
+                    >
+                      <PackageCheck className={cn("w-3.5 h-3.5", item.isOwned ? "text-emerald-400" : "text-zinc-500")} />
+                      <span>{item.isOwned ? 'Aus Besitz entfernen' : 'Als "Gekauft" markieren'}</span>
+                    </button>
+                  )}
+
+                  {isGame && onToggleGameStory && (
+                    <button
+                      onClick={() => {
+                        onToggleGameStory(item.id);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-purple-300"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
+                      <span>{isGameStoryDone ? 'Story: Offen' : 'Story: Beendet ✓'}</span>
+                    </button>
+                  )}
+
+                  {isGame && onToggleGame100 && (
+                    <button
+                      onClick={() => {
+                        onToggleGame100(item.id);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-amber-300"
+                    >
+                      <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{isGame100Done ? '100%: Zurücksetzen' : '100% Meisterung 🏆'}</span>
+                    </button>
+                  )}
+
+                  <div className="my-1 border-t border-[#282D37]" />
+
+                  <Link
+                    href={`/media/${item.id}`}
+                    onClick={() => setShowMenu(false)}
+                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
+                  >
+                    <Info className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>Details &amp; Besetzung</span>
+                  </Link>
 
                   <button
                     onClick={() => {
                       onEdit(item);
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-slate-800 text-left text-slate-300 hover:text-white"
+                    className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-zinc-300"
                   >
                     <Edit2 className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Details bearbeiten</span>
+                    <span>Bearbeiten</span>
                   </button>
                   <button
                     onClick={() => {
@@ -140,83 +249,243 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         </div>
 
         {/* Rating Badge at Bottom Left of Poster */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur border border-amber-500/30 text-amber-400 text-xs font-semibold shadow-md">
+        <div
+          className={cn(
+            'absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#0F1117]/80 backdrop-blur border border-amber-500/30 text-amber-400 text-xs font-bold shadow-md transition-opacity duration-200',
+            showMenu && 'opacity-0 pointer-events-none'
+          )}
+        >
           <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
           <span>{item.rating ? item.rating.toFixed(1) : '—'}</span>
         </div>
 
-        {/* Quick Increment Button Overlay */}
-        <div className="absolute bottom-3 right-3 z-10">
+        {/* Quick Increment Button Overlay (colored by category!) */}
+        <div
+          className={cn(
+            'absolute bottom-3 right-3 z-10 transition-opacity duration-200',
+            showMenu && 'opacity-0 pointer-events-none'
+          )}
+        >
           <button
-            onClick={() => onQuickIncrement(item.id)}
-            title={`Schnell-Fortschritt (${incrementInfo.label})`}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-950/60 backdrop-blur transition-all active:scale-95 hover:scale-105 border border-indigo-400/40"
+            onClick={(e) => {
+              e.stopPropagation();
+              onQuickIncrement(item.id);
+            }}
+            disabled={!isGame && isCompleted}
+            title={
+              isGame
+                ? `+1 Std. Spielzeit loggen (aktuell ${gamePlaytime} Std.)`
+                : isCompleted
+                ? 'Bereits alle Einheiten beendet'
+                : `Schnell-Fortschritt (${incrementInfo.label})`
+            }
+            className={cn(
+              'flex items-center gap-1 px-3 py-1 rounded-full font-bold text-xs shadow-lg backdrop-blur transition-all',
+              !isGame && isCompleted
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default'
+                : `active:scale-95 hover:scale-105 ${typeButtonStyles[item.type]}`
+            )}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{incrementInfo.label}</span>
+            {!isGame && isCompleted ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                <span>{isMovie ? 'Gesehen' : 'Fertig'}</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>{isGame ? '1 Std.' : incrementInfo.label.replace(/^\+/, '')}</span>
+              </>
+            )}
           </button>
         </div>
       </div>
 
       {/* Card Body & Progress Section */}
-      <div className="p-3.5 flex flex-col flex-1 justify-between gap-3 bg-card">
+      <div className="p-3.5 flex flex-col flex-1 justify-between gap-3 bg-[#181B22]">
         <div>
           {/* Status & Franchise line */}
           <div className="flex items-center justify-between gap-2 mb-1">
-            <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full', statusBadge.bgClass, statusBadge.colorClass)}>
-              {statusBadge.label}
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider', statusBadge.bgClass, statusBadge.colorClass)}>
+                {statusBadge.label}
+              </span>
+              {item.isOwned && item.status !== 'owned' && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm">
+                  <PackageCheck className="w-3 h-3 text-emerald-400" />
+                  <span>Besitz</span>
+                </span>
+              )}
+            </div>
             {item.collection_name && (
-              <span className="text-[10px] text-slate-400 truncate max-w-[120px]" title={item.collection_name}>
+              <span className="text-[10px] text-zinc-400 truncate max-w-[120px]" title={item.collection_name}>
                 {item.collection_name}
               </span>
             )}
           </div>
 
           {/* Title */}
-          <h3
-            className="font-bold text-sm text-slate-100 group-hover:text-primary transition-colors line-clamp-1 cursor-pointer"
-            onClick={() => onEdit(item)}
+          <Link
+            href={`/media/${item.id}`}
+            className={cn(
+              'font-bold text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block',
+              typeTextHover[item.type]
+            )}
             title={item.title}
           >
             {item.title}
-          </h3>
+          </Link>
 
           {/* Creator / Release info */}
-          <p className="text-xs text-slate-400 truncate mt-0.5">
+          <p className="text-xs text-zinc-400 truncate mt-0.5">
             {item.creator || (item.releaseDate ? item.releaseDate.split('-')[0] : '—')}
           </p>
         </div>
 
-        {/* Progress Bar & Counter */}
-        <div className="space-y-1.5 pt-2 border-t border-border/60">
-          <div className="flex items-center justify-between text-[11px] font-medium text-slate-400">
-            <span>Fortschritt</span>
-            <span className="text-slate-200 font-semibold">
-              {currentProgress}
-              {totalProgress > 0 ? ` / ${totalProgress}` : ''}{' '}
-              {item.progress.unit === 'episodes'
-                ? 'Ep.'
-                : item.progress.unit === 'pages'
-                ? 'S.'
-                : item.progress.unit === 'hours'
-                ? 'Std.'
-                : ''}
-            </span>
-          </div>
+        {/* Progress Bar & Tracker Section */}
+        {isGame ? (
+          /* ============= GAME TRACKER UI ============= */
+          <div className="space-y-2 pt-2 border-t border-[#282D37]">
+            {/* Playtime Header */}
+            <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-purple-400" />
+                <span>Spielzeit</span>
+              </span>
+              <span className="text-[#F1F3F7] font-bold">
+                {gamePlaytime} Std.
+              </span>
+            </div>
 
-          <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className={cn(
-                'h-full transition-all duration-300 rounded-full',
-                isCompleted
-                  ? 'bg-gradient-to-r from-emerald-500 to-indigo-500'
-                  : 'bg-gradient-to-r from-primary to-purple-500'
+            {/* Badges: Story & 100% & Achievements */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleGameStory?.(item.id);
+                }}
+                className={cn(
+                  'text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
+                  isGameStoryDone
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
+                )}
+                title="Klicken zum Umschalten: Story beendet"
+              >
+                <span>Story</span>
+                <span className={isGameStoryDone ? "text-purple-300 font-extrabold" : "text-zinc-500"}>
+                  {isGameStoryDone ? '✓' : '—'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleGame100?.(item.id);
+                }}
+                className={cn(
+                  'text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
+                  isGame100Done
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
+                )}
+                title="Klicken zum Umschalten: 100% Meisterung"
+              >
+                <span>100%</span>
+                <span>{isGame100Done ? '🏆' : '—'}</span>
+              </button>
+
+              {achievements && achievements.total > 0 && (
+                <span
+                  className="text-[10px] font-medium text-zinc-400 ml-auto flex items-center gap-1"
+                  title={`${achievements.current} von ${achievements.total} Erfolgen (${achievementPercentage}%)`}
+                >
+                  <span>🏆</span>
+                  <span className="font-bold text-zinc-200">{achievements.current}</span>
+                  <span className="text-zinc-500">/{achievements.total}</span>
+                </span>
               )}
-              style={{ width: `${totalProgress > 0 ? percentage : Math.min(100, currentProgress * 5)}%` }}
-            />
+            </div>
+
+            {/* Mini Progress Bar for Achievements or Game Completion */}
+            <div className="w-full h-1.5 bg-[#0F1117] rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  'h-full transition-all duration-300 rounded-full',
+                  isGame100Done
+                    ? 'bg-amber-400'
+                    : isGameStoryDone
+                    ? 'bg-purple-400'
+                    : 'bg-purple-500/40'
+                )}
+                style={{
+                  width:
+                    achievements && achievements.total > 0
+                      ? `${achievementPercentage}%`
+                      : isGame100Done
+                      ? '100%'
+                      : isGameStoryDone
+                      ? '100%'
+                      : `${Math.min(100, Math.max(10, gamePlaytime * 2))}%`,
+                }}
+              />
+            </div>
           </div>
-        </div>
+        ) : isMovie ? (
+          /* ============= MOVIE TRACKER UI ============= */
+          <div className="space-y-1.5 pt-2 border-t border-[#282D37]">
+            <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400">
+              <span>{isCompleted ? 'Laufzeit' : 'Fortschritt'}</span>
+              <span className="text-[#F1F3F7] font-bold">
+                {isCompleted
+                  ? `${totalProgress || currentProgress} Min.`
+                  : `${currentProgress} / ${totalProgress || currentProgress} Min.`}
+              </span>
+            </div>
+
+            <div className="w-full h-1.5 bg-[#0F1117] rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  'h-full transition-all duration-300 rounded-full',
+                  isCompleted ? 'bg-emerald-400' : 'bg-rose-500'
+                )}
+                style={{ width: `${isCompleted ? 100 : percentage}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          /* ============= SHOW / ANIME / BOOK UI ============= */
+          <div className="space-y-1.5 pt-2 border-t border-[#282D37]">
+            <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400">
+              <span>Fortschritt</span>
+              <span className="text-[#F1F3F7] font-bold">
+                {currentProgress}
+                {totalProgress > 0 ? ` / ${totalProgress}` : ''}{' '}
+                {item.progress.unit === 'episodes'
+                  ? 'Ep.'
+                  : item.progress.unit === 'pages'
+                  ? 'S.'
+                  : item.progress.unit === 'hours'
+                  ? 'Std.'
+                  : ''}
+              </span>
+            </div>
+
+            <div className="w-full h-1.5 bg-[#0F1117] rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  'h-full transition-all duration-300 rounded-full',
+                  isCompleted
+                    ? 'bg-emerald-400'
+                    : typeProgressColors[item.type]
+                )}
+                style={{ width: `${totalProgress > 0 ? percentage : Math.min(100, currentProgress * 5)}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
