@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       title: result.title,
       subtitle: result.originalTitle,
       creator: result.creator,
-      publisher: result.collection_name?.replace(' Ausgabe', ''),
+      publisher: result.publisher || result.collection_name?.replace(' Ausgabe', ''),
       pages: result.totalUnits,
       coverUrl: result.coverUrl,
       summary: result.summary,

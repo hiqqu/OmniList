@@ -1,5 +1,6 @@
 import { SearchResultItem, MediaItem, SequelNotification } from '@/types/media';
 import { MediaAdapter } from './types';
+import { lookupDnbByIsbn, searchDnb } from '@/lib/dnb';
 
 function createBookSvgCover(title: string, author?: string): string {
   const safeTitle = title.replace(/[<>&"]/g, '').slice(0, 30);
@@ -180,6 +181,8 @@ export class GoogleBooksAdapter implements MediaAdapter {
             }`,
             genres: item.subjects ? item.subjects.slice(0, 4).map((s: { name: string }) => s.name) : ['Literatur', 'Buch'],
             creator: authorNames,
+            publisher: publisher || undefined,
+            isbn,
             franchise_id: `book:publisher:${publisher ? publisher.toLowerCase().replace(/\s+/g, '-') : 'edition'}`,
             collection_name: publisher ? `${publisher} Ausgabe` : 'Exakte Buch-Edition',
             totalUnits: item.number_of_pages || 350,
@@ -192,7 +195,37 @@ export class GoogleBooksAdapter implements MediaAdapter {
       console.warn('Open Library ISBN lookup failed:', e);
     }
 
-    // 2. Open Library Search by ISBN
+    // 2. Deutsche Nationalbibliothek (DNB) Lookup (100% accurate for German editions & publishers)
+    try {
+      const dnbRec = await lookupDnbByIsbn(isbn);
+      if (dnbRec && dnbRec.title) {
+        const publisher = dnbRec.publisher;
+        const editionLabel = publisher ? `${publisher} (${formatted})` : `ISBN ${formatted}`;
+        return {
+          id: `isbn:${isbn}`,
+          external_id: `isbn:${isbn}`,
+          title: dnbRec.title,
+          originalTitle: dnbRec.subtitle ? `${dnbRec.subtitle} • ${editionLabel}` : editionLabel,
+          type: 'book',
+          coverUrl: `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+          releaseDate: dnbRec.year ? `${dnbRec.year}-01-01` : undefined,
+          summary: `Exakte Buch-Ausgabe der Deutschen Nationalbibliothek (${publisher || 'Verlag'}, ISBN: ${formatted}).`,
+          genres: ['Literatur', 'Buch'],
+          creator: dnbRec.author || 'Autor',
+          publisher: publisher || undefined,
+          isbn,
+          franchise_id: `book:publisher:${publisher ? publisher.toLowerCase().replace(/\s+/g, '-') : 'edition'}`,
+          collection_name: publisher ? `${publisher} Ausgabe` : 'Exakte Buch-Edition',
+          totalUnits: dnbRec.pages || 350,
+          unit: 'pages',
+          rating: 4.8,
+        };
+      }
+    } catch (e) {
+      console.warn('DNB ISBN lookup failed:', e);
+    }
+
+    // 3. Open Library Search by ISBN
     try {
       const searchRes = await fetch(`https://openlibrary.org/search.json?isbn=${isbn}`);
       if (searchRes.ok) {
@@ -202,19 +235,22 @@ export class GoogleBooksAdapter implements MediaAdapter {
           const coverUrl = doc.cover_i
             ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
             : `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+          const publisher = doc.publisher?.[0];
           return {
             id: `isbn:${isbn}`,
             external_id: `isbn:${isbn}`,
             title: doc.title,
-            originalTitle: `ISBN ${formatted}`,
+            originalTitle: publisher ? `${publisher} (ISBN ${formatted})` : `ISBN ${formatted}`,
             type: 'book',
             coverUrl,
             releaseDate: doc.first_publish_year ? `${doc.first_publish_year}-01-01` : undefined,
-            summary: `Buch-Ausgabe mit ISBN ${formatted}. Verfasst von ${doc.author_name?.[0] || 'Autor'}.`,
+            summary: `Buch-Ausgabe mit ISBN ${formatted}. Verfasst von ${doc.author_name?.[0] || 'Autor'}.${publisher ? ` Verlag: ${publisher}.` : ''}`,
             genres: doc.subject ? doc.subject.slice(0, 3) : ['Literatur'],
             creator: doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor',
+            publisher: publisher || undefined,
+            isbn,
             franchise_id: 'book:isbn',
-            collection_name: 'Buch-Edition',
+            collection_name: publisher ? `${publisher} Ausgabe` : 'Buch-Edition',
             totalUnits: doc.number_of_pages_median || 350,
             unit: 'pages',
             rating: 4.7,
@@ -225,7 +261,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
       console.warn('Open Library search by ISBN failed:', e);
     }
 
-    // 3. Fallback direct Open Library ISBN cover
+    // 4. Fallback direct Open Library ISBN cover
     return {
       id: `isbn:${isbn}`,
       external_id: `isbn:${isbn}`,
@@ -236,6 +272,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
       summary: `Buchausgabe für ISBN ${formatted}.`,
       genres: ['Buch'],
       creator: 'Autor',
+      isbn,
       totalUnits: 350,
       unit: 'pages',
       rating: 4.5,
@@ -259,40 +296,109 @@ export class GoogleBooksAdapter implements MediaAdapter {
 
     const q = raw.toLowerCase();
     const items: SearchResultItem[] = [];
+    const seenIsbns = new Set<string>();
 
-    // 1. Live Open Library Search (Completely FREE, public, returns real official book covers!)
+    // 1. DNB Live Search for German Publisher Editions (e.g. "Dune Heyne", "Percy Jackson Carlsen")
+    try {
+      const dnbMatches = await searchDnb(raw, 5);
+      for (const dnb of dnbMatches) {
+        if (!dnb.title) continue;
+        const cleanIsbn = dnb.isbn ? dnb.isbn.replace(/[-\s]/g, '') : undefined;
+        if (cleanIsbn && seenIsbns.has(cleanIsbn)) continue;
+        if (cleanIsbn) seenIsbns.add(cleanIsbn);
+
+        const external_id = cleanIsbn ? `isbn:${cleanIsbn}` : `dnb:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`;
+        const coverUrl = cleanIsbn
+          ? `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`
+          : createBookSvgCover(dnb.title, dnb.author);
+
+        items.push({
+          id: external_id,
+          external_id,
+          title: dnb.title,
+          originalTitle: dnb.subtitle || (dnb.publisher ? `${dnb.publisher}${dnb.year ? ` (${dnb.year})` : ''}` : undefined),
+          type: 'book',
+          coverUrl,
+          releaseDate: dnb.year ? `${dnb.year}-01-01` : undefined,
+          summary: `Ausgabe von ${dnb.publisher || 'Verlag'}${dnb.year ? ` (${dnb.year})` : ''}.${cleanIsbn ? ` ISBN: ${formatIsbn(cleanIsbn)}.` : ''}`,
+          genres: ['Literatur', 'Buch'],
+          creator: dnb.author || 'Autor',
+          publisher: dnb.publisher,
+          isbn: cleanIsbn,
+          collection_name: dnb.publisher ? `${dnb.publisher} Ausgabe` : undefined,
+          totalUnits: dnb.pages || 350,
+          unit: 'pages',
+          rating: 4.8,
+        });
+      }
+    } catch (e) {
+      console.warn('DNB search failed:', e);
+    }
+
+    // 2. Live Open Library Search with detailed fields (Editions, Publishers, Cover IDs, Work Key)
     try {
       const openLibRes = await fetch(
-        `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=8`
+        `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=key,title,subtitle,author_name,isbn,publisher,publish_date,number_of_pages,number_of_pages_median,cover_i,language,edition_count&limit=8`,
+        { headers: { 'User-Agent': 'OmniTrack/1.0' } }
       );
       if (openLibRes.ok) {
         const data = await openLibRes.json();
         for (const doc of data.docs || []) {
           if (!doc.title) continue;
+
+          // Check if user search matches any specific publisher in this work
+          const queryWords = q.split(/\s+/).filter((w) => w.length > 2);
+          const matchingPublisher = doc.publisher?.find((p: string) =>
+            queryWords.some((w) => p.toLowerCase().includes(w))
+          );
+
+          // Find German publisher or matching publisher if available
+          const germanPublisher = doc.publisher?.find((p: string) =>
+            /carlsen|heyne|dtv|piper|fischer|klett|reclam|suhrkamp|goldmann|ullstein|kiwi|rowohlt|droemer|blanvalet|loewe|arena|ravensburger/i.test(p)
+          );
+
+          const chosenPublisher = matchingPublisher || germanPublisher || doc.publisher?.[0];
+
+          // Pick primary ISBN
           const primaryIsbn = doc.isbn?.[0];
+          if (primaryIsbn && seenIsbns.has(primaryIsbn)) continue;
+          if (primaryIsbn) seenIsbns.add(primaryIsbn);
+
           const external_id = primaryIsbn
             ? `isbn:${primaryIsbn}`
             : `openlibrary:${doc.key?.replace('/works/', '') || doc.cover_edition_key || Math.random()}`;
+
           const coverUrl = doc.cover_i
             ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
             : primaryIsbn
             ? `https://covers.openlibrary.org/b/isbn/${primaryIsbn}-L.jpg`
             : createBookSvgCover(doc.title, doc.author_name?.[0]);
 
+          const editionLabel = chosenPublisher
+            ? `${chosenPublisher}${primaryIsbn ? ` (${formatIsbn(primaryIsbn)})` : ''}`
+            : primaryIsbn
+            ? `ISBN ${formatIsbn(primaryIsbn)}`
+            : undefined;
+
           items.push({
             id: external_id,
             external_id,
             title: doc.title,
-            originalTitle: doc.subtitle || (primaryIsbn ? `ISBN ${formatIsbn(primaryIsbn)}` : undefined),
+            originalTitle: doc.subtitle ? `${doc.subtitle} • ${editionLabel || ''}` : editionLabel,
             type: 'book',
             coverUrl,
             releaseDate: doc.first_publish_year ? `${doc.first_publish_year}-01-01` : undefined,
-            summary: `Buch von ${doc.author_name?.[0] || 'Unbekanntem Autor'}. Erschienen ca. ${doc.first_publish_year || 'k. A.'}.${
+            summary: `Buch von ${doc.author_name?.[0] || 'Unbekanntem Autor'}. Verlag: ${chosenPublisher || 'k. A.'}.${
               primaryIsbn ? ` (ISBN ${formatIsbn(primaryIsbn)})` : ''
             }`,
             genres: doc.subject ? doc.subject.slice(0, 3) : ['Literatur'],
             creator: doc.author_name ? doc.author_name.slice(0, 2).join(', ') : 'Autor',
+            publisher: chosenPublisher,
+            isbn: primaryIsbn,
+            editionKey: doc.key,
+            editionCount: doc.edition_count,
             franchise_id: `book:franchise:${doc.author_name?.[0] || 'general'}`,
+            collection_name: chosenPublisher ? `${chosenPublisher} Ausgabe` : undefined,
             totalUnits: doc.number_of_pages_median || 350,
             unit: 'pages',
             rating: 4.6,
@@ -303,7 +409,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
       console.warn('Open Library search failed:', e);
     }
 
-    // 2. Search in local catalog
+    // 3. Search in local catalog
     const catalogMatches = POPULAR_BOOKS_CATALOG.filter(
       (m) =>
         m.title.toLowerCase().includes(q) ||
@@ -316,6 +422,10 @@ export class GoogleBooksAdapter implements MediaAdapter {
       if (!combined.some((x) => x.title.toLowerCase() === match.title.toLowerCase())) {
         combined.push(match);
       }
+    }
+
+    if (combined.length > 0) {
+      return combined;
     }
 
     if (combined.length > 0) {

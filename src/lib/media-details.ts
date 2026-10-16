@@ -498,14 +498,17 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
     book: {
       writers: [item.creator || 'Autor/in'],
       publisher:
+        item.publisher ||
         item.collection_name?.replace(' Ausgabe', '') ||
         (item.originalTitle && item.originalTitle.includes('Verlag') ? item.originalTitle : undefined) ||
         'Buchverlag',
       pageCount: item.progress.total || 380,
       readingTime: `ca. ${Math.round((item.progress.total || 380) / 45)} Stunden`,
-      isbn: item.external_id?.startsWith('isbn:')
+      isbn: item.isbn
+        ? formatIsbn(item.isbn)
+        : item.external_id?.startsWith('isbn:')
         ? formatIsbn(item.external_id.replace('isbn:', ''))
-        : '978-3-XXX-XXXXX-X',
+        : undefined,
       language: 'Deutsch',
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : '4.7 / 5.0',

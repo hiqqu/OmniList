@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Star, Trash2, Save, PackageCheck, BookOpen, Sparkles, Loader2, Image as ImageIcon, Gamepad2, Trophy, Clock } from 'lucide-react';
+import { X, Star, Trash2, Save, PackageCheck, BookOpen, Sparkles, Loader2, Image as ImageIcon, Gamepad2, Trophy, Clock, Building2, Layers, ChevronDown, ChevronUp } from 'lucide-react';
 import { MediaItem, MediaStatus, ProgressUnit } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { formatIsbn } from '@/lib/api-adapters/googlebooks';
+import { BookEditionItem } from '@/app/api/book-editions/route';
 
 interface EditMediaModalProps {
   item: MediaItem | null;
@@ -30,9 +31,16 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   const [unit, setUnit] = useState<ProgressUnit>('episodes');
   const [summary, setSummary] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
+  const [publisher, setPublisher] = useState('');
   const [isbnInput, setIsbnInput] = useState('');
   const [isFetchingIsbn, setIsFetchingIsbn] = useState(false);
   const [isbnFeedback, setIsbnFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Book Edition Picker State
+  const [isEditionPickerOpen, setIsEditionPickerOpen] = useState(false);
+  const [editionsList, setEditionsList] = useState<BookEditionItem[]>([]);
+  const [isLoadingEditions, setIsLoadingEditions] = useState(false);
+  const [editionPickerFilter, setEditionPickerFilter] = useState('');
 
   // Dedicated Game Tracker State
   const [gameStoryCompleted, setGameStoryCompleted] = useState<boolean>(false);
@@ -51,7 +59,11 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       setUnit(item.progress.unit);
       setSummary(item.summary || '');
       setCoverUrl(item.coverUrl || '');
+      setPublisher(item.publisher || '');
       setIsbnFeedback(null);
+      setIsEditionPickerOpen(false);
+      setEditionsList([]);
+      setEditionPickerFilter('');
 
       if (item.type === 'game') {
         setGameStoryCompleted(Boolean(item.gameTracker?.storyCompleted));
@@ -61,9 +73,9 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       }
 
       if (item.type === 'book') {
-        const existingIsbn = item.external_id?.startsWith('isbn:')
+        const existingIsbn = item.isbn || (item.external_id?.startsWith('isbn:')
           ? item.external_id.replace('isbn:', '')
-          : '';
+          : '');
         setIsbnInput(existingIsbn ? formatIsbn(existingIsbn) : '');
       } else {
         setIsbnInput('');
@@ -74,6 +86,46 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   if (!isOpen || !item) return null;
 
   const typeBadge = getMediaTypeBadge(item.type);
+
+  const handleOpenEditionPicker = async () => {
+    const nextState = !isEditionPickerOpen;
+    setIsEditionPickerOpen(nextState);
+    setEditionPickerFilter('');
+
+    if (nextState && editionsList.length === 0) {
+      setIsLoadingEditions(true);
+      try {
+        const queryParams = new URLSearchParams({
+          title: title || item.title,
+          author: item.creator || '',
+        });
+        const res = await fetch(`/api/book-editions?${queryParams.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setEditionsList(data.editions || []);
+        }
+      } catch (err) {
+        console.error('Failed to load editions in EditMediaModal:', err);
+      } finally {
+        setIsLoadingEditions(false);
+      }
+    }
+  };
+
+  const handleApplyEdition = (edition: BookEditionItem) => {
+    if (edition.coverUrl) setCoverUrl(edition.coverUrl);
+    if (edition.pages) {
+      setTotalProgress(edition.pages);
+      setUnit('pages');
+    }
+    if (edition.publisher) setPublisher(edition.publisher);
+    if (edition.isbn) setIsbnInput(edition.formattedIsbn || edition.isbn);
+    setIsEditionPickerOpen(false);
+    setIsbnFeedback({
+      type: 'success',
+      text: `Ausgabe übernommen: ${edition.publisher} (${edition.pages} Seiten, ISBN: ${edition.formattedIsbn || edition.isbn || '—'}).`,
+    });
+  };
 
   const handleFetchIsbn = async () => {
     const raw = isbnInput.trim();
@@ -93,6 +145,9 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
         if (data.pages) {
           setTotalProgress(data.pages);
           setUnit('pages');
+        }
+        if (data.publisher) {
+          setPublisher(data.publisher);
         }
         if (data.title && confirm(`Möchtest du den Titel auch auf "${data.title}" aktualisieren?`)) {
           setTitle(data.title);
@@ -140,6 +195,8 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       isOwned,
       rating,
       summary,
+      publisher: publisher.trim() || undefined,
+      isbn: cleanIsbn || undefined,
       coverUrl: coverUrl || item.coverUrl,
       external_id: updatedExternalId,
       progress: {
@@ -422,16 +479,139 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
 
           {/* Cover & ISBN Edition Matcher */}
           {item.type === 'book' ? (
-            <div className="p-3.5 rounded-2xl bg-[#0F1117] border border-orange-500/20 space-y-2.5">
+            <div className="p-3.5 rounded-2xl bg-[#0F1117] border border-orange-500/20 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
                   <BookOpen className="w-3.5 h-3.5" />
-                  <span>Exakte Buch-Edition &amp; Cover per ISBN abgleichen</span>
+                  <span>Buch-Ausgabe, Verlag &amp; Cover abgleichen</span>
                 </label>
-                <span className="text-[10px] text-zinc-500 font-medium">Open Library / Goodreads</span>
+                <span className="text-[10px] text-zinc-500 font-medium">DNB / Open Library</span>
               </div>
+
+              {/* Publisher Input */}
+              <div>
+                <label className="text-[10px] text-zinc-400 block mb-1 font-semibold flex items-center gap-1">
+                  <Building2 className="w-3 h-3 text-orange-400" />
+                  <span>Verlag / Herausgeber</span>
+                </label>
+                <input
+                  type="text"
+                  value={publisher}
+                  onChange={(e) => setPublisher(e.target.value)}
+                  placeholder="z. B. Carlsen Verlag, Heyne, dtv, Klett-Cotta..."
+                  className="w-full bg-[#181B22] border border-[#282D37] focus:border-orange-500 rounded-xl px-3 py-2 text-xs text-[#F1F3F7] placeholder-zinc-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Button to search editions by publisher */}
+              <div>
+                <button
+                  type="button"
+                  onClick={handleOpenEditionPicker}
+                  className="w-full py-2 px-3 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Ausgaben nach Verlag durchsuchen (DNB / Open Library)</span>
+                  {isEditionPickerOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              {/* Edition Picker Drawer */}
+              {isEditionPickerOpen && (
+                <div className="space-y-2.5 p-3 rounded-xl bg-[#181B22] border border-[#282D37]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-zinc-300">Gefundene Ausgaben</span>
+                    <input
+                      type="text"
+                      placeholder="Verlag filtern (z. B. Carlsen)..."
+                      value={editionPickerFilter}
+                      onChange={(e) => setEditionPickerFilter(e.target.value)}
+                      className="bg-[#0F1117] border border-[#282D37] focus:border-orange-500 rounded-lg px-2 py-1 text-xs text-[#F1F3F7] placeholder-zinc-500 focus:outline-none w-44"
+                    />
+                  </div>
+
+                  {isLoadingEditions ? (
+                    <div className="py-6 flex flex-col items-center justify-center gap-2 text-zinc-400">
+                      <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+                      <span className="text-xs">Ausgaben werden geladen...</span>
+                    </div>
+                  ) : (
+                    (() => {
+                      const filtered = editionsList.filter((ed) => {
+                        if (!editionPickerFilter.trim()) return true;
+                        const q = editionPickerFilter.toLowerCase();
+                        return (
+                          ed.publisher.toLowerCase().includes(q) ||
+                          ed.title.toLowerCase().includes(q) ||
+                          (ed.subtitle && ed.subtitle.toLowerCase().includes(q)) ||
+                          (ed.isbn && ed.isbn.includes(q))
+                        );
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="py-3 text-center text-xs text-zinc-400">
+                            {editionsList.length === 0
+                              ? 'Keine Ausgaben gefunden.'
+                              : `Keine Ausgabe für "${editionPickerFilter}" gefunden.`}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                          {filtered.map((ed) => (
+                            <div
+                              key={ed.id}
+                              className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#0F1117] border border-[#282D37] hover:border-zinc-700 transition-all text-xs"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div className="w-8 h-11 rounded overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0">
+                                  <img
+                                    src={ed.coverUrl}
+                                    alt={ed.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src =
+                                        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
+                                    }}
+                                  />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-orange-300">{ed.publisher}</span>
+                                    {ed.isGerman && (
+                                      <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        DE
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] text-zinc-400">{ed.pages} S.</span>
+                                    {ed.year && <span className="text-[10px] text-zinc-400">{ed.year}</span>}
+                                  </div>
+                                  <p className="text-zinc-300 truncate text-[11px]">{ed.title}</p>
+                                  {ed.formattedIsbn && (
+                                    <p className="text-[10px] font-mono text-zinc-500">ISBN: {ed.formattedIsbn}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleApplyEdition(ed)}
+                                className="px-2.5 py-1 rounded bg-orange-500 hover:bg-orange-400 text-zinc-950 text-[11px] font-bold flex-shrink-0 active:scale-95 transition-all"
+                              >
+                                Übernehmen
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()
+                  )}
+                </div>
+              )}
+
               <p className="text-[11px] text-zinc-400 leading-relaxed">
-                Gib die ISBN deines physischen Buches ein (Barcode auf der Rückseite), um exakt dein Cover und die Seitenzahl zu laden.
+                Oder gib die ISBN deines physischen Buches direkt ein (Barcode auf der Rückseite):
               </p>
               <div className="flex items-center gap-2">
                 <input

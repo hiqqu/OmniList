@@ -36,6 +36,8 @@ export interface MediaItem {
   summary?: string;
   genres?: string[];
   creator?: string; // Regisseur, Autor, Studio, Entwickler
+  publisher?: string; // Buchverlag, Game Publisher, Studio
+  isbn?: string; // Für Bücher: ISBN-10 oder ISBN-13
   progress: MediaProgress;
   gameTracker?: GameTracker; // Spezieller Tracker für Videospiele (Story, 100%, Achievements, offene Spielzeit)
   external_id: string; // e.g. "tmdb:1234", "anilist:5678", "rawg:456", "googlebooks:abc"
@@ -80,6 +82,10 @@ export interface SearchResultItem {
   summary?: string;
   genres?: string[];
   creator?: string;
+  publisher?: string;
+  isbn?: string;
+  editionKey?: string;
+  editionCount?: number;
   external_id: string;
   franchise_id?: string;
   collection_name?: string;

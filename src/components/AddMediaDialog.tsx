@@ -15,9 +15,14 @@ import {
   Calendar,
   Flame,
   PackageCheck,
+  Building2,
+  Layers,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { MediaType, SearchResultItem, MediaStatus, MediaItem } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
+import { BookEditionItem } from '@/app/api/book-editions/route';
 
 interface AddMediaDialogProps {
   isOpen: boolean;
@@ -39,6 +44,12 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [selectedStatus, setSelectedStatus] = useState<MediaStatus>('in_progress');
   const [isOwned, setIsOwned] = useState<boolean>(false);
+
+  // Book edition switcher state
+  const [expandedEditionItemId, setExpandedEditionItemId] = useState<string | null>(null);
+  const [editionsMap, setEditionsMap] = useState<Record<string, BookEditionItem[]>>({});
+  const [loadingEditionsId, setLoadingEditionsId] = useState<string | null>(null);
+  const [editionFilter, setEditionFilter] = useState('');
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -110,6 +121,8 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       setSearchQuery('');
       setResults([]);
       setIsLoading(false);
+      setExpandedEditionItemId(null);
+      setEditionFilter('');
     }
   }, [isOpen, activeTab, executeSearch]);
 
@@ -140,6 +153,77 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
     executeSearch(searchQuery, tab);
   };
 
+  const handleToggleEditions = async (result: SearchResultItem) => {
+    if (expandedEditionItemId === result.id) {
+      setExpandedEditionItemId(null);
+      return;
+    }
+
+    setExpandedEditionItemId(result.id);
+    setEditionFilter('');
+
+    if (!editionsMap[result.id]) {
+      setLoadingEditionsId(result.id);
+      try {
+        const queryParams = new URLSearchParams({
+          title: result.title,
+          author: result.creator || '',
+          workKey: result.editionKey || '',
+        });
+        const res = await fetch(`/api/book-editions?${queryParams.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setEditionsMap((prev) => ({
+            ...prev,
+            [result.id]: data.editions || [],
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load book editions:', err);
+      } finally {
+        setLoadingEditionsId(null);
+      }
+    }
+  };
+
+  const handleAddEdition = (result: SearchResultItem, edition: BookEditionItem) => {
+    const isCompleted = selectedStatus === 'completed';
+    const totalUnits = edition.pages || result.totalUnits || 350;
+
+    onAddMedia({
+      title: edition.title || result.title,
+      originalTitle: edition.subtitle || result.originalTitle,
+      type: 'book',
+      status: selectedStatus,
+      coverUrl: edition.coverUrl || result.coverUrl,
+      bannerUrl: result.bannerUrl,
+      rating: result.rating || 4.5,
+      releaseDate: edition.year ? `${edition.year}-01-01` : result.releaseDate,
+      summary: result.summary,
+      genres: result.genres,
+      creator: result.creator,
+      publisher: edition.publisher,
+      isbn: edition.isbn,
+      progress: {
+        current: isCompleted ? totalUnits : selectedStatus === 'in_progress' ? 1 : 0,
+        total: totalUnits,
+        unit: 'pages',
+      },
+      external_id: edition.isbn ? `isbn:${edition.isbn}` : result.external_id,
+      franchise_id: result.franchise_id,
+      collection_name: edition.publisher ? `${edition.publisher} Ausgabe` : result.collection_name,
+      isOwned: isOwned || selectedStatus === 'owned',
+      last_sequel_check: new Date().toISOString(),
+    });
+
+    setAddedIds((prev) => {
+      const next = new Set(prev);
+      next.add(result.external_id);
+      if (edition.isbn) next.add(`isbn:${edition.isbn}`);
+      return next;
+    });
+  };
+
   const handleAdd = (result: SearchResultItem) => {
     const isCompleted = selectedStatus === 'completed';
     const isGame = result.type === 'game';
@@ -158,6 +242,8 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       summary: result.summary,
       genres: result.genres,
       creator: result.creator,
+      publisher: result.publisher,
+      isbn: result.isbn,
       progress: {
         current: isCompleted ? (totalUnits || 0) : selectedStatus === 'in_progress' ? 1 : 0,
         total: totalUnits,
@@ -397,88 +483,257 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
               return (
                 <div
                   key={result.id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 rounded-2xl bg-[#0F1117]/60 hover:bg-[#0F1117] border border-[#282D37] hover:border-zinc-600 transition-all"
+                  className="flex flex-col items-stretch p-3.5 rounded-2xl bg-[#0F1117]/60 hover:bg-[#0F1117] border border-[#282D37] hover:border-zinc-600 transition-all"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    {/* Cover Thumbnail */}
-                    <div className="w-14 h-20 rounded-lg overflow-hidden bg-[#0F1117] flex-shrink-0 border border-[#282D37]">
-                      <img
-                        src={result.coverUrl}
-                        alt={result.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
-                        }}
-                      />
-                    </div>
-
-                    {/* Metadata */}
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide',
-                            typeBadge.bgClass,
-                            typeBadge.colorClass
-                          )}
-                        >
-                          {typeBadge.label}
-                        </span>
-                        {result.external_id.startsWith('isbn:') && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30">
-                            Exakte ISBN-Edition
-                          </span>
-                        )}
-                        {result.releaseDate && (
-                          <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {result.releaseDate.split('-')[0]}
-                          </span>
-                        )}
-                        {result.rating && (
-                          <span className="text-[11px] text-amber-400 font-bold flex items-center gap-0.5">
-                            <Star className="w-3 h-3 fill-amber-400" />
-                            {result.rating.toFixed(1)}
-                          </span>
-                        )}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      {/* Cover Thumbnail */}
+                      <div className="w-14 h-20 rounded-lg overflow-hidden bg-[#0F1117] flex-shrink-0 border border-[#282D37]">
+                        <img
+                          src={result.coverUrl}
+                          alt={result.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
+                          }}
+                        />
                       </div>
 
-                      <h4 className="font-bold text-sm text-[#F1F3F7] truncate">{result.title}</h4>
-
-                      <p className="text-xs text-zinc-400 truncate">
-                        {result.creator || result.originalTitle || '—'}
-                      </p>
-
-                      {result.genres && result.genres.length > 0 && (
-                        <div className="flex flex-wrap gap-1 pt-0.5">
-                          {result.genres.slice(0, 3).map((g) => (
-                            <span key={g} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
-                              {g}
+                      {/* Metadata */}
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={cn(
+                              'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide',
+                              typeBadge.bgClass,
+                              typeBadge.colorClass
+                            )}
+                          >
+                            {typeBadge.label}
+                          </span>
+                          {result.external_id.startsWith('isbn:') && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                              Exakte ISBN-Edition
                             </span>
-                          ))}
+                          )}
+                          {result.publisher && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-500/10 text-orange-300 border border-orange-500/25 flex items-center gap-1">
+                              <Building2 className="w-2.5 h-2.5 text-orange-400" />
+                              {result.publisher}
+                            </span>
+                          )}
+                          {result.type === 'book' && result.totalUnits && (
+                            <span className="text-[11px] text-zinc-400 font-medium">
+                              {result.totalUnits} Seiten
+                            </span>
+                          )}
+                          {result.releaseDate && (
+                            <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {result.releaseDate.split('-')[0]}
+                            </span>
+                          )}
+                          {result.rating && (
+                            <span className="text-[11px] text-amber-400 font-bold flex items-center gap-0.5">
+                              <Star className="w-3 h-3 fill-amber-400" />
+                              {result.rating.toFixed(1)}
+                            </span>
+                          )}
                         </div>
+
+                        <h4 className="font-bold text-sm text-[#F1F3F7] truncate">{result.title}</h4>
+
+                        <p className="text-xs text-zinc-400 truncate">
+                          {result.creator || result.originalTitle || '—'}
+                        </p>
+
+                        {result.genres && result.genres.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            {result.genres.slice(0, 3).map((g) => (
+                              <span key={g} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                {g}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Editions toggle button for books */}
+                        {result.type === 'book' && (
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleEditions(result)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-orange-400 hover:text-orange-300 bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/30 transition-all"
+                            >
+                              <Layers className="w-3 h-3" />
+                              <span>
+                                {expandedEditionItemId === result.id
+                                  ? 'Ausgaben-Auswahl schließen'
+                                  : `Andere Ausgabe / Verlag wählen ${result.editionCount ? `(${result.editionCount}+)` : ''}`}
+                              </span>
+                              {expandedEditionItemId === result.id ? (
+                                <ChevronUp className="w-3 h-3" />
+                              ) : (
+                                <ChevronDown className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Add Button */}
+                    <div className="sm:self-center flex-shrink-0 w-full sm:w-auto">
+                      {isAlreadyInLibrary ? (
+                        <span className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 w-full sm:w-auto">
+                          <Check className="w-4 h-4" />
+                          <span>In Sammlung</span>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleAdd(result)}
+                          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-zinc-100 hover:bg-white text-zinc-950 shadow-md shadow-black/20 active:scale-95 transition-all w-full sm:w-auto"
+                        >
+                          <Plus className="w-4 h-4 stroke-[2.5]" />
+                          <span>Hinzufügen</span>
+                        </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Add Button */}
-                  <div className="sm:self-center flex-shrink-0 w-full sm:w-auto">
-                    {isAlreadyInLibrary ? (
-                      <span className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 w-full sm:w-auto">
-                        <Check className="w-4 h-4" />
-                        <span>In Sammlung</span>
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleAdd(result)}
-                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-zinc-100 hover:bg-white text-zinc-950 shadow-md shadow-black/20 active:scale-95 transition-all w-full sm:w-auto"
-                      >
-                        <Plus className="w-4 h-4 stroke-[2.5]" />
-                        <span>Hinzufügen</span>
-                      </button>
-                    )}
-                  </div>
+                  {/* Collapsible Edition Selector Drawer */}
+                  {expandedEditionItemId === result.id && (
+                    <div className="w-full mt-3 pt-3 border-t border-[#282D37] space-y-3 bg-[#181B22]/90 p-3.5 rounded-xl border border-orange-500/20">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <div className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>Verlagsausgaben für &quot;{result.title}&quot;</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5">
+                            Treffer der Deutschen Nationalbibliothek (DNB) &amp; Open Library
+                          </p>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Verlag filtern (z. B. Carlsen, Heyne, dtv)..."
+                          value={editionFilter}
+                          onChange={(e) => setEditionFilter(e.target.value)}
+                          className="bg-[#0F1117] border border-[#282D37] focus:border-orange-500 rounded-lg px-2.5 py-1 text-xs text-[#F1F3F7] placeholder-zinc-500 focus:outline-none w-full sm:w-60"
+                        />
+                      </div>
+
+                      {loadingEditionsId === result.id ? (
+                        <div className="py-6 flex flex-col items-center justify-center gap-2 text-zinc-400">
+                          <Loader2 className="w-5 h-5 animate-spin text-orange-400" />
+                          <span className="text-xs">Ausgaben und Verlage werden geladen...</span>
+                        </div>
+                      ) : (
+                        (() => {
+                          const allEditions = editionsMap[result.id] || [];
+                          const filteredEditions = allEditions.filter((ed) => {
+                            if (!editionFilter.trim()) return true;
+                            const q = editionFilter.toLowerCase();
+                            return (
+                              ed.publisher.toLowerCase().includes(q) ||
+                              ed.title.toLowerCase().includes(q) ||
+                              (ed.subtitle && ed.subtitle.toLowerCase().includes(q)) ||
+                              (ed.isbn && ed.isbn.includes(q))
+                            );
+                          });
+
+                          if (filteredEditions.length === 0) {
+                            return (
+                              <div className="py-4 text-center text-xs text-zinc-400">
+                                {allEditions.length === 0
+                                  ? 'Keine alternativen Verlagsausgaben gefunden. Du kannst diese Standard-Ausgabe hinzufügen oder die ISBN manuell anpassen.'
+                                  : `Keine Ausgabe für "${editionFilter}" gefunden.`}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                              {filteredEditions.map((ed) => {
+                                const edIsAdded =
+                                  (ed.isbn && existingExternalIds.has(`isbn:${ed.isbn}`)) ||
+                                  (ed.isbn && addedIds.has(`isbn:${ed.isbn}`));
+
+                                return (
+                                  <div
+                                    key={ed.id}
+                                    className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-[#0F1117]/80 hover:bg-[#0F1117] border border-[#282D37] transition-all"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <div className="w-10 h-14 rounded overflow-hidden bg-zinc-900 border border-zinc-800 flex-shrink-0">
+                                        <img
+                                          src={ed.coverUrl}
+                                          alt={ed.title}
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src =
+                                              'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
+                                          }}
+                                        />
+                                      </div>
+                                      <div className="min-w-0 flex-1 space-y-0.5">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="font-bold text-xs text-orange-300">
+                                            {ed.publisher}
+                                          </span>
+                                          {ed.isGerman && (
+                                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                              DE
+                                            </span>
+                                          )}
+                                          {ed.year && (
+                                            <span className="text-[10px] text-zinc-400">
+                                              {ed.year}
+                                            </span>
+                                          )}
+                                          <span className="text-[10px] text-zinc-400">
+                                            {ed.pages} Seiten
+                                          </span>
+                                        </div>
+                                        <p className="text-xs text-zinc-200 truncate">
+                                          {ed.title}
+                                          {ed.subtitle ? ` – ${ed.subtitle}` : ''}
+                                        </p>
+                                        {ed.formattedIsbn && (
+                                          <p className="text-[10px] font-mono text-zinc-500">
+                                            ISBN: {ed.formattedIsbn}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex-shrink-0">
+                                      {edIsAdded ? (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                          <Check className="w-3.5 h-3.5" />
+                                          <span>In Sammlung</span>
+                                        </span>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAddEdition(result, ed)}
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-orange-500 hover:bg-orange-400 text-zinc-950 active:scale-95 transition-all shadow-sm"
+                                        >
+                                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                                          <span>Diese Ausgabe wählen</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })
