@@ -389,6 +389,49 @@ const CURATED_DETAILS: Record<string, Partial<EnrichedMediaDetails>> = {
   },
 };
 
+function parseBookContributors(creator?: string, originalTitle?: string, title?: string): CastMember[] {
+  if (!creator) {
+    return [
+      { name: 'Autor/in', role: 'Autor / Schriftsteller' },
+      ...(originalTitle && originalTitle !== title
+        ? [{ name: 'Deutsche Übersetzung', role: 'Übersetzung / Lokalisierung' }]
+        : []),
+    ];
+  }
+
+  const parts = creator.split(/[,;\n]/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    return parts.map((part, idx) => {
+      let role = idx === 0 ? 'Autor / Schriftsteller' : 'Mitwirkende/r';
+      let cleanName = part;
+      if (/übersetz|transl/i.test(part)) {
+        role = 'Übersetzer / Deutsche Übersetzung';
+        cleanName = part.replace(/\(?(übersetzt von|übersetzung|übers\.|transl\.?|translator)\)?/gi, '').trim();
+      } else if (/illustrat|zeichn/i.test(part)) {
+        role = 'Illustration / Cover';
+        cleanName = part.replace(/\(?(illustrator|illustration|illustriert von)\)?/gi, '').trim();
+      } else if (/herausgeb|hrsg/i.test(part)) {
+        role = 'Herausgeber (Hrsg.)';
+        cleanName = part.replace(/\(?(herausgeber|hrsg\.)\)?/gi, '').trim();
+      }
+      return {
+        name: cleanName || part,
+        role,
+      };
+    });
+  }
+
+  return [
+    {
+      name: creator,
+      role: 'Autor / Schriftsteller',
+    },
+    ...(originalTitle && originalTitle !== title
+      ? [{ name: 'Deutsche Übersetzung', role: 'Übersetzer / Lokalisierung' }]
+      : []),
+  ];
+}
+
 export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
   // Check if we have exact curated details
   const curated = CURATED_DETAILS[item.id];
@@ -515,7 +558,7 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         audience: '4.4 / 5',
         audienceLabel: 'Leser-Bewertung',
       },
-      cast: [{ name: item.creator || 'Autor/in', role: 'Verfasser/in des Werks' }],
+      cast: parseBookContributors(item.creator, item.originalTitle, item.title),
       reviews: [
         {
           author: 'Literatur-Kritik',

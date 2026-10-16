@@ -705,8 +705,20 @@ export default function MediaDetailPage() {
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             )}
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>Besetzung &amp; Synchronisation ({details.cast.length})</span>
+            {item.type === 'book' ? (
+              <BookOpen className="w-3.5 h-3.5" />
+            ) : (
+              <Users className="w-3.5 h-3.5" />
+            )}
+            <span>
+              {item.type === 'book'
+                ? `Autor & Mitwirkende (${details.cast.length})`
+                : item.type === 'anime'
+                ? `Charaktere & Sprecher (${details.cast.length})`
+                : item.type === 'game'
+                ? `Besetzung & Team (${details.cast.length})`
+                : `Besetzung & Stab (${details.cast.length})`}
+            </span>
           </button>
 
           <button
@@ -825,7 +837,9 @@ export default function MediaDetailPage() {
 
                 {details.writers && details.writers.length > 0 && (
                   <div>
-                    <span className="text-zinc-500 block">Autoren / Schöpfer:</span>
+                    <span className="text-zinc-500 block">
+                      {item.type === 'book' ? 'Autor / Verfasser:' : 'Autoren / Schöpfer:'}
+                    </span>
                     <span className="font-bold text-zinc-200">{details.writers.join(', ')}</span>
                   </div>
                 )}
@@ -881,7 +895,13 @@ export default function MediaDetailPage() {
                     : 'Schauspieler & Rollenbesetzung'}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Hauptdarsteller, Regie und Lokalisierungsstimmen
+                  {item.type === 'book'
+                    ? 'Schriftsteller, Verfasser und ggf. deutsche Übersetzung'
+                    : item.type === 'anime'
+                    ? 'Charaktere, japanische Originalstimmen und Synchronisation'
+                    : item.type === 'game'
+                    ? 'Synchronsprecher, Motion Capture und leitende Entwickler'
+                    : 'Hauptdarsteller, Regie und Lokalisierungsstimmen'}
                 </p>
               </div>
             </div>
@@ -896,6 +916,8 @@ export default function MediaDetailPage() {
                   <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 border border-zinc-700">
                     {c.avatarUrl ? (
                       <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" />
+                    ) : item.type === 'book' ? (
+                      <BookOpen className="w-5 h-5 text-orange-400" />
                     ) : (
                       <Users className="w-5 h-5 text-zinc-400" />
                     )}

@@ -335,7 +335,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
             >
               <Info className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-              <span className="truncate">Details &amp; Besetzung</span>
+              <span className="truncate">
+                {item.type === 'book'
+                  ? 'Details & Autoren'
+                  : item.type === 'anime'
+                  ? 'Details & Charaktere'
+                  : item.type === 'game'
+                  ? 'Details & Team'
+                  : 'Details & Besetzung'}
+              </span>
             </Link>
 
             <button

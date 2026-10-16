@@ -23,6 +23,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   onDelete,
 }) => {
   const [title, setTitle] = useState('');
+  const [creator, setCreator] = useState('');
   const [status, setStatus] = useState<MediaStatus>('in_progress');
   const [isOwned, setIsOwned] = useState<boolean>(false);
   const [rating, setRating] = useState<number | ''>('');
@@ -51,6 +52,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   useEffect(() => {
     if (item) {
       setTitle(item.title);
+      setCreator(item.creator || '');
       setStatus(item.status);
       setIsOwned(Boolean(item.isOwned || item.status === 'owned'));
       setRating(typeof item.rating === 'number' ? item.rating : '');
@@ -191,6 +193,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
 
     onSave(item.id, {
       title,
+      creator: creator.trim() || undefined,
       status: resolvedStatus,
       isOwned,
       rating: typeof rating === 'number' ? rating : undefined,
@@ -243,16 +246,36 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 mb-1">Titel</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none"
-              required
-            />
+          {/* Title & Creator */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 mb-1">Titel</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 mb-1">
+                {item.type === 'book'
+                  ? 'Autor / Schriftsteller'
+                  : item.type === 'movie' || item.type === 'show'
+                  ? 'Regie / Schöpfer'
+                  : item.type === 'game'
+                  ? 'Entwicklerstudio'
+                  : 'Studio / Schöpfer'}
+              </label>
+              <input
+                type="text"
+                value={creator}
+                onChange={(e) => setCreator(e.target.value)}
+                placeholder={item.type === 'book' ? 'z. B. Albert Camus' : 'z. B. Regisseur oder Studio'}
+                className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] placeholder-zinc-600 focus:outline-none"
+              />
+            </div>
           </div>
 
           {/* Status & Rating */}
