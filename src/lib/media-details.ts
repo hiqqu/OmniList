@@ -34,7 +34,6 @@ export interface EnrichedMediaDetails {
   language?: string;
   ageRating?: string;
   pageCount?: number;
-  readingTime?: string;
   isbn?: string;
   scores: {
     community: string;
@@ -277,7 +276,6 @@ const CURATED_DETAILS: Record<string, Partial<EnrichedMediaDetails>> = {
     writers: ['James Clear (Autor & Vortragsredner)'],
     publisher: 'Goldmann Verlag (Penguin Random House)',
     pageCount: 320,
-    readingTime: 'ca. 6 Std. 30 Min.',
     isbn: '978-3-442-17858-2',
     language: 'Deutsch (Übersetzung aus dem US-Englischen)',
     scores: {
@@ -314,7 +312,6 @@ const CURATED_DETAILS: Record<string, Partial<EnrichedMediaDetails>> = {
     writers: ['Cixin Liu (Autor)', 'Martina Hasse (Deutsche Übersetzung)'],
     publisher: 'Heyne Verlag',
     pageCount: 592,
-    readingTime: 'ca. 14 Std.',
     isbn: '978-3-453-31716-1',
     language: 'Deutsch (Original: Chinesisch)',
     scores: {
@@ -546,7 +543,6 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         (item.collection_name ? item.collection_name.replace(' Ausgabe', '') : undefined) ||
         (item.originalTitle && item.originalTitle.includes('Verlag') ? item.originalTitle : undefined),
       pageCount: item.progress.total || 380,
-      readingTime: `ca. ${Math.round((item.progress.total || 380) / 45)} Stunden`,
       isbn: item.isbn
         ? formatIsbn(item.isbn)
         : item.external_id?.startsWith('isbn:')

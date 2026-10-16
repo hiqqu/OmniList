@@ -902,7 +902,7 @@ export default function MediaDetailPage() {
                 {details.pageCount && (
                   <div>
                     <span className="text-zinc-500 block">Umfang:</span>
-                    <span className="font-bold text-zinc-200">{details.pageCount} Seiten ({details.readingTime})</span>
+                    <span className="font-bold text-zinc-200">{details.pageCount} Seiten</span>
                   </div>
                 )}
 
