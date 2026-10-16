@@ -43,11 +43,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   const [syncCode, setSyncCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [kvStatus, setKvStatus] = useState<{ isConfigured: boolean } | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved sync code from localStorage and check KV configuration
+  // Load saved sync code from localStorage
   useEffect(() => {
     if (isOpen) {
       const savedCode =
@@ -58,12 +57,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       } else if (!syncCode) {
         generateRandomCode();
       }
-
-      // Check Vercel KV backend status
-      fetch('/api/sync')
-        .then((res) => res.json())
-        .then((data) => setKvStatus({ isConfigured: Boolean(data.isConfigured) }))
-        .catch(() => setKvStatus({ isConfigured: false }));
 
       setFeedback(null);
     }
@@ -365,21 +358,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                   <span>Aus Cloud laden (Pull)</span>
                   <span className="text-[10px] font-normal text-zinc-400">Auf diesem Gerät empfangen</span>
                 </button>
-              </div>
-
-              {/* Vercel KV Setup Hint */}
-              <div className="p-3 rounded-xl bg-[#0F1117] border border-[#282D37] flex items-start gap-2.5 text-[11px] text-zinc-400 leading-relaxed">
-                <Info className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold text-zinc-300">Vercel Cloud-Speicher (100% kostenlos): </span>
-                  {kvStatus?.isConfigured ? (
-                    <span className="text-emerald-400 font-bold">Verbindung aktiv</span>
-                  ) : (
-                    <span>
-                      Verbinde in deinem Vercel-Dashboard unter dem Reiter <b>&quot;Storage&quot;</b> eine kostenlose <b>&quot;KV Database&quot;</b>, um den Cloud-Sync scharfzuschalten.
-                    </span>
-                  )}
-                </div>
               </div>
             </div>
           ) : (
