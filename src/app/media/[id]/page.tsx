@@ -54,19 +54,42 @@ export default function MediaDetailPage() {
     const all = getStoredMedia();
     const found = all.find((m) => m.id === id);
     if (found) {
+      let active = found;
       if (found.progress.total && found.progress.total > 0 && found.progress.current > found.progress.total) {
         const clamped = updateMediaItem(found.id, {
           progress: { ...found.progress, current: found.progress.total },
           status: found.status !== 'owned' ? 'completed' : found.status,
         });
-        const active = clamped || found;
-        setItem(active);
-        setDetails(getEnrichedMediaDetails(active));
-        setPersonalNotes(active.notes || '');
-      } else {
-        setItem(found);
-        setDetails(getEnrichedMediaDetails(found));
-        setPersonalNotes(found.notes || '');
+        if (clamped) active = clamped;
+      }
+      setItem(active);
+      setDetails(getEnrichedMediaDetails(active));
+      setPersonalNotes(active.notes || '');
+
+      // Dynamically fetch real Open Library reader rating if missing
+      if (active.type === 'book' && !active.communityRating) {
+        const queryTerm = active.isbn ? `isbn:${active.isbn}` : active.title;
+        fetch(
+          `https://openlibrary.org/search.json?q=${encodeURIComponent(queryTerm)}&fields=key,ratings_average,ratings_count&limit=1`,
+          { headers: { 'User-Agent': 'OmniList/1.0' } }
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            const doc = data.docs?.[0];
+            if (doc && doc.ratings_average && doc.ratings_count > 0) {
+              const commRating = Math.round(doc.ratings_average * 10) / 10;
+              const commCount = doc.ratings_count;
+              const updatedItem = updateMediaItem(active.id, {
+                communityRating: commRating,
+                communityRatingsCount: commCount,
+              });
+              if (updatedItem) {
+                setItem(updatedItem);
+                setDetails(getEnrichedMediaDetails(updatedItem));
+              }
+            }
+          })
+          .catch((err) => console.warn('Could not fetch book ratings:', err));
       }
     }
     setIsLoaded(true);

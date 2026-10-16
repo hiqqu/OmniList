@@ -31,7 +31,9 @@ export interface MediaItem {
   isOwned?: boolean; // Gekauft / Im physischen oder digitalen Besitz
   coverUrl: string;
   bannerUrl?: string;
-  rating?: number; // 0 - 5 scale, e.g. 4.5
+  rating?: number; // 0 - 5 scale, e.g. 4.5 (Persönliche Bewertung des Nutzers)
+  communityRating?: number; // Reale externe Leser-/Community-Bewertung (z. B. von Open Library oder TMDB)
+  communityRatingsCount?: number; // Anzahl der externen Bewertungen
   releaseDate?: string;
   summary?: string;
   notes?: string; // Persönliche Notizen & Gedanken des Nutzers
@@ -94,4 +96,6 @@ export interface SearchResultItem {
   totalSeasons?: number;
   unit: ProgressUnit;
   rating?: number;
+  communityRating?: number;
+  communityRatingsCount?: number;
 }

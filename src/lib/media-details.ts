@@ -455,10 +455,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       ageRating: 'FSK 12',
       language: 'Deutsch / Originalversion',
       scores: {
-        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : '4.5 / 5.0',
+        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: '78 / 100',
         criticsLabel: 'Kritiker-Durchschnitt',
-        audience: '8.2 / 10',
+        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : '8.2 / 10',
         audienceLabel: 'Publikumswertung',
       },
       cast: [
@@ -482,10 +482,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       ageRating: 'FSK 16',
       language: 'Deutsch / Original',
       scores: {
-        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : '4.6 / 5.0',
+        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: '84 / 100',
         criticsLabel: 'Serien-Kritik',
-        audience: '8.5 / 10',
+        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : '8.5 / 10',
         audienceLabel: 'Zuschauer-Wertung',
       },
       cast: [
@@ -508,10 +508,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       language: 'Japanisch mit Untertiteln & Synchro',
       ageRating: 'FSK 12',
       scores: {
-        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : '4.8 / 5.0',
+        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: '8.7 / 10',
         criticsLabel: 'MyAnimeList',
-        audience: '85%',
+        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : '85%',
         audienceLabel: 'AniList Community',
       },
       cast: [
@@ -554,8 +554,14 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         : undefined,
       language: 'Deutsch',
       scores: {
-        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : '4.7 / 5.0',
-        audience: '4.4 / 5',
+        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
+        audience: item.communityRating
+          ? `${item.communityRating.toFixed(1)} / 5.0${
+              item.communityRatingsCount
+                ? ` (${item.communityRatingsCount.toLocaleString('de-DE')} Leser)`
+                : ''
+            }`
+          : undefined,
         audienceLabel: 'Leser-Bewertung',
       },
       cast: parseBookContributors(item.creator, item.originalTitle, item.title),
@@ -579,10 +585,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       },
       ageRating: 'USK 16',
       scores: {
-        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : '4.6 / 5.0',
+        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: '88 / 100',
         criticsLabel: 'Metacritic',
-        audience: 'Sehr positiv',
+        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : 'Sehr positiv',
         audienceLabel: 'Spielerbewertungen',
       },
       cast: [

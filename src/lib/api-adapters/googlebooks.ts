@@ -185,7 +185,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
             collection_name: publisher ? `${publisher} Ausgabe` : 'Exakte Buch-Edition',
             totalUnits: item.number_of_pages || 350,
             unit: 'pages',
-            rating: 4.8,
+            rating: undefined,
           };
         }
       }
@@ -216,7 +216,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
           collection_name: publisher ? `${publisher} Ausgabe` : 'Exakte Buch-Edition',
           totalUnits: dnbRec.pages || 350,
           unit: 'pages',
-          rating: 4.8,
+          rating: undefined,
         };
       }
     } catch (e) {
@@ -251,7 +251,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
             collection_name: publisher ? `${publisher} Ausgabe` : 'Buch-Edition',
             totalUnits: doc.number_of_pages_median || 350,
             unit: 'pages',
-            rating: 4.7,
+            rating: undefined,
           };
         }
       }
@@ -273,7 +273,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
       isbn,
       totalUnits: 350,
       unit: 'pages',
-      rating: 4.5,
+      rating: undefined,
     };
   }
 
@@ -326,7 +326,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
           collection_name: dnb.publisher ? `${dnb.publisher} Ausgabe` : undefined,
           totalUnits: dnb.pages || 350,
           unit: 'pages',
-          rating: 4.8,
+          rating: undefined,
         });
       }
     } catch (e) {
@@ -336,7 +336,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
     // 2. Live Open Library Search with detailed fields (Editions, Publishers, Cover IDs, Work Key)
     try {
       const openLibRes = await fetch(
-        `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=key,title,subtitle,author_name,isbn,publisher,publish_date,number_of_pages,number_of_pages_median,cover_i,language,edition_count&limit=8`,
+        `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=key,title,subtitle,author_name,isbn,publisher,publish_date,number_of_pages,number_of_pages_median,cover_i,language,edition_count,ratings_average,ratings_count&limit=8`,
         { headers: { 'User-Agent': 'OmniList/1.0' } }
       );
       if (openLibRes.ok) {
@@ -397,7 +397,9 @@ export class GoogleBooksAdapter implements MediaAdapter {
             collection_name: chosenPublisher ? `${chosenPublisher} Ausgabe` : undefined,
             totalUnits: doc.number_of_pages_median || 350,
             unit: 'pages',
-            rating: 4.6,
+            communityRating: doc.ratings_average ? Math.round(doc.ratings_average * 10) / 10 : undefined,
+            communityRatingsCount: doc.ratings_count || undefined,
+            rating: undefined,
           });
         }
       }
@@ -424,10 +426,6 @@ export class GoogleBooksAdapter implements MediaAdapter {
       return combined;
     }
 
-    if (combined.length > 0) {
-      return combined;
-    }
-
     // 3. Dynamic fallback with dedicated book artwork (Never shows the wrong cover!)
     const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     return [
@@ -443,7 +441,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
         creator: 'Autor',
         totalUnits: 350,
         unit: 'pages',
-        rating: 4.5,
+        rating: undefined,
       },
     ];
   }
