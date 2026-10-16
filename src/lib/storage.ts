@@ -171,7 +171,22 @@ export function getStoredSequels(): SequelNotification[] {
       localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(upgraded));
     }
 
-    return upgraded;
+    // Auto-remove orphan sequels whose parent media was deleted or is not in library
+    const currentMedia = getStoredMedia();
+    const mediaIds = new Set(currentMedia.map((m) => m.id));
+    const mediaTitles = new Set(currentMedia.map((m) => m.title.toLowerCase()));
+
+    const activeSequels = upgraded.filter((s) => {
+      const idMatch = s.parentMediaId ? mediaIds.has(s.parentMediaId) : false;
+      const titleMatch = s.parentMediaTitle ? mediaTitles.has(s.parentMediaTitle.toLowerCase()) : false;
+      return idMatch || titleMatch;
+    });
+
+    if (activeSequels.length !== parsed.length) {
+      localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(activeSequels));
+    }
+
+    return activeSequels;
   } catch (e) {
     console.error('Failed to load sequels from localStorage', e);
     return INITIAL_SEQUEL_NOTIFICATIONS;
@@ -238,8 +253,33 @@ export function updateMediaItem(
 
 export function deleteMediaItem(id: string): void {
   const current = getStoredMedia();
+  const target = current.find((m) => m.id === id);
   const filtered = current.filter((m) => m.id !== id);
   saveStoredMedia(filtered);
+
+  // Auto-remove any sequels tied to this media item
+  if (typeof window !== 'undefined') {
+    try {
+      const rawSequels = localStorage.getItem(SEQUELS_STORAGE_KEY);
+      if (rawSequels) {
+        const sequels: SequelNotification[] = JSON.parse(rawSequels);
+        const updatedSequels = sequels.filter((s) => {
+          if (s.parentMediaId === id) return false;
+          if (
+            target &&
+            s.parentMediaTitle &&
+            s.parentMediaTitle.trim().toLowerCase() === target.title.trim().toLowerCase()
+          ) {
+            return false;
+          }
+          return true;
+        });
+        saveStoredSequels(updatedSequels);
+      }
+    } catch (e) {
+      console.error('Failed to prune sequels on deleteMediaItem', e);
+    }
+  }
 }
 
 export function dismissSequel(id: string): void {

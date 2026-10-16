@@ -214,6 +214,13 @@ export default function Home() {
     const target = media.find((m) => m.id === id);
     deleteMediaItem(id);
     setMedia((prev) => prev.filter((m) => m.id !== id));
+    setSequels((prev) =>
+      prev.filter(
+        (s) =>
+          s.parentMediaId !== id &&
+          (!target || s.parentMediaTitle.trim().toLowerCase() !== target.title.trim().toLowerCase())
+      )
+    );
     if (target) {
       addToast('info', `Aus Sammlung entfernt`, target.title);
     }

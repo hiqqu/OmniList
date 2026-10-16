@@ -218,7 +218,7 @@ export const INITIAL_SEQUEL_NOTIFICATIONS: SequelNotification[] = [
     franchise_id: 'tmdb:collection:726871',
     description: 'Die Reise von Paul Atreides geht weiter, als er sich mit Chani und den Fremen zusammenschließt.',
     detectedAt: new Date().toISOString(),
-    progressSuggestion: { current: 0, total: 166, unit: 'hours' },
+    progressSuggestion: { current: 0, total: 166, unit: 'minutes' },
   },
   {
     id: 'seq-seed-severance-2',

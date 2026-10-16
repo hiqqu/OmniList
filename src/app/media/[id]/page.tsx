@@ -31,7 +31,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
-import { getStoredMedia, updateMediaItem } from '@/lib/storage';
+import { getStoredMedia, updateMediaItem, deleteMediaItem } from '@/lib/storage';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, getProgressUnitLabel, cn } from '@/lib/utils';
 import { getEnrichedMediaDetails, EnrichedMediaDetails } from '@/lib/media-details';
 import { EditMediaModal } from '@/components/EditMediaModal';
@@ -1208,7 +1208,8 @@ export default function MediaDetailPage() {
               setDetails(getEnrichedMediaDetails(updated));
             }
           }}
-          onDelete={(id) => {
+          onDelete={(deleteId) => {
+            deleteMediaItem(deleteId);
             router.push('/');
           }}
         />
