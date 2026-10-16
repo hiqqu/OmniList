@@ -197,7 +197,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       status: selectedStatus,
       coverUrl: edition.coverUrl || result.coverUrl,
       bannerUrl: result.bannerUrl,
-      rating: result.rating || 4.5,
+      rating: undefined,
       releaseDate: edition.year ? `${edition.year}-01-01` : result.releaseDate,
       summary: result.summary,
       genres: result.genres,
@@ -237,7 +237,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       status: selectedStatus,
       coverUrl: result.coverUrl,
       bannerUrl: result.bannerUrl,
-      rating: result.rating || 4.5,
+      rating: undefined,
       releaseDate: result.releaseDate,
       summary: result.summary,
       genres: result.genres,
@@ -288,7 +288,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
           : activeTab === 'book'
           ? 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80'
           : 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80',
-      rating: 4.5,
+      rating: undefined,
       releaseDate: new Date().toISOString().split('T')[0],
       summary: `Eigener Eintrag zu ${title}`,
       genres: [activeTab.toUpperCase()],

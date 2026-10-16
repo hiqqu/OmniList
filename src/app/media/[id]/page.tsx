@@ -410,8 +410,26 @@ export default function MediaDetailPage() {
                 <div className="p-3 rounded-xl bg-[#181B22] border border-[#282D37] text-center md:text-left">
                   <span className="text-[10px] uppercase font-bold text-zinc-400 block">Eigene Wertung</span>
                   <div className="flex items-center justify-center md:justify-start gap-1.5 mt-0.5">
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    <span className="text-base font-bold text-[#F1F3F7]">{details.scores.community}</span>
+                    <Star
+                      className={cn(
+                        'w-4 h-4',
+                        item.rating !== undefined && item.rating !== null
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-zinc-600'
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'text-base font-bold',
+                        item.rating !== undefined && item.rating !== null
+                          ? 'text-[#F1F3F7]'
+                          : 'text-zinc-500 text-sm font-medium'
+                      )}
+                    >
+                      {item.rating !== undefined && item.rating !== null
+                        ? `${item.rating.toFixed(1)} / 5.0`
+                        : 'Nicht bewertet'}
+                    </span>
                   </div>
                 </div>
 

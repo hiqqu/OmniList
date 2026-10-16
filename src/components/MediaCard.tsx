@@ -126,12 +126,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         {/* Rating Badge at Bottom Left of Poster */}
         <div
           className={cn(
-            'absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#0F1117]/80 backdrop-blur border border-amber-500/30 text-amber-400 text-xs font-bold shadow-md transition-opacity duration-200',
+            'absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full backdrop-blur text-xs font-bold shadow-md transition-opacity duration-200',
+            item.rating !== undefined && item.rating !== null
+              ? 'bg-[#0F1117]/80 border border-amber-500/30 text-amber-400'
+              : 'bg-[#0F1117]/60 border border-zinc-700/40 text-zinc-400',
             showMenu && 'opacity-0 pointer-events-none'
           )}
         >
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-          <span>{item.rating ? item.rating.toFixed(1) : '—'}</span>
+          <Star
+            className={cn(
+              'w-3.5 h-3.5',
+              item.rating !== undefined && item.rating !== null
+                ? 'fill-amber-400 text-amber-400'
+                : 'text-zinc-500'
+            )}
+          />
+          <span>{item.rating !== undefined && item.rating !== null ? item.rating.toFixed(1) : '—'}</span>
         </div>
 
         {/* Quick Increment Button Overlay */}

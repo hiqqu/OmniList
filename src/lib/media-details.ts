@@ -395,8 +395,8 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
   if (curated) {
     return {
       scores: {
-        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : '4.5 / 5.0',
         ...curated.scores,
+        community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
       },
       cast: curated.cast || [],
       reviews: curated.reviews || [],
@@ -564,8 +564,8 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
     tagline: item.summary ? item.summary.slice(0, 80) + '...' : undefined,
     ...dynamic,
     scores: {
-      community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : '4.5 / 5.0',
       ...dynamic.scores,
+      community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
     },
     cast: dynamic.cast || [],
     reviews: dynamic.reviews || [],

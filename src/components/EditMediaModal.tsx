@@ -25,7 +25,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<MediaStatus>('in_progress');
   const [isOwned, setIsOwned] = useState<boolean>(false);
-  const [rating, setRating] = useState<number>(4.5);
+  const [rating, setRating] = useState<number | ''>('');
   const [currentProgress, setCurrentProgress] = useState<number>(0);
   const [totalProgress, setTotalProgress] = useState<number>(0);
   const [unit, setUnit] = useState<ProgressUnit>('episodes');
@@ -53,7 +53,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       setTitle(item.title);
       setStatus(item.status);
       setIsOwned(Boolean(item.isOwned || item.status === 'owned'));
-      setRating(item.rating || 4.5);
+      setRating(typeof item.rating === 'number' ? item.rating : '');
       setCurrentProgress(item.progress.current);
       setTotalProgress(item.progress.total || 0);
       setUnit(item.progress.unit);
@@ -193,7 +193,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       title,
       status: resolvedStatus,
       isOwned,
-      rating,
+      rating: typeof rating === 'number' ? rating : undefined,
       summary,
       publisher: publisher.trim() || undefined,
       isbn: cleanIsbn || undefined,
@@ -279,20 +279,45 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-400 mb-1">
-                Bewertung (0.0 - 5.0)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-zinc-400">
+                  Eigene Bewertung (0.0 - 5.0)
+                </label>
+                {rating !== '' && (
+                  <button
+                    type="button"
+                    onClick={() => setRating('')}
+                    className="text-[11px] text-zinc-500 hover:text-rose-400 transition-colors"
+                  >
+                    Bewertung entfernen
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type="number"
                   step="0.1"
                   min="0"
                   max="5"
+                  placeholder="Keine Wertung vergeben"
                   value={rating}
-                  onChange={(e) => setRating(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl pl-8 pr-3 py-2 text-sm text-[#F1F3F7] focus:outline-none"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setRating('');
+                    } else {
+                      const num = parseFloat(val);
+                      setRating(isNaN(num) ? '' : Math.min(5, Math.max(0, num)));
+                    }
+                  }}
+                  className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl pl-8 pr-3 py-2 text-sm text-[#F1F3F7] placeholder-zinc-600 focus:outline-none"
                 />
-                <Star className="w-4 h-4 text-amber-400 fill-amber-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Star
+                  className={cn(
+                    'w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none',
+                    rating !== '' ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'
+                  )}
+                />
               </div>
             </div>
           </div>
