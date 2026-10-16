@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 export interface ToastMessage {
   id: string;
-  type: 'success' | 'info' | 'warning';
+  type: 'success' | 'info' | 'warning' | 'error';
   title: string;
   description?: string;
 }
@@ -28,6 +28,8 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
             'pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl shadow-2xl border backdrop-blur-md text-xs animate-slideUp transition-all',
             t.type === 'success'
               ? 'bg-[#181B22]/95 border-emerald-500/40 text-emerald-400'
+              : t.type === 'error'
+              ? 'bg-[#181B22]/95 border-rose-500/40 text-rose-400'
               : t.type === 'warning'
               ? 'bg-[#181B22]/95 border-amber-500/40 text-amber-300'
               : 'bg-[#181B22]/95 border-zinc-700 text-zinc-200'
@@ -35,6 +37,8 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
         >
           {t.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+          ) : t.type === 'error' ? (
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
           ) : t.type === 'warning' ? (
             <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           ) : (

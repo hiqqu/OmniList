@@ -16,6 +16,7 @@ import {
   PackageCheck,
   RefreshCw,
   RotateCcw,
+  Cloud,
 } from 'lucide-react';
 import { MediaType, MediaStatus } from '@/types/media';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,7 @@ interface SidebarProps {
   isCheckingSequels: boolean;
   onCheckSequels: () => void;
   onResetLibrary: () => void;
+  onOpenSyncModal?: () => void;
   className?: string;
 }
 
@@ -47,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCheckingSequels,
   onCheckSequels,
   onResetLibrary,
+  onOpenSyncModal,
   className,
 }) => {
   const typeFilters: {
@@ -302,6 +305,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Footer Actions */}
       <div className="p-3 border-t border-[#282D37] space-y-2 bg-[#181B22]/50">
+        {onOpenSyncModal && (
+          <button
+            onClick={onOpenSyncModal}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all active:scale-95 shadow-sm"
+          >
+            <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Geräte-Sync &amp; Backup</span>
+          </button>
+        )}
+
         <button
           onClick={onCheckSequels}
           disabled={isCheckingSequels}

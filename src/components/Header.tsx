@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Plus, ArrowUpDown, X } from 'lucide-react';
+import { Search, Plus, ArrowUpDown, X, Cloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type SortOption = 'updated' | 'title' | 'rating' | 'progress';
@@ -12,6 +12,7 @@ interface HeaderProps {
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   onOpenAddModal: () => void;
+  onOpenSyncModal?: () => void;
   totalFilteredCount: number;
 }
 
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   sortBy,
   onSortChange,
   onOpenAddModal,
+  onOpenSyncModal,
   totalFilteredCount,
 }) => {
   return (
@@ -62,6 +64,18 @@ export const Header: React.FC<HeaderProps> = ({
             <option value="progress" className="bg-[#181B22] text-[#F1F3F7]">Höchster Fortschritt</option>
           </select>
         </div>
+
+        {/* Cloud-Sync & Backup Button */}
+        {onOpenSyncModal && (
+          <button
+            onClick={onOpenSyncModal}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#181B22] hover:bg-zinc-800 text-zinc-300 hover:text-white border border-[#282D37] text-xs font-semibold transition-all active:scale-95"
+            title="Mediensammlung zwischen Geräten abgleichen oder Backup erstellen"
+          >
+            <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Sync &amp; Backup</span>
+          </button>
+        )}
 
         {/* Counter Pill */}
         <div className="hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#181B22] border border-[#282D37] text-xs text-zinc-400">

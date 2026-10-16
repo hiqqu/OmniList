@@ -9,6 +9,7 @@ import { MediaCard } from '@/components/MediaCard';
 import { SequelCard } from '@/components/SequelCard';
 import { AddMediaDialog } from '@/components/AddMediaDialog';
 import { EditMediaModal } from '@/components/EditMediaModal';
+import { SyncModal } from '@/components/SyncModal';
 import { StatsBar } from '@/components/StatsBar';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
 import { MediaItem, MediaType, MediaStatus, SequelNotification } from '@/types/media';
@@ -41,12 +42,13 @@ export default function Home() {
 
   // Modals & States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Toast Helper
-  const addToast = useCallback((type: 'success' | 'info' | 'warning', title: string, description?: string) => {
+  const addToast = useCallback((type: 'success' | 'info' | 'warning' | 'error', title: string, description?: string) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
     setToasts((prev) => [...prev, { id, type, title, description }]);
     setTimeout(() => {
@@ -348,6 +350,16 @@ export default function Home() {
     });
   }, [media, selectedType, selectedStatus, searchQuery, sortBy]);
 
+  // Apply Synced Data from Cloud or File
+  const handleApplySync = (syncedMedia: MediaItem[], syncedSequels?: SequelNotification[]) => {
+    saveStoredMedia(syncedMedia);
+    setMedia(syncedMedia);
+    if (syncedSequels && syncedSequels.length > 0) {
+      saveStoredSequels(syncedSequels);
+      setSequels(syncedSequels);
+    }
+  };
+
   const existingExternalIds = useMemo(() => new Set(media.map((m) => m.external_id)), [media]);
 
   if (!isLoaded) {
@@ -376,6 +388,7 @@ export default function Home() {
         isCheckingSequels={isCheckingSequels}
         onCheckSequels={handleCheckSequels}
         onResetLibrary={handleResetLibrary}
+        onOpenSyncModal={() => setIsSyncModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -387,6 +400,7 @@ export default function Home() {
           sortBy={sortBy}
           onSortChange={setSortBy}
           onOpenAddModal={() => setIsAddModalOpen(true)}
+          onOpenSyncModal={() => setIsSyncModalOpen(true)}
           totalFilteredCount={filteredAndSortedMedia.length}
         />
 
@@ -547,6 +561,16 @@ export default function Home() {
         onClose={() => setEditingItem(null)}
         onSave={handleSaveEdit}
         onDelete={handleDeleteMedia}
+      />
+
+      {/* Cloud-Sync & Backup Modal */}
+      <SyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        media={media}
+        sequels={sequels}
+        onApplySync={handleApplySync}
+        addToast={addToast}
       />
 
       {/* Toast Notifications */}
