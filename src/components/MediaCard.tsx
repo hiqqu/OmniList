@@ -367,19 +367,19 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         <div>
           {/* Status & Franchise line */}
           <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider', statusBadge.bgClass, statusBadge.colorClass)}>
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
                 {statusBadge.label}
               </span>
               {item.isOwned && item.status !== 'owned' && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
                   <PackageCheck className="w-3 h-3 text-emerald-400" />
                   <span>Im Besitz</span>
                 </span>
               )}
             </div>
             {item.collection_name && (
-              <span className="text-[10px] text-zinc-400 truncate max-w-[120px]" title={item.collection_name}>
+              <span className="text-[10px] text-zinc-400 truncate max-w-[120px] text-right" title={item.collection_name}>
                 {item.collection_name}
               </span>
             )}

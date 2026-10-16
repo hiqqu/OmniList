@@ -341,12 +341,12 @@ export default function MediaDetailPage() {
             <div className="flex-1 space-y-4 text-center md:text-left">
               {/* Category & Status Badges */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                <span className={cn('text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider', statusBadge.bgClass, statusBadge.colorClass)}>
+                <span className={cn('text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
                   {statusBadge.label}
                 </span>
 
                 {item.isOwned && (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0">
                     <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Im Besitz (Gekauft)</span>
                   </span>
