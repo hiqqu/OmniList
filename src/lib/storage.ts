@@ -73,6 +73,11 @@ export function getStoredMedia(): MediaItem[] {
         }
       }
 
+      if (item.id === 'media-habits-1' && item.rating === 4.8 && item.status === 'in_progress') {
+        hasMigrated = true;
+        return { ...item, rating: undefined, communityRating: 4.8 };
+      }
+
       // Migrate legacy status 'owned' to regular status 'planned' with isOwned: true
       if (item.status === 'owned') {
         hasMigrated = true;

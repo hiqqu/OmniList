@@ -20,7 +20,8 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     collection_name: 'Dune Romanreihe',
     totalUnits: 800,
     unit: 'pages',
-    rating: 4.8,
+    rating: undefined,
+    communityRating: 4.8,
   },
   {
     id: 'googlebooks:3body',
@@ -37,7 +38,8 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     collection_name: 'Trisolaris Trilogie',
     totalUnits: 592,
     unit: 'pages',
-    rating: 4.7,
+    rating: undefined,
+    communityRating: 4.7,
   },
   {
     id: 'googlebooks:lotr1',
@@ -54,7 +56,8 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     collection_name: 'Der Herr der Ringe',
     totalUnits: 608,
     unit: 'pages',
-    rating: 4.9,
+    rating: undefined,
+    communityRating: 4.9,
   },
   {
     id: 'googlebooks:habits',
@@ -69,7 +72,8 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     creator: 'James Clear',
     totalUnits: 320,
     unit: 'pages',
-    rating: 4.8,
+    rating: undefined,
+    communityRating: 4.8,
   },
   {
     id: 'googlebooks:hp1',
@@ -86,7 +90,8 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     collection_name: 'Harry Potter Saga',
     totalUnits: 336,
     unit: 'pages',
-    rating: 4.9,
+    rating: undefined,
+    communityRating: 4.9,
   },
   {
     id: 'googlebooks:1984',
@@ -101,7 +106,8 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     creator: 'George Orwell',
     totalUnits: 320,
     unit: 'pages',
-    rating: 4.8,
+    rating: undefined,
+    communityRating: 4.8,
   },
 ];
 

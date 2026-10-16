@@ -544,12 +544,19 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                               {result.releaseDate.split('-')[0]}
                             </span>
                           )}
-                          {result.rating && (
+                          {result.type === 'book' ? (
+                            result.communityRating ? (
+                              <span className="text-[11px] text-amber-400 font-bold flex items-center gap-0.5" title="Leser-Bewertung">
+                                <Star className="w-3 h-3 fill-amber-400" />
+                                {result.communityRating.toFixed(1)}
+                              </span>
+                            ) : null
+                          ) : result.rating ? (
                             <span className="text-[11px] text-amber-400 font-bold flex items-center gap-0.5">
                               <Star className="w-3 h-3 fill-amber-400" />
                               {result.rating.toFixed(1)}
                             </span>
-                          )}
+                          ) : null}
                         </div>
 
                         <h4 className="font-bold text-sm text-[#F1F3F7] truncate">{result.title}</h4>
