@@ -1,6 +1,6 @@
-# OmniTrack – Modern All-in-One Medien-Tracker
+# OmniList – Modern All-in-One Medien-Tracker
 
-OmniTrack ist eine moderne, lokale Web-Applikation zur lückenlosen Verwaltung deiner Filme, Serien, Anime, Bücher und Videospiele.
+OmniList ist eine moderne, lokale Web-Applikation zur lückenlosen Verwaltung deiner Filme, Serien, Anime, Bücher und Videospiele.
 
 ---
 
@@ -28,19 +28,14 @@ npm start
 * **Typ-fokussierte externe Suche:** Vorabauswahl (Film/Serie, Anime, Buch, Videospiel) verhindert unnötigen API-Fan-out.
 * **300 ms Debounce & AbortController:** Verhindert Race Conditions und spart Bandbreite bei schnellem Tippen.
 * **Server-seitiges Caching (24h TTL):** Suchanfragen werden serverseitig zwischengespeichert.
-* **Adapter-Pattern mit Mock-Fallback:**
+* **Adapter-Pattern & Multiquellen:**
   * **TMDB:** Filme & Serien (inkl. Fortsetzungen via Collections & neue Staffeln)
-  * **AniList:** Anime (Live GraphQL-Relations `SEQUEL` & Mock-Fallback)
-  * **Google Books:** Bücher & Buchserien
+  * **AniList:** Anime (Live GraphQL-Relations `SEQUEL` & Fallback)
+  * **Deutsche Nationalbibliothek (DNB) & Open Library:** Deutsche Verlagsausgaben, ISBN-13, genaue Seitenzahlen & Verlagsfilter
   * **RAWG:** Videospiele & Expansions
 
 ### 2. Der "Sequel Radar"
 * **Automatische Erkennung:** Prüft Medien mit dem Status *„Beendet“* oder *„Gerade dabei“* auf Nachfolger.
-* **Sofortige interaktive Demos:**
-  * *Frieren: Beyond Journey's End* &rarr; **Staffel 2 (Neu angekündigt)**
-  * *Dune* &rarr; **Dune: Teil 2 (Jetzt verfügbar)**
-  * *Severance* &rarr; **Staffel 2 verfügbar**
-  * *Elden Ring* &rarr; **Shadow of the Erdtree (Erweiterung)**
 * **1-Klick-Übernahme:** Mit einem Klick auf *„+ Zu 'Geplant' hinzufügen“* oder *„Direkt starten“* wandert die Fortsetzung direkt in deine Sammlung.
 * **Manueller Sync-Button:** *„Sequel Radar prüfen“* ruft den Route Handler `/api/check-sequels` auf.
 
@@ -53,20 +48,17 @@ npm start
   * Orange: Buch
   * Violett: Videospiel
 * **Quick-Increment:** Ein Klick auf `+1 Ep.`, `+10 S.` oder `+1 Std.` aktualisiert den Fortschritt optimistisch in Echtzeit.
-* **Sterne-Rating:** Schnelle visuelle Orientierung (★ 4.8).
+* **Sterne-Rating:** Schnelle visuelle Orientierung ohne automatische Vorbelegung.
 
 ---
 
 ## Optionale API-Keys (.env.local)
 
-OmniTrack funktioniert standardmäßig **100 % out-of-the-box ohne API-Keys** dank integrierter Mock-Kataloge und öffentlicher Endpunkte (wie AniList & Google Books). 
+OmniList funktioniert standardmäßig **100 % out-of-the-box ohne API-Keys** dank integrierter Mock-Kataloge und öffentlicher Endpunkte (wie AniList, Open Library & DNB). 
 
 Falls du Live-Daten für TMDB oder RAWG nutzen möchtest, erstelle eine `.env.local`:
 ```env
 TMDB_API_KEY=dein_tmdb_api_key
 RAWG_API_KEY=dein_rawg_api_key
 GOOGLE_BOOKS_API_KEY=optionaler_key
-```
-
-    └── page.tsx              # Haupt-Dashboard & Sequel-Radar-View
 ```

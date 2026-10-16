@@ -20,7 +20,7 @@ function createGameSvgCover(title: string): string {
     <text x="135" y="102" fill="#d8b4fe" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">VIDEOSPIEL</text>
     <text x="300" y="450" fill="#ffffff" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle}</text>
     <text x="300" y="500" fill="#c084fc" font-family="system-ui, sans-serif" font-size="18" text-anchor="middle">PC / Konsole</text>
-    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniTrack Library</text>
+    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniList Library</text>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
@@ -282,7 +282,7 @@ export class RAWGAdapter implements MediaAdapter {
         type: 'game',
         coverUrl: createGameSvgCover(capitalized),
         releaseDate: new Date().toISOString().split('T')[0],
-        summary: `Videospiel: ${capitalized}. Spielzeit und Trophäen in OmniTrack erfassen.`,
+        summary: `Videospiel: ${capitalized}. Spielzeit und Trophäen in OmniList erfassen.`,
         genres: ['Action', 'Videospiel'],
         creator: 'Game Studio',
         totalUnits: 40,

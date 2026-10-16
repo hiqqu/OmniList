@@ -20,7 +20,7 @@ function createBookSvgCover(title: string, author?: string): string {
     <text x="120" y="102" fill="#f97316" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">BUCH</text>
     <text x="300" y="440" fill="#ffffff" font-family="Georgia, serif" font-size="34" font-weight="bold" text-anchor="middle">${safeTitle}</text>
     <text x="300" y="490" fill="#fdba74" font-family="system-ui, sans-serif" font-size="20" text-anchor="middle">${safeAuthor}</text>
-    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniTrack Library</text>
+    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniList Library</text>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
@@ -152,7 +152,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
     try {
       const res = await fetch(
         `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
-        { headers: { 'User-Agent': 'OmniTrack/1.0 (https://github.com)' } }
+        { headers: { 'User-Agent': 'OmniList/1.0 (https://github.com)' } }
       );
       if (res.ok) {
         const data = await res.json();
@@ -339,7 +339,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
     try {
       const openLibRes = await fetch(
         `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=key,title,subtitle,author_name,isbn,publisher,publish_date,number_of_pages,number_of_pages_median,cover_i,language,edition_count&limit=8`,
-        { headers: { 'User-Agent': 'OmniTrack/1.0' } }
+        { headers: { 'User-Agent': 'OmniList/1.0' } }
       );
       if (openLibRes.ok) {
         const data = await openLibRes.json();

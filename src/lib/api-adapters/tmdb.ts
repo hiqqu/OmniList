@@ -22,7 +22,7 @@ function createSvgPlaceholder(title: string, type: string): string {
     <rect x="70" y="80" width="80" height="32" rx="8" fill="${color}" fill-opacity="0.2"/>
     <text x="110" y="102" fill="${color}" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">${label}</text>
     <text x="300" y="450" fill="#ffffff" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle.slice(0, 24)}</text>
-    <text x="300" y="500" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="18" text-anchor="middle">OmniTrack Library</text>
+    <text x="300" y="500" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="18" text-anchor="middle">OmniList Library</text>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
@@ -487,7 +487,7 @@ export class TMDBAdapter implements MediaAdapter {
         type: 'show',
         coverUrl: createSvgPlaceholder(capitalized, 'show'),
         releaseDate: new Date().toISOString().split('T')[0],
-        summary: `Serie: ${capitalized}. Verfolge Staffeln und Episoden in OmniTrack.`,
+        summary: `Serie: ${capitalized}. Verfolge Staffeln und Episoden in OmniList.`,
         genres: ['Serie'],
         creator: 'TV Studio',
         totalUnits: 10,

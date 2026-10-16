@@ -148,7 +148,7 @@ export default function Home() {
       addToast(
         'info',
         item.title,
-        newStory ? 'Hauptstory als beendet markiert ✓' : 'Story-Status auf offen gesetzt'
+        newStory ? 'Hauptstory als beendet markiert' : 'Story-Status auf offen gesetzt'
       );
     }
   };
@@ -397,7 +397,7 @@ export default function Home() {
       <div className="min-h-screen bg-background flex items-center justify-center text-slate-400">
         <div className="flex flex-col items-center gap-3">
           <Radar className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-sm font-medium">OmniTrack wird geladen...</p>
+          <p className="text-sm font-medium">OmniList wird geladen...</p>
         </div>
       </div>
     );

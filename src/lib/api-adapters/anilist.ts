@@ -19,7 +19,7 @@ function createAnimeSvgCover(title: string): string {
     <text x="125" y="102" fill="#7dd3fc" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">ANIME</text>
     <text x="300" y="450" fill="#ffffff" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle}</text>
     <text x="300" y="500" fill="#bae6fd" font-family="system-ui, sans-serif" font-size="18" text-anchor="middle">Animation Studio</text>
-    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniTrack Library</text>
+    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniList Library</text>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }

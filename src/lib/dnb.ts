@@ -99,7 +99,7 @@ function parseRecordsFromXml(xml: string): DnbBookRecord[] {
 export async function lookupDnbByIsbn(cleanIsbn: string): Promise<DnbBookRecord | null> {
   try {
     const url = `https://services.dnb.de/sru/dnb?version=1.1&operation=searchRetrieve&query=num%3D${encodeURIComponent(cleanIsbn)}&recordSchema=MARC21-xml&maximumRecords=1`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'OmniTrack/1.0' } });
+    const res = await fetch(url, { headers: { 'User-Agent': 'OmniList/1.0' } });
     if (!res.ok) return null;
     const xml = await res.text();
     const records = parseRecordsFromXml(xml);
@@ -120,7 +120,7 @@ export async function searchDnb(query: string, maxResults = 8): Promise<DnbBookR
     const sruQuery = words.length > 1 ? words.join(' and ') : cleanQ;
 
     const url = `https://services.dnb.de/sru/dnb?version=1.1&operation=searchRetrieve&query=${encodeURIComponent(sruQuery)}&recordSchema=MARC21-xml&maximumRecords=${maxResults}`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'OmniTrack/1.0' } });
+    const res = await fetch(url, { headers: { 'User-Agent': 'OmniList/1.0' } });
     if (!res.ok) return [];
     const xml = await res.text();
     return parseRecordsFromXml(xml);

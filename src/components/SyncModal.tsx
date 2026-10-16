@@ -28,7 +28,8 @@ interface SyncModalProps {
   addToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void;
 }
 
-const STORAGE_SYNC_CODE_KEY = 'omnitrack_last_sync_code_v1';
+const STORAGE_SYNC_CODE_KEY = 'omnilist_last_sync_code_v1';
+const LEGACY_STORAGE_SYNC_CODE_KEY = 'omnitrack_last_sync_code_v1';
 
 export const SyncModal: React.FC<SyncModalProps> = ({
   isOpen,
@@ -49,7 +50,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   // Load saved sync code from localStorage and check KV configuration
   useEffect(() => {
     if (isOpen) {
-      const savedCode = localStorage.getItem(STORAGE_SYNC_CODE_KEY);
+      const savedCode =
+        localStorage.getItem(STORAGE_SYNC_CODE_KEY) ||
+        localStorage.getItem(LEGACY_STORAGE_SYNC_CODE_KEY);
       if (savedCode) {
         setSyncCode(savedCode);
       } else if (!syncCode) {
@@ -178,7 +181,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   // File Download Backup (.json)
   const handleDownloadFile = () => {
     const exportData = {
-      version: 'omnitrack_v1',
+      version: 'omnilist_v1',
       exportedAt: new Date().toISOString(),
       itemCount: media.length,
       media,
@@ -189,7 +192,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `omnitrack-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `omnilist-backup-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -370,7 +373,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 <div>
                   <span className="font-bold text-zinc-300">Vercel Cloud-Speicher (100% kostenlos): </span>
                   {kvStatus?.isConfigured ? (
-                    <span className="text-emerald-400 font-bold">Verbindung aktiv ✓</span>
+                    <span className="text-emerald-400 font-bold">Verbindung aktiv</span>
                   ) : (
                     <span>
                       Verbinde in deinem Vercel-Dashboard unter dem Reiter <b>&quot;Storage&quot;</b> eine kostenlose <b>&quot;KV Database&quot;</b>, um den Cloud-Sync scharfzuschalten.

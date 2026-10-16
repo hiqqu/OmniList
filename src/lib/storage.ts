@@ -1,22 +1,26 @@
 import { MediaItem, SequelNotification, MediaStatus, ProgressUnit } from '@/types/media';
 import { INITIAL_MEDIA_ITEMS, INITIAL_SEQUEL_NOTIFICATIONS } from './seed-data';
 
-const MEDIA_STORAGE_KEY = 'omnitrack_media_library_v1';
-const SEQUELS_STORAGE_KEY = 'omnitrack_sequels_v1';
+const MEDIA_STORAGE_KEY = 'omnilist_media_library_v1';
+const LEGACY_MEDIA_STORAGE_KEY = 'omnitrack_media_library_v1';
+const SEQUELS_STORAGE_KEY = 'omnilist_sequels_v1';
+const LEGACY_SEQUELS_STORAGE_KEY = 'omnitrack_sequels_v1';
 
 export function getStoredMedia(): MediaItem[] {
   if (typeof window === 'undefined') return INITIAL_MEDIA_ITEMS;
 
   try {
     const raw = localStorage.getItem(MEDIA_STORAGE_KEY);
-    if (!raw) {
+    const legacyRaw = !raw ? localStorage.getItem(LEGACY_MEDIA_STORAGE_KEY) : null;
+    const sourceRaw = raw || legacyRaw;
+    if (!sourceRaw) {
       localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(INITIAL_MEDIA_ITEMS));
       return INITIAL_MEDIA_ITEMS;
     }
-    const parsed: MediaItem[] = JSON.parse(raw);
+    const parsed: MediaItem[] = JSON.parse(sourceRaw);
     
     // Auto-migrate legacy Unsplash covers or mismatched placeholders to official posters
-    let hasMigrated = false;
+    let hasMigrated = Boolean(legacyRaw);
     const upgraded = parsed.map((item) => {
       // Fix Spider-Man saved with old Dune/Severance placeholder from earlier searches
       if (
@@ -163,14 +167,16 @@ export function getStoredSequels(): SequelNotification[] {
 
   try {
     const raw = localStorage.getItem(SEQUELS_STORAGE_KEY);
-    if (!raw) {
+    const legacyRaw = !raw ? localStorage.getItem(LEGACY_SEQUELS_STORAGE_KEY) : null;
+    const sourceRaw = raw || legacyRaw;
+    if (!sourceRaw) {
       localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(INITIAL_SEQUEL_NOTIFICATIONS));
       return INITIAL_SEQUEL_NOTIFICATIONS;
     }
-    const parsed: SequelNotification[] = JSON.parse(raw);
+    const parsed: SequelNotification[] = JSON.parse(sourceRaw);
 
     // Auto-migrate legacy Unsplash covers to official posters
-    let hasMigrated = false;
+    let hasMigrated = Boolean(legacyRaw);
     const upgraded = parsed.map((seq) => {
       if (
         (seq.sequelCoverUrl && seq.sequelCoverUrl.includes('images.unsplash.com')) ||

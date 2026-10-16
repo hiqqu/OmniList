@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const redisKey = `omnitrack:sync:${syncCode}`;
+    const redisKey = `omnilist:sync:${syncCode}`;
+    const legacyRedisKey = `omnitrack:sync:${syncCode}`;
 
     if (action === 'push') {
       if (!data) {
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'pull') {
-      const getRes = await fetch(`${kvUrl}/get/${encodeURIComponent(redisKey)}`, {
+      let getRes = await fetch(`${kvUrl}/get/${encodeURIComponent(redisKey)}`, {
         headers: {
           Authorization: `Bearer ${kvToken}`,
         },
@@ -81,7 +82,19 @@ export async function POST(req: NextRequest) {
         throw new Error(`KV Error (${getRes.status}): ${getRes.statusText}`);
       }
 
-      const rawResult = await getRes.json();
+      let rawResult = await getRes.json();
+      if (!rawResult || rawResult.result === null || rawResult.result === undefined) {
+        // Fallback to legacy key if not found under omnilist
+        const legacyRes = await fetch(`${kvUrl}/get/${encodeURIComponent(legacyRedisKey)}`, {
+          headers: {
+            Authorization: `Bearer ${kvToken}`,
+          },
+        });
+        if (legacyRes.ok) {
+          rawResult = await legacyRes.json();
+        }
+      }
+
       if (!rawResult || rawResult.result === null || rawResult.result === undefined) {
         return NextResponse.json(
           { error: `Unter dem Code "${syncCode}" wurde noch kein Backup gefunden. Bitte zuerst auf dem Hauptgerät in die Cloud sichern.` },

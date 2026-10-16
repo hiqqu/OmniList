@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       try {
         const olSearchRes = await fetch(
           `https://openlibrary.org/search.json?q=${encodeURIComponent(title)}&fields=key,title&limit=1`,
-          { headers: { 'User-Agent': 'OmniTrack/1.0' } }
+          { headers: { 'User-Agent': 'OmniList/1.0' } }
         );
         if (olSearchRes.ok) {
           const sData = await olSearchRes.json();
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       try {
         const edRes = await fetch(
           `https://openlibrary.org${normalizedKey}/editions.json?limit=40`,
-          { headers: { 'User-Agent': 'OmniTrack/1.0' } }
+          { headers: { 'User-Agent': 'OmniList/1.0' } }
         );
         if (edRes.ok) {
           const edData = await edRes.json();

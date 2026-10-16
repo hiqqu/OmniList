@@ -17,6 +17,7 @@ import {
   RefreshCw,
   RotateCcw,
   Cloud,
+  Check,
 } from 'lucide-react';
 import { MediaType, MediaStatus } from '@/types/media';
 import { cn } from '@/lib/utils';
@@ -173,7 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-[#F1F3F7]">
-              OmniTrack
+              OmniList
             </h1>
             <p className="text-xs text-zinc-400">All-in-One Medien Hub</p>
           </div>
@@ -329,7 +330,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'border-zinc-600 bg-zinc-900'
                     )}
                   >
-                    {onlyOwned && <span className="text-[10px] font-black">✓</span>}
+                    {onlyOwned && <Check className="w-3 h-3 stroke-[3]" />}
                   </div>
                 </button>
                 <p className="px-3 mt-1.5 text-[10px] text-zinc-500 leading-tight">
