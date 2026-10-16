@@ -8,7 +8,7 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     title: 'Dune: Der Wüstenplanet',
     originalTitle: 'Dune',
     type: 'book',
-    coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://covers.openlibrary.org/b/id/11481354-L.jpg',
     releaseDate: '1965-08-01',
     summary: 'Auf dem Wüstenplaneten Arrakis entbrennt ein gnadenloser Krieg um das Spice, die kostbarste Substanz des bekannten Universums.',
     genres: ['Science-Fiction', 'Klassiker'],
@@ -25,7 +25,7 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     title: 'Die drei Sonnen',
     originalTitle: 'The Three-Body Problem',
     type: 'book',
-    coverUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://covers.openlibrary.org/b/id/8315104-L.jpg',
     releaseDate: '2008-01-01',
     summary: 'Während der Kulturrevolution sendet eine chinesische Wissenschaftlerin ein Signal ins All – mit unabsehbaren Folgen für die Menschheit.',
     genres: ['Hard Sci-Fi', 'Thriller'],
@@ -42,7 +42,7 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     title: 'Der Herr der Ringe: Die Gefährten',
     originalTitle: 'The Fellowship of the Ring',
     type: 'book',
-    coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://covers.openlibrary.org/b/id/14588724-L.jpg',
     releaseDate: '1954-07-29',
     summary: 'Frodo Beutlin erhält die gefahrvolle Bürde, den Einen Ring des Dunklen Herrschers Sauron zu den Schicksalsklüften zu bringen.',
     genres: ['High Fantasy', 'Epos'],
@@ -59,7 +59,7 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     title: 'Atomic Habits: Die 1%-Methode',
     originalTitle: 'Atomic Habits',
     type: 'book',
-    coverUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://covers.openlibrary.org/b/id/12539702-L.jpg',
     releaseDate: '2018-10-16',
     summary: 'Minimale Veränderungen, beachtliche Wirkung: Wie kleine Gewohnheiten unser Leben und unsere Produktivität revolutionieren.',
     genres: ['Sachbuch', 'Psychologie', 'Produktivität'],
@@ -74,7 +74,7 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     title: 'Harry Potter und der Stein der Weisen',
     originalTitle: "Harry Potter and the Philosopher's Stone",
     type: 'book',
-    coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://covers.openlibrary.org/b/id/10522270-L.jpg',
     releaseDate: '1997-06-26',
     summary: 'An seinem elften Geburtstag erfährt der Waisenjunge Harry Potter, dass er ein Zauberer ist und nach Hogwarts eingeladen wird.',
     genres: ['Fantasy', 'Jugendbuch'],
@@ -91,27 +91,12 @@ export const POPULAR_BOOKS_CATALOG: SearchResultItem[] = [
     title: '1984',
     originalTitle: 'Nineteen Eighty-Four',
     type: 'book',
-    coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://covers.openlibrary.org/b/id/8575708-L.jpg',
     releaseDate: '1949-06-08',
     summary: 'Winston Smith lebt in einem totalitären Überwachungsstaat, in dem der Große Bruder jede Regung der Bürger kontrolliert.',
     genres: ['Dystopie', 'Klassiker'],
     creator: 'George Orwell',
     totalUnits: 320,
-    unit: 'pages',
-    rating: 4.8,
-  },
-  {
-    id: 'googlebooks:martian',
-    external_id: 'googlebooks:martian',
-    title: 'Der Marsianer',
-    originalTitle: 'The Martian',
-    type: 'book',
-    coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format&fit=crop&q=80',
-    releaseDate: '2011-09-27',
-    summary: 'Nach einem Sandsturm bleibt der Astronaut Mark Watney allein auf dem Mars zurück und muss um sein Überleben kämpfen.',
-    genres: ['Science-Fiction', 'Hard Sci-Fi'],
-    creator: 'Andy Weir',
-    totalUnits: 512,
     unit: 'pages',
     rating: 4.8,
   },
@@ -126,7 +111,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
 
     const items: SearchResultItem[] = [];
 
-    // 1. Live Open Library Search (Completely FREE, public, no API key required!)
+    // 1. Live Open Library Search (Completely FREE, public, returns real official book covers!)
     try {
       const openLibRes = await fetch(
         `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6`
@@ -137,8 +122,8 @@ export class GoogleBooksAdapter implements MediaAdapter {
           if (!doc.title) continue;
           const external_id = `openlibrary:${doc.key?.replace('/works/', '') || doc.cover_edition_key || Math.random()}`;
           const coverUrl = doc.cover_i
-            ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
-            : 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80';
+            ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+            : POPULAR_BOOKS_CATALOG[0].coverUrl;
 
           items.push({
             id: external_id,
@@ -181,7 +166,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
       return combined;
     }
 
-    // 3. Dynamic fallback if no search hit
+    // 3. Dynamic fallback with official book cover template
     const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     return [
       {
@@ -189,7 +174,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
         external_id: `custom:book:${Date.now()}`,
         title: capitalized,
         type: 'book',
-        coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80',
+        coverUrl: POPULAR_BOOKS_CATALOG[0].coverUrl,
         releaseDate: new Date().toISOString().split('T')[0],
         summary: `Buch: ${capitalized}. Seiten erfassen und Lesefortschritt tracken.`,
         genres: ['Buch', 'Literatur'],
@@ -218,8 +203,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Dune: Der Herr des Wüstenplaneten (Teil 2)',
         sequelType: 'book',
-        sequelCoverUrl:
-          'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80',
+        sequelCoverUrl: 'https://covers.openlibrary.org/b/id/11481354-L.jpg',
         releaseDate: '1969-07-01',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -244,8 +228,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Der dunkle Wald (Trisolaris 2)',
         sequelType: 'book',
-        sequelCoverUrl:
-          'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=500&auto=format&fit=crop&q=80',
+        sequelCoverUrl: 'https://covers.openlibrary.org/b/id/8315104-L.jpg',
         releaseDate: '2008-05-01',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -270,8 +253,7 @@ export class GoogleBooksAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Der Herr der Ringe: Die zwei Türme',
         sequelType: 'book',
-        sequelCoverUrl:
-          'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop&q=80',
+        sequelCoverUrl: 'https://covers.openlibrary.org/b/id/14588724-L.jpg',
         releaseDate: '1954-11-11',
         status: 'released',
         badgeText: 'Jetzt verfügbar',

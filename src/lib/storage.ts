@@ -13,7 +13,28 @@ export function getStoredMedia(): MediaItem[] {
       localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(INITIAL_MEDIA_ITEMS));
       return INITIAL_MEDIA_ITEMS;
     }
-    return JSON.parse(raw);
+    const parsed: MediaItem[] = JSON.parse(raw);
+    
+    // Auto-migrate legacy Unsplash covers to official posters
+    let hasMigrated = false;
+    const upgraded = parsed.map((item) => {
+      if (item.coverUrl && item.coverUrl.includes('images.unsplash.com')) {
+        const matchingSeed = INITIAL_MEDIA_ITEMS.find(
+          (s) => s.external_id === item.external_id || s.title.toLowerCase() === item.title.toLowerCase()
+        );
+        if (matchingSeed) {
+          hasMigrated = true;
+          return { ...item, coverUrl: matchingSeed.coverUrl };
+        }
+      }
+      return item;
+    });
+
+    if (hasMigrated) {
+      localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(upgraded));
+    }
+
+    return upgraded;
   } catch (e) {
     console.error('Failed to load media from localStorage', e);
     return INITIAL_MEDIA_ITEMS;
@@ -38,7 +59,33 @@ export function getStoredSequels(): SequelNotification[] {
       localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(INITIAL_SEQUEL_NOTIFICATIONS));
       return INITIAL_SEQUEL_NOTIFICATIONS;
     }
-    return JSON.parse(raw);
+    const parsed: SequelNotification[] = JSON.parse(raw);
+
+    // Auto-migrate legacy Unsplash covers to official posters
+    let hasMigrated = false;
+    const upgraded = parsed.map((seq) => {
+      if (
+        (seq.sequelCoverUrl && seq.sequelCoverUrl.includes('images.unsplash.com')) ||
+        (seq.parentCoverUrl && seq.parentCoverUrl.includes('images.unsplash.com'))
+      ) {
+        const matchingSeed = INITIAL_SEQUEL_NOTIFICATIONS.find((s) => s.id === seq.id);
+        if (matchingSeed) {
+          hasMigrated = true;
+          return {
+            ...seq,
+            sequelCoverUrl: matchingSeed.sequelCoverUrl,
+            parentCoverUrl: matchingSeed.parentCoverUrl,
+          };
+        }
+      }
+      return seq;
+    });
+
+    if (hasMigrated) {
+      localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(upgraded));
+    }
+
+    return upgraded;
   } catch (e) {
     console.error('Failed to load sequels from localStorage', e);
     return INITIAL_SEQUEL_NOTIFICATIONS;

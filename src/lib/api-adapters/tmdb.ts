@@ -12,7 +12,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Dune',
     originalTitle: 'Dune: Part One',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/d5NXSklXo0qyIYkgV94XAgMIckC.jpg',
     releaseDate: '2021-09-15',
     summary: 'Paul Atreides muss auf den gefährlichsten Wüstenplaneten Arrakis reisen, um die Zukunft seines Volkes zu sichern.',
     genres: ['Sci-Fi', 'Abenteuer'],
@@ -29,7 +29,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Dune: Teil 2',
     originalTitle: 'Dune: Part Two',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg',
     releaseDate: '2024-03-01',
     summary: 'Die Reise von Paul Atreides geht weiter mit den Fremen auf Arrakis im Kampf gegen das Haus Harkonnen.',
     genres: ['Sci-Fi', 'Action', 'Abenteuer'],
@@ -46,7 +46,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Arcane',
     originalTitle: 'Arcane: League of Legends',
     type: 'show',
-    coverUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/477/1193309.jpg',
     releaseDate: '2021-11-06',
     summary: 'Inmitten des Konflikts zwischen Piltover und Zhaun kämpfen zwei Schwestern auf entgegengesetzten Seiten.',
     genres: ['Animation', 'Sci-Fi', 'Action'],
@@ -64,7 +64,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Severance',
     originalTitle: 'Severance',
     type: 'show',
-    coverUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/398/995400.jpg',
     releaseDate: '2022-02-18',
     summary: 'Mark leitet ein Team bei Lumon Industries, dessen Angestellte ihr Arbeits- und Privatgedächtnis getrennt haben.',
     genres: ['Mystery', 'Sci-Fi', 'Psychothriller'],
@@ -82,7 +82,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'The Last of Us',
     originalTitle: 'The Last of Us',
     type: 'show',
-    coverUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/477/1194988.jpg',
     releaseDate: '2023-01-15',
     summary: 'Zwanzig Jahre nach dem Zusammenbruch der Zivilisation muss Joel die 14-jährige Ellie quer durch die USA schmuggeln.',
     genres: ['Drama', 'Sci-Fi', 'Postapokalypse'],
@@ -100,7 +100,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Oppenheimer',
     originalTitle: 'Oppenheimer',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/ptpr0kGAckfQkJeJIt8st5dglvd.jpg',
     releaseDate: '2023-07-21',
     summary: 'Die Geschichte von J. Robert Oppenheimer und die Entwicklung der Atombombe im Manhattan-Projekt.',
     genres: ['Biografie', 'Drama', 'Historie'],
@@ -115,7 +115,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Interstellar',
     originalTitle: 'Interstellar',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
     releaseDate: '2014-11-05',
     summary: 'Ein Forscherteam reist durch ein Wurmloch, um eine neue Heimat für die bedrohte Menschheit zu finden.',
     genres: ['Sci-Fi', 'Drama', 'Abenteuer'],
@@ -130,7 +130,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Inception',
     originalTitle: 'Inception',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg',
     releaseDate: '2010-07-16',
     summary: 'Ein Dieb, der Geheimnisse aus Träumen stiehlt, erhält die umgekehrte Aufgabe: eine Idee in ein Unterbewusstsein einzupflanzen.',
     genres: ['Sci-Fi', 'Action', 'Heist'],
@@ -145,7 +145,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'The Dark Knight',
     originalTitle: 'The Dark Knight',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
     releaseDate: '2008-07-18',
     summary: 'Batman verbündet sich mit Gordon und Dent gegen das Verbrechen in Gotham, als der Joker Chaos sät.',
     genres: ['Action', 'Krimi', 'Drama'],
@@ -162,7 +162,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Breaking Bad',
     originalTitle: 'Breaking Bad',
     type: 'show',
-    coverUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/501/1253519.jpg',
     releaseDate: '2008-01-20',
     summary: 'Ein krebskranker Chemielehrer beginnt Meth herzustellen, um die finanzielle Zukunft seiner Familie zu sichern.',
     genres: ['Drama', 'Krimi', 'Thriller'],
@@ -180,7 +180,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Stranger Things',
     originalTitle: 'Stranger Things',
     type: 'show',
-    coverUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/200/501942.jpg',
     releaseDate: '2016-07-15',
     summary: 'Nach dem Verschwinden eines Jungen deckt eine Kleinstadt geheime Experimente und übernatürliche Mächte auf.',
     genres: ['Sci-Fi', 'Mystery', 'Drama'],
@@ -198,7 +198,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Game of Thrones',
     originalTitle: 'Game of Thrones',
     type: 'show',
-    coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/1/2668.jpg',
     releaseDate: '2011-04-17',
     summary: 'Neun Adelsfamilien kämpfen um die Kontrolle über das mythische Land Westeros, während sich eine uralte Bedrohung erhebt.',
     genres: ['Fantasy', 'Drama', 'Abenteuer'],
@@ -216,7 +216,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Spider-Man: Across the Spider-Verse',
     originalTitle: 'Spider-Man: Across the Spider-Verse',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg',
     releaseDate: '2023-06-02',
     summary: 'Miles Morales reist durch das Multiversum und gerät in Konflikt mit einer Vereinigung von Spider-Helden.',
     genres: ['Animation', 'Action', 'Sci-Fi'],
@@ -233,7 +233,7 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     title: 'Matrix',
     originalTitle: 'The Matrix',
     type: 'movie',
-    coverUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg',
     releaseDate: '1999-03-31',
     summary: 'Ein Computerhacker erfährt von mysteriösen Rebellen die schockierende Natur seiner Realität.',
     genres: ['Sci-Fi', 'Action'],
@@ -244,24 +244,68 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     unit: 'hours',
     rating: 4.8,
   },
+  {
+    id: 'tmdb:movie:550',
+    external_id: 'tmdb:movie:550',
+    title: 'Fight Club',
+    originalTitle: 'Fight Club',
+    type: 'movie',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
+    releaseDate: '1999-10-15',
+    summary: 'Ein schlafloser Büroangestellter und ein charismatischer Seifenverkäufer gründen einen geheimen Untergrund-Club.',
+    genres: ['Drama', 'Thriller'],
+    creator: 'David Fincher',
+    totalUnits: 139,
+    unit: 'hours',
+    rating: 4.8,
+  },
+  {
+    id: 'tmdb:movie:680',
+    external_id: 'tmdb:movie:680',
+    title: 'Pulp Fiction',
+    originalTitle: 'Pulp Fiction',
+    type: 'movie',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/vQWk5YBFWF4bZaofAbv0tShwBvQ.jpg',
+    releaseDate: '1994-09-10',
+    summary: 'Verflochtene Geschichten aus der Unterwelt von Los Angeles: Zwei Auftragskiller, eine Gangsterbraut und ein Boxer.',
+    genres: ['Krimi', 'Thriller'],
+    creator: 'Quentin Tarantino',
+    totalUnits: 154,
+    unit: 'hours',
+    rating: 4.9,
+  },
+  {
+    id: 'tmdb:movie:98',
+    external_id: 'tmdb:movie:98',
+    title: 'Gladiator',
+    originalTitle: 'Gladiator',
+    type: 'movie',
+    coverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg',
+    releaseDate: '2000-05-01',
+    summary: 'Der betrogene römische General Maximus wird zum Gladiator und kämpft im Kolosseum gegen den korrupten Kaiser Commodus.',
+    genres: ['Action', 'Drama', 'Historie'],
+    creator: 'Ridley Scott',
+    totalUnits: 155,
+    unit: 'hours',
+    rating: 4.8,
+  },
 ];
 
 export class TMDBAdapter implements MediaAdapter {
   async search(query: string): Promise<SearchResultItem[]> {
     const q = query.trim().toLowerCase();
     if (!q) {
-      // If query is empty, return popular trending recommendations!
       return POPULAR_TMDB_CATALOG;
     }
 
     const items: SearchResultItem[] = [];
 
-    // 1. Live TVmaze Search for TV shows (Completely FREE, public, no API key required!)
+    // 1. Live TVmaze Search for TV shows (Completely FREE, public, returns official poster images!)
     try {
       const tvRes = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`);
       if (tvRes.ok) {
         const tvData = await tvRes.json();
-        for (const entry of tvData.slice(0, 5)) {
+        for (const entry of tvData.slice(0, 6)) {
           const show = entry.show;
           if (!show) continue;
 
@@ -269,11 +313,11 @@ export class TMDBAdapter implements MediaAdapter {
           const coverUrl =
             show.image?.original?.replace('http://', 'https://') ||
             show.image?.medium?.replace('http://', 'https://') ||
-            'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80';
+            POPULAR_TMDB_CATALOG[2].coverUrl;
 
           const summaryText = show.summary
             ? show.summary.replace(/<[^>]*>?/gm, '').slice(0, 250)
-            : 'Serie aus dem TV-Katalog.';
+            : 'Serie aus dem offiziellen TV-Katalog.';
 
           items.push({
             id: external_id,
@@ -289,7 +333,7 @@ export class TMDBAdapter implements MediaAdapter {
             totalUnits: 10,
             totalSeasons: 1,
             unit: 'episodes',
-            rating: show.rating?.average ? Math.round((show.rating.average / 2) * 10) / 10 : 4.4,
+            rating: show.rating?.average ? Math.round((show.rating.average / 2) * 10) / 10 : 4.5,
           });
         }
       }
@@ -313,7 +357,7 @@ export class TMDBAdapter implements MediaAdapter {
             const external_id = `tmdb:${item.media_type}:${item.id}`;
             const coverUrl = item.poster_path
               ? `${TMDB_IMAGE_BASE}${item.poster_path}`
-              : 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80';
+              : POPULAR_TMDB_CATALOG[0].coverUrl;
 
             items.push({
               id: external_id,
@@ -357,7 +401,7 @@ export class TMDBAdapter implements MediaAdapter {
       return combined;
     }
 
-    // 4. Intelligent dynamic fallback if no live API returned results
+    // 4. Fallback with official poster template
     const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     return [
       {
@@ -365,7 +409,7 @@ export class TMDBAdapter implements MediaAdapter {
         external_id: `custom:movie:${Date.now()}`,
         title: capitalized,
         type: 'movie',
-        coverUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80',
+        coverUrl: POPULAR_TMDB_CATALOG[0].coverUrl,
         releaseDate: new Date().toISOString().split('T')[0],
         summary: `Film: ${capitalized}. Jetzt zur Sammlung hinzufügen und Fortschritt erfassen.`,
         genres: ['Film', 'Drama'],
@@ -379,7 +423,7 @@ export class TMDBAdapter implements MediaAdapter {
         external_id: `custom:show:${Date.now()}`,
         title: `${capitalized} (Serie)`,
         type: 'show',
-        coverUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+        coverUrl: POPULAR_TMDB_CATALOG[2].coverUrl,
         releaseDate: new Date().toISOString().split('T')[0],
         summary: `Serie: ${capitalized}. Verfolge Staffeln und Episoden in OmniTrack.`,
         genres: ['Serie', 'Action'],
@@ -409,8 +453,7 @@ export class TMDBAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Dune: Teil 2',
         sequelType: 'movie',
-        sequelCoverUrl:
-          'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+        sequelCoverUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg',
         releaseDate: '2024-03-01',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -435,7 +478,7 @@ export class TMDBAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Severance (Staffel 2)',
         sequelType: 'show',
-        sequelCoverUrl: item.coverUrl,
+        sequelCoverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/398/995400.jpg',
         releaseDate: '2025-01-17',
         status: 'releasing',
         badgeText: 'Staffel 2 verfügbar',
@@ -460,8 +503,7 @@ export class TMDBAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'The Last of Us (Staffel 2)',
         sequelType: 'show',
-        sequelCoverUrl:
-          'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+        sequelCoverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/477/1194988.jpg',
         releaseDate: '2025-04-01',
         status: 'announced',
         badgeText: 'Neu angekündigt',
@@ -486,7 +528,7 @@ export class TMDBAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Arcane: Staffel 2',
         sequelType: 'show',
-        sequelCoverUrl: item.coverUrl,
+        sequelCoverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/477/1193309.jpg',
         releaseDate: '2024-11-09',
         status: 'released',
         badgeText: 'Staffel 2 verfügbar',
@@ -511,7 +553,7 @@ export class TMDBAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Stranger Things (Staffel 5 - Finale)',
         sequelType: 'show',
-        sequelCoverUrl: item.coverUrl,
+        sequelCoverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/200/501942.jpg',
         releaseDate: '2025-10-31',
         status: 'announced',
         badgeText: 'Startet demnächst',
