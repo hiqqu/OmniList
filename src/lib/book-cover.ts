@@ -132,34 +132,77 @@ export function getOpenLibraryCoverUrl(
   return undefined;
 }
 
+export function createNoCoverSvg(title?: string, type?: string): string {
+  const safeTitle = title ? cleanSvgText(title, 26) : '';
+  const typeLabel =
+    type === 'movie'
+      ? 'FILM'
+      : type === 'show'
+      ? 'SERIE'
+      : type === 'anime'
+      ? 'ANIME'
+      : type === 'book'
+      ? 'BUCH'
+      : type === 'game'
+      ? 'SPIEL'
+      : undefined;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+  <defs>
+    <linearGradient id="noCoverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181B22"/>
+      <stop offset="100%" stop-color="#0F1117"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Dark background -->
+  <rect width="600" height="900" fill="url(#noCoverGrad)"/>
+  <rect x="24" y="24" width="552" height="852" rx="16" fill="none" stroke="#282D37" stroke-width="2"/>
+  
+  <!-- Light gray symbol: Image with slash (No picture found) -->
+  <g transform="translate(236, 340)">
+    <rect x="6" y="12" width="116" height="92" rx="12" fill="none" stroke="#71717A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="42" cy="44" r="10" fill="#71717A"/>
+    <path d="M18 92 L54 56 L78 80 L96 62 L116 82" fill="none" stroke="#71717A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="0" y1="116" x2="128" y2="0" stroke="#71717A" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- Light gray text indicating no picture found -->
+  <text x="300" y="495" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" letter-spacing="1.5" text-anchor="middle">KEIN BILD GEFUNDEN</text>
+  
+  ${safeTitle ? `<text x="300" y="538" fill="#64748B" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="500" text-anchor="middle">${safeTitle}</text>` : ''}
+  
+  ${typeLabel ? `
+  <rect x="246" y="572" width="108" height="26" rx="13" fill="#282D37"/>
+  <text x="300" y="589" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5" text-anchor="middle">${typeLabel}</text>
+  ` : ''}
+</svg>`;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export function getMediaCoverFallback(item: {
   title: string;
   creator?: string;
   publisher?: string;
   type?: string;
 }): string {
+  // If it's a specific publisher edition with dedicated design (Reclam, Insel, Suhrkamp), keep the authentic book cover:
   if (item.type === 'book') {
-    return createBookSvgCover(item.title, item.creator, item.publisher);
+    const pubLower = (item.publisher || '').toLowerCase();
+    const titleLower = item.title.toLowerCase();
+    if (
+      pubLower.includes('reclam') ||
+      titleLower.includes('reclam') ||
+      pubLower.includes('insel') ||
+      titleLower.includes('insel') ||
+      pubLower.includes('suhrkamp')
+    ) {
+      return createBookSvgCover(item.title, item.creator, item.publisher);
+    }
   }
-  if (item.type === 'game') {
-    const safeTitle = cleanSvgText(item.title, 32);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
-  <rect width="600" height="900" fill="#0F172A"/>
-  <rect x="30" y="30" width="540" height="840" rx="16" fill="none" stroke="#6366F1" stroke-opacity="0.4" stroke-width="2"/>
-  <text x="300" y="440" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle}</text>
-  <text x="300" y="490" fill="#818CF8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" letter-spacing="3" text-anchor="middle">SPIEL</text>
-</svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }
-  const safeTitle = cleanSvgText(item.title, 32);
-  const typeLabel = item.type === 'show' ? 'SERIE' : item.type === 'anime' ? 'ANIME' : 'FILM';
-  const strokeColor = item.type === 'show' ? '#3B82F6' : item.type === 'anime' ? '#EC4899' : '#EF4444';
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
-  <rect width="600" height="900" fill="#0F172A"/>
-  <rect x="30" y="30" width="540" height="840" rx="16" fill="none" stroke="${strokeColor}" stroke-opacity="0.4" stroke-width="2"/>
-  <text x="300" y="440" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle}</text>
-  <text x="300" y="490" fill="${strokeColor}" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" letter-spacing="3" text-anchor="middle">${typeLabel}</text>
-</svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+
+  // Otherwise, return the clean dark image with light-gray symbol indicating no picture found
+  return createNoCoverSvg(item.title, item.type);
 }
 

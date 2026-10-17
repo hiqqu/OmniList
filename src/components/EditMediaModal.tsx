@@ -738,7 +738,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
               <div className="flex items-center gap-3 pt-1">
                 <div className="w-10 h-14 rounded bg-zinc-900 border border-[#282D37] overflow-hidden flex-shrink-0">
                   <img
-                    src={coverUrl || item.coverUrl}
+                    src={(coverUrl || item.coverUrl) && !(coverUrl || item.coverUrl).includes('images.unsplash.com') ? (coverUrl || item.coverUrl) : getMediaCoverFallback({ title, creator, publisher, type: item.type })}
                     alt={title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -756,7 +756,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                   <span className="text-[10px] text-zinc-500 block mb-0.5">Cover-Bild URL:</span>
                   <input
                     type="text"
-                    value={coverUrl}
+                    value={coverUrl && !coverUrl.includes('images.unsplash.com') ? coverUrl : ''}
                     onChange={(e) => setCoverUrl(e.target.value)}
                     placeholder="https://..."
                     className="w-full bg-[#181B22] border border-[#282D37] focus:border-zinc-500 rounded-lg px-2.5 py-1 text-[11px] text-zinc-300 focus:outline-none"
@@ -768,7 +768,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
             <div className="p-3 rounded-xl bg-[#0F1117] border border-[#282D37] flex items-center gap-3">
               <div className="w-10 h-14 rounded bg-zinc-900 border border-[#282D37] overflow-hidden flex-shrink-0">
                 <img
-                  src={coverUrl || item.coverUrl}
+                  src={(coverUrl || item.coverUrl) && !(coverUrl || item.coverUrl).includes('images.unsplash.com') ? (coverUrl || item.coverUrl) : getMediaCoverFallback({ title, creator, publisher, type: item?.type })}
                   alt={title}
                   className="w-full h-full object-cover"
                   onError={(e) => {

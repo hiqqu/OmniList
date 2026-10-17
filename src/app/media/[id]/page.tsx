@@ -343,7 +343,7 @@ export default function MediaDetailPage() {
               typeAccentBorder[item.type]
             )}>
               <img
-                src={item.coverUrl}
+                src={item.coverUrl && !item.coverUrl.includes('images.unsplash.com') ? item.coverUrl : getMediaCoverFallback(item)}
                 alt={item.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {

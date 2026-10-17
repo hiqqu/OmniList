@@ -57,6 +57,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       ? item.collection_name.replace(/\s*Ausgabe$/i, '').trim()
       : item.collection_name);
 
+  const isStockOrEmptyCover = !item.coverUrl || item.coverUrl.includes('images.unsplash.com');
+  const displayCover = isStockOrEmptyCover ? getMediaCoverFallback(item) : item.coverUrl;
+
   // Category specific accent styles
   const typeButtonStyles: Record<MediaType, string> = {
     movie: 'bg-rose-500 hover:bg-rose-400 text-white shadow-rose-950/40',
@@ -93,7 +96,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       <div className="relative aspect-poster w-full bg-[#0F1117] overflow-hidden rounded-t-2xl">
         <Link href={`/media/${item.id}`} className="block w-full h-full cursor-pointer">
           <img
-            src={item.coverUrl}
+            src={displayCover}
             alt={item.title}
             loading="lazy"
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"

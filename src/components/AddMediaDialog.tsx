@@ -23,7 +23,7 @@ import {
 import { MediaType, SearchResultItem, MediaStatus, MediaItem } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { BookEditionItem } from '@/app/api/book-editions/route';
-import { getMediaCoverFallback, createBookSvgCover } from '@/lib/book-cover';
+import { getMediaCoverFallback, createBookSvgCover, createNoCoverSvg } from '@/lib/book-cover';
 
 interface AddMediaDialogProps {
   isOpen: boolean;
@@ -285,14 +285,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       title,
       type: activeTab,
       status: selectedStatus,
-      coverUrl:
-        activeTab === 'movie'
-          ? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80'
-          : activeTab === 'anime'
-          ? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80'
-          : activeTab === 'book'
-          ? 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=80'
-          : 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&auto=format&fit=crop&q=80',
+      coverUrl: createNoCoverSvg(title, activeTab),
       rating: undefined,
       releaseDate: new Date().toISOString().split('T')[0],
       summary: undefined,
