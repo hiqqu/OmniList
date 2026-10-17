@@ -445,6 +445,9 @@ export default function Home() {
               <StatsBar
                 media={media}
                 sequels={sequels}
+                selectedType={selectedType}
+                selectedStatus={selectedStatus}
+                onSelectStatus={setSelectedStatus}
                 onOpenSequelRadar={() => setCurrentView('sequel_radar')}
               />
 

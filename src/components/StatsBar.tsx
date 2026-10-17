@@ -1,35 +1,91 @@
 'use client';
 
 import React from 'react';
-import { Film, CheckCircle2, Clock, Radar, Flame } from 'lucide-react';
-import { MediaItem, SequelNotification } from '@/types/media';
+import { Film, CheckCircle2, Clock, Radar, Flame, BookmarkCheck } from 'lucide-react';
+import { MediaItem, SequelNotification, MediaType, MediaStatus } from '@/types/media';
+import { cn } from '@/lib/utils';
 
 interface StatsBarProps {
   media: MediaItem[];
   sequels: SequelNotification[];
+  selectedType?: MediaType | 'all';
+  selectedStatus?: MediaStatus | 'all';
+  onSelectStatus?: (status: MediaStatus | 'all') => void;
   onOpenSequelRadar: () => void;
 }
 
-export const StatsBar: React.FC<StatsBarProps> = ({ media, sequels, onOpenSequelRadar }) => {
-  const inProgressCount = media.filter((m) => m.status === 'in_progress').length;
-  const completedCount = media.filter((m) => m.status === 'completed').length;
-  const unhandledSequelCount = sequels.filter((s) => !s.isDismissed && !s.isAdded).length;
+export const StatsBar: React.FC<StatsBarProps> = ({
+  media,
+  sequels,
+  selectedType = 'all',
+  selectedStatus,
+  onSelectStatus,
+  onOpenSequelRadar,
+}) => {
+  const isAllType = selectedType === 'all';
+  const relevantMedia = isAllType ? media : media.filter((m) => m.type === selectedType);
+
+  const plannedCount = relevantMedia.filter((m) => m.status === 'planned').length;
+  const inProgressCount = relevantMedia.filter((m) => m.status === 'in_progress').length;
+  const completedCount = relevantMedia.filter((m) => m.status === 'completed').length;
+
+  const sequelCount = isAllType
+    ? sequels.filter((s) => !s.isDismissed && !s.isAdded).length
+    : sequels.filter(
+        (s) =>
+          !s.isDismissed &&
+          !s.isAdded &&
+          (s.parentMediaType === selectedType || s.sequelType === selectedType)
+      ).length;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      {/* Total Library */}
-      <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center gap-3.5 shadow-sm">
-        <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300">
-          <Film className="w-5 h-5" />
+      {/* Slot 1: Gesamtsammlung (All) OR Geplant (Specific Category) */}
+      {isAllType ? (
+        <div
+          onClick={() => onSelectStatus?.('all')}
+          className={cn(
+            'p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center gap-3.5 shadow-sm transition-all',
+            onSelectStatus && 'cursor-pointer hover:border-zinc-600',
+            selectedStatus === 'all' && onSelectStatus && 'ring-1 ring-zinc-500/40 bg-zinc-800/40'
+          )}
+        >
+          <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300">
+            <Film className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Gesamtsammlung</span>
+            <span className="text-xl font-extrabold text-[#F1F3F7] tracking-tight">{relevantMedia.length}</span>
+          </div>
         </div>
-        <div>
-          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Gesamtsammlung</span>
-          <span className="text-xl font-extrabold text-[#F1F3F7] tracking-tight">{media.length}</span>
+      ) : (
+        <div
+          onClick={() => onSelectStatus?.(selectedStatus === 'planned' ? 'all' : 'planned')}
+          className={cn(
+            'p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center gap-3.5 shadow-sm transition-all',
+            onSelectStatus && 'cursor-pointer hover:border-sky-500/50',
+            selectedStatus === 'planned' && onSelectStatus && 'ring-1 ring-sky-500/50 bg-sky-500/10 border-sky-500/40'
+          )}
+        >
+          <div className="w-10 h-10 rounded-full bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">
+            <BookmarkCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Geplant</span>
+            <span className="text-xl font-extrabold text-sky-400 tracking-tight">{plannedCount}</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Currently In Progress */}
-      <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center gap-3.5 shadow-sm">
+      {/* Slot 2: Currently In Progress */}
+      <div
+        onClick={() => onSelectStatus?.(selectedStatus === 'in_progress' ? 'all' : 'in_progress')}
+        className={cn(
+          'p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center gap-3.5 shadow-sm transition-all',
+          onSelectStatus && 'cursor-pointer hover:border-emerald-500/50',
+          selectedStatus === 'in_progress' && onSelectStatus && 'ring-1 ring-emerald-500/50 bg-emerald-500/10 border-emerald-500/40'
+        )}
+      >
         <div className="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
           <Clock className="w-5 h-5" />
         </div>
@@ -39,8 +95,15 @@ export const StatsBar: React.FC<StatsBarProps> = ({ media, sequels, onOpenSequel
         </div>
       </div>
 
-      {/* Completed */}
-      <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center gap-3.5 shadow-sm">
+      {/* Slot 3: Completed */}
+      <div
+        onClick={() => onSelectStatus?.(selectedStatus === 'completed' ? 'all' : 'completed')}
+        className={cn(
+          'p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center gap-3.5 shadow-sm transition-all',
+          onSelectStatus && 'cursor-pointer hover:border-indigo-500/50',
+          selectedStatus === 'completed' && onSelectStatus && 'ring-1 ring-indigo-500/50 bg-indigo-500/10 border-indigo-500/40'
+        )}
+      >
         <div className="w-10 h-10 rounded-full bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
           <CheckCircle2 className="w-5 h-5" />
         </div>
@@ -50,7 +113,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ media, sequels, onOpenSequel
         </div>
       </div>
 
-      {/* Sequel Radar Alert Card */}
+      {/* Slot 4: Sequel Radar Alert Card */}
       <div
         onClick={onOpenSequelRadar}
         className="p-4 rounded-2xl bg-gradient-to-r from-rose-950/30 via-[#181B22] to-[#181B22] border border-rose-500/40 hover:border-rose-400 flex items-center justify-between cursor-pointer transition-all group shadow-sm hover:shadow-rose-950/20"
@@ -65,7 +128,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ media, sequels, onOpenSequel
               Sequel Radar
             </span>
             <span className="text-xl font-extrabold text-[#F1F3F7] tracking-tight">
-              {unhandledSequelCount} {unhandledSequelCount === 1 ? 'Treffer' : 'Treffer'}
+              {sequelCount} {sequelCount === 1 ? 'Treffer' : 'Treffer'}
             </span>
           </div>
         </div>
