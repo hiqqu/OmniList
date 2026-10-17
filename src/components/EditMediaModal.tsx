@@ -64,7 +64,13 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       setSummary(item.summary || '');
       setNotes(item.notes || '');
       setCoverUrl(item.coverUrl || '');
-      setPublisher(item.publisher || '');
+      setPublisher(
+        item.publisher ||
+        (item.type === 'book' && item.collection_name
+          ? item.collection_name.replace(/\s*Ausgabe$/i, '').trim()
+          : '') ||
+        ''
+      );
       setIsbnFeedback(null);
       setIsEditionPickerOpen(false);
       setEditionsList([]);
@@ -204,7 +210,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       notes: notes.trim() || undefined,
       publisher: publisher.trim() || undefined,
       collection_name: item.type === 'book'
-        ? (publisher.trim() ? `${publisher.trim()} Ausgabe` : undefined)
+        ? (publisher.trim() ? publisher.trim() : item.collection_name)
         : item.collection_name,
       isbn: cleanIsbn || undefined,
       coverUrl: coverUrl || item.coverUrl,

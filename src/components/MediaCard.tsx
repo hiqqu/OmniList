@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy } from 'lucide-react';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
@@ -50,6 +50,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const isCompleted =
     item.status === 'completed' ||
     (isGame ? isGame100Done || isGameStoryDone : totalProgress > 0 && currentProgress >= totalProgress);
+
+  const displayPublisher =
+    item.publisher ||
+    (item.type === 'book' && item.collection_name
+      ? item.collection_name.replace(/\s*Ausgabe$/i, '').trim()
+      : item.collection_name);
 
   // Category specific accent styles
   const typeButtonStyles: Record<MediaType, string> = {
@@ -379,31 +385,38 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       {/* Card Body & Progress Section */}
       <div className="p-3.5 flex flex-col flex-1 justify-between gap-3 bg-[#181B22]">
         <div>
-          {/* Status & Franchise line */}
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-              <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
-                {statusBadge.label}
-              </span>
-              {item.isOwned && item.status !== 'owned' && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
-                  <PackageCheck className="w-3 h-3 text-emerald-400" />
-                  <span>Im Besitz</span>
-                </span>
-              )}
-            </div>
-            {item.collection_name && (
-              <span className="text-[10px] text-zinc-400 truncate max-w-[120px] text-right" title={item.collection_name}>
-                {item.collection_name}
+          {/* Status & Ownership Badges line - side by side */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
+              {statusBadge.label}
+            </span>
+            {item.isOwned && item.status !== 'owned' && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+                <PackageCheck className="w-3 h-3 text-emerald-400" />
+                <span>Im Besitz</span>
               </span>
             )}
           </div>
+
+          {/* Publisher / Collection line underneath badges */}
+          {displayPublisher && (
+            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 truncate mt-1.5" title={displayPublisher}>
+              {item.type === 'book' ? (
+                <Building2 className="w-3 h-3 text-orange-400/80 shrink-0" />
+              ) : (
+                <Layers className="w-3 h-3 text-zinc-500 shrink-0" />
+              )}
+              <span className="truncate font-medium text-zinc-300">
+                {displayPublisher}
+              </span>
+            </div>
+          )}
 
           {/* Title */}
           <Link
             href={`/media/${item.id}`}
             className={cn(
-              'font-bold text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block',
+              'font-bold text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block mt-1.5',
               typeTextHover[item.type]
             )}
             title={item.title}
