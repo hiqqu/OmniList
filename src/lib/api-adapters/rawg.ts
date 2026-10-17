@@ -1,31 +1,517 @@
 import { SearchResultItem, MediaItem, SequelNotification } from '@/types/media';
 import { MediaAdapter } from './types';
+import { createNoCoverSvg } from '../book-cover';
 
 const RAWG_API_KEY = process.env.RAWG_API_KEY;
 const RAWG_BASE_URL = 'https://api.rawg.io/api';
 
-function createGameSvgCover(title: string): string {
-  const safeTitle = title.replace(/[<>&"]/g, '').slice(0, 28);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
-    <defs>
-      <linearGradient id="gameBg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#2e1065" />
-        <stop offset="50%" stop-color="#581c87" />
-        <stop offset="100%" stop-color="#0f172a" />
-      </linearGradient>
-    </defs>
-    <rect width="600" height="900" fill="url(#gameBg)"/>
-    <rect x="30" y="30" width="540" height="840" rx="20" fill="none" stroke="#a855f7" stroke-opacity="0.4" stroke-width="2"/>
-    <rect x="80" y="80" width="110" height="32" rx="8" fill="#a855f7" fill-opacity="0.25"/>
-    <text x="135" y="102" fill="#d8b4fe" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">VIDEOSPIEL</text>
-    <text x="300" y="450" fill="#ffffff" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" text-anchor="middle">${safeTitle}</text>
-    <text x="300" y="500" fill="#c084fc" font-family="system-ui, sans-serif" font-size="18" text-anchor="middle">PC / Konsole</text>
-    <text x="300" y="780" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">OmniList Library</text>
-  </svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+export interface CatalogGameItem extends SearchResultItem {
+  aliases?: string[];
 }
 
-export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
+export function normalizeGameQuery(q: string): string[] {
+  const raw = q.trim().toLowerCase();
+  const variants = new Set<string>([raw]);
+
+  // Handle typos and common variations
+  if (raw.includes('unchartet')) {
+    variants.add(raw.replace(/unchartet/g, 'uncharted'));
+  }
+  if (raw.includes('last od us')) {
+    variants.add(raw.replace(/last od us/g, 'last of us'));
+  }
+  if (raw.includes('astrobot')) {
+    variants.add(raw.replace(/astrobot/g, 'astro bot'));
+  }
+  if (raw.includes('astro bot')) {
+    variants.add(raw.replace(/astro bot/g, 'astrobot'));
+  }
+  if (raw.includes('spiderman')) {
+    variants.add(raw.replace(/spiderman/g, 'spider-man'));
+    variants.add(raw.replace(/spiderman/g, 'spider man'));
+  }
+  if (raw.includes('spider-man')) {
+    variants.add(raw.replace(/spider-man/g, 'spiderman'));
+  }
+  if (raw.includes('uncharted 1') || raw.includes('unchartet 1')) {
+    variants.add('uncharted: drakes schicksal');
+    variants.add("uncharted: drake's fortune");
+    variants.add('drakes schicksal');
+  }
+
+  // Without special characters
+  const cleanPunct = raw.replace(/[-':’]/g, ' ').replace(/\s+/g, ' ').trim();
+  variants.add(cleanPunct);
+
+  return Array.from(variants);
+}
+
+export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
+  // ================= UNCHARTED REIHE =================
+  {
+    id: 'playstation:uncharted-1',
+    external_id: 'playstation:uncharted-1',
+    title: 'Uncharted: Drakes Schicksal',
+    originalTitle: "Uncharted: Drake's Fortune",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7f.jpg',
+    releaseDate: '2007-11-19',
+    summary: 'Nathan Drake begibt sich auf die Suche nach dem sagenumwobenen Schatz von El Dorado.',
+    genres: ['Action-Adventure', 'Third-Person-Shooter'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Computer Entertainment',
+    franchise_id: 'playstation:franchise:uncharted',
+    collection_name: 'Uncharted Reihe',
+    totalUnits: 10,
+    unit: 'hours',
+    rating: 4.6,
+    aliases: ['uncharted 1', 'unchartet 1', 'uncharted one', 'drakes schicksal', "drake's fortune"],
+  },
+  {
+    id: 'playstation:uncharted-2',
+    external_id: 'playstation:uncharted-2',
+    title: 'Uncharted 2: Among Thieves',
+    originalTitle: 'Uncharted 2: Among Thieves',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7g.jpg',
+    releaseDate: '2009-10-13',
+    summary: 'Nathan Drake folgt den Spuren von Marco Polo auf der Suche nach dem Cintamani-Stein im Himalaja.',
+    genres: ['Action-Adventure', 'Story-Rich'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Computer Entertainment',
+    franchise_id: 'playstation:franchise:uncharted',
+    collection_name: 'Uncharted Reihe',
+    totalUnits: 11,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['uncharted 2', 'unchartet 2', 'among thieves'],
+  },
+  {
+    id: 'playstation:uncharted-3',
+    external_id: 'playstation:uncharted-3',
+    title: "Uncharted 3: Drake's Deception",
+    originalTitle: "Uncharted 3: Drake's Deception",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.jpg',
+    releaseDate: '2011-11-01',
+    summary: 'Auf der Suche nach dem Atlantis der Wüste verschlägt es Nathan Drake und Sully in die Rub al-Chali-Wüste.',
+    genres: ['Action-Adventure', 'Shooter'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Computer Entertainment',
+    franchise_id: 'playstation:franchise:uncharted',
+    collection_name: 'Uncharted Reihe',
+    totalUnits: 11,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['uncharted 3', 'unchartet 3', 'drakes deception'],
+  },
+  {
+    id: 'playstation:uncharted-4',
+    external_id: 'playstation:uncharted-4',
+    title: "Uncharted 4: A Thief's End",
+    originalTitle: "Uncharted 4: A Thief's End",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7b.jpg',
+    releaseDate: '2016-05-10',
+    summary: 'Drei Jahre nach seinem letzten Abenteuer kehrt Nathan Drake zurück, um seinem Bruder Sam zu helfen.',
+    genres: ['Action-Adventure', 'Meisterwerk'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:uncharted',
+    collection_name: 'Uncharted Reihe',
+    totalUnits: 15,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['uncharted 4', 'unchartet 4', "a thief's end"],
+  },
+  {
+    id: 'playstation:uncharted-ndc',
+    external_id: 'playstation:uncharted-ndc',
+    title: 'Uncharted: The Nathan Drake Collection',
+    originalTitle: 'Uncharted: The Nathan Drake Collection',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1t9g.jpg',
+    releaseDate: '2015-10-07',
+    summary: 'Enthält die ersten drei Abenteuer: Uncharted 1, Uncharted 2 und Uncharted 3 komplett überarbeitet für PS4.',
+    genres: ['Action-Adventure', 'Trilogie'],
+    creator: 'Bluepoint Games / Naughty Dog',
+    publisher: 'Sony Computer Entertainment',
+    franchise_id: 'playstation:franchise:uncharted',
+    collection_name: 'Uncharted Reihe',
+    totalUnits: 32,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['nathan drake collection', 'uncharted collection', 'uncharted trilogie', 'unchartet collection'],
+  },
+  {
+    id: 'playstation:uncharted-lost-legacy',
+    external_id: 'playstation:uncharted-lost-legacy',
+    title: 'Uncharted: The Lost Legacy',
+    originalTitle: 'Uncharted: The Lost Legacy',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7c.jpg',
+    releaseDate: '2017-08-22',
+    summary: 'Chloe Frazer verbündet sich mit Nadine Ross, um das Goldene Horn von Ganesha in Indien zu finden.',
+    genres: ['Action-Adventure'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:uncharted',
+    collection_name: 'Uncharted Reihe',
+    totalUnits: 9,
+    unit: 'hours',
+    rating: 4.7,
+    aliases: ['lost legacy', 'uncharted lost legacy'],
+  },
+
+  // ================= ASTRO BOT REIHE =================
+  {
+    id: 'playstation:astro-bot-2024',
+    external_id: 'playstation:astro-bot-2024',
+    title: 'Astro Bot',
+    originalTitle: 'Astro Bot',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co88e5.jpg',
+    releaseDate: '2024-09-06',
+    summary: 'Das gefeierte 3D-Plattform-Meisterwerk für PS5: Rette über 300 VIP-Bots aus der gesamten PlayStation-Geschichte.',
+    genres: ['3D-Plattformer', 'Familie', 'GOTY'],
+    creator: 'Team ASOBI',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:astrobot',
+    collection_name: 'Astro Bot Series',
+    totalUnits: 15,
+    unit: 'hours',
+    rating: 5.0,
+    aliases: ['astrobot', 'astro bot ps5', 'astro bot 2024', 'astrobot 2024', 'astrobot ps5'],
+  },
+  {
+    id: 'playstation:astros-playroom',
+    external_id: 'playstation:astros-playroom',
+    title: "Astro's Playroom",
+    originalTitle: "Astro's Playroom",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co20u5.jpg',
+    releaseDate: '2020-11-12',
+    summary: 'Erkunde die Wunder der PS5-Hardware in einem kreativen Plattformer voller Nostalgie und DualSense-Effekte.',
+    genres: ['Plattformer', 'DualSense Showcase'],
+    creator: 'Team ASOBI',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:astrobot',
+    collection_name: 'Astro Bot Series',
+    totalUnits: 4,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['astros playroom', 'astro playroom', 'astrobot playroom', 'astro bot playroom'],
+  },
+
+  // ================= MARVEL'S SPIDER-MAN REIHE =================
+  {
+    id: 'playstation:spiderman-ps4',
+    external_id: 'playstation:spiderman-ps4',
+    title: "Marvel's Spider-Man",
+    originalTitle: "Marvel's Spider-Man",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r77.jpg',
+    releaseDate: '2018-09-07',
+    summary: 'Das gefeierte Original für PS4: Schwinge als Peter Parker durch Manhattan und rette New York vor den Sinister Six.',
+    genres: ['Action-Adventure', 'Superhelden', 'Open World'],
+    creator: 'Insomniac Games',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:spiderman',
+    collection_name: "Marvel's Spider-Man Series",
+    totalUnits: 20,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['spiderman ps4', 'spider-man ps4', 'marvels spiderman', 'marvels spider-man', 'spiderman 1', 'spiderman 2018'],
+  },
+  {
+    id: 'playstation:spiderman-remastered',
+    external_id: 'playstation:spiderman-remastered',
+    title: "Marvel's Spider-Man Remastered",
+    originalTitle: "Marvel's Spider-Man Remastered",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co246a.jpg',
+    releaseDate: '2020-11-12',
+    summary: 'Grafisch überarbeitete Version von Marvel\'s Spider-Man für PS5 und PC mit Raytracing und allen DLCs.',
+    genres: ['Action-Adventure', 'Superhelden'],
+    creator: 'Insomniac Games / Nixxes',
+    publisher: 'PlayStation Publishing',
+    franchise_id: 'playstation:franchise:spiderman',
+    collection_name: "Marvel's Spider-Man Series",
+    totalUnits: 25,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['spiderman remastered', 'spider-man remastered'],
+  },
+  {
+    id: 'playstation:spiderman-miles-morales',
+    external_id: 'playstation:spiderman-miles-morales',
+    title: "Marvel's Spider-Man: Miles Morales",
+    originalTitle: "Marvel's Spider-Man: Miles Morales",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co246a.jpg',
+    releaseDate: '2020-11-12',
+    summary: 'Miles Morales tritt als neuer Spider-Man an, um sein Zuhause Harlem vor einem Krieg zwischen Roxxon und dem Underground zu schützen.',
+    genres: ['Action-Adventure', 'Superhelden'],
+    creator: 'Insomniac Games',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:spiderman',
+    collection_name: "Marvel's Spider-Man Series",
+    totalUnits: 12,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['miles morales', 'spiderman miles morales', 'spider-man miles'],
+  },
+  {
+    id: 'playstation:spiderman-2',
+    external_id: 'playstation:spiderman-2',
+    title: "Marvel's Spider-Man 2",
+    originalTitle: "Marvel's Spider-Man 2",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co6nn4.jpg',
+    releaseDate: '2023-10-20',
+    summary: 'Peter Parker und Miles Morales stellen sich gemeinsam Venom, Kraven dem Jäger und ihren eigenen Dämonen.',
+    genres: ['Action-Adventure', 'Superhelden'],
+    creator: 'Insomniac Games',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:spiderman',
+    collection_name: "Marvel's Spider-Man Series",
+    totalUnits: 20,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['spiderman 2', 'spider-man 2', 'marvels spiderman 2'],
+  },
+
+  // ================= THE LAST OF US REIHE =================
+  {
+    id: 'playstation:tlou-original',
+    external_id: 'playstation:tlou-original',
+    title: 'The Last of Us',
+    originalTitle: 'The Last of Us',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r0k.jpg',
+    releaseDate: '2013-06-14',
+    summary: 'Das legendäre Original-Meisterwerk: Joel und die 14-jährige Ellie schlagen sich durch ein postapokalyptisches Amerika.',
+    genres: ['Action-Adventure', 'Survival-Horror', 'Story-Rich'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Computer Entertainment',
+    franchise_id: 'playstation:franchise:tlou',
+    collection_name: 'The Last of Us Saga',
+    totalUnits: 15,
+    unit: 'hours',
+    rating: 5.0,
+    aliases: ['the last of us', 'the last od us', 'last of us 1', 'last of us original', 'the last of us 2013', 'the last of us ps3', 'tlou', 'tlou 1'],
+  },
+  {
+    id: 'playstation:tlou-remastered',
+    external_id: 'playstation:tlou-remastered',
+    title: 'The Last of Us Remastered',
+    originalTitle: 'The Last of Us Remastered',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r0k.jpg',
+    releaseDate: '2014-07-29',
+    summary: 'Die aufpolierte PS4-Fassung des preisgekrönten Action-Adventures inklusive des Prequels Left Behind.',
+    genres: ['Action-Adventure', 'Survival-Horror'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Computer Entertainment',
+    franchise_id: 'playstation:franchise:tlou',
+    collection_name: 'The Last of Us Saga',
+    totalUnits: 16,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['the last of us remastered', 'last of us remastered', 'tlou remastered', 'last of us ps4'],
+  },
+  {
+    id: 'playstation:tlou-part-1',
+    external_id: 'playstation:tlou-part-1',
+    title: 'The Last of Us Part I',
+    originalTitle: 'The Last of Us Part I',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co4x4e.jpg',
+    releaseDate: '2022-09-02',
+    summary: 'Das von Grund auf neu entwickelte Remake für PS5 und PC mit modernisiertem Gameplay und fotorealistischer Grafik.',
+    genres: ['Action-Adventure', 'Remake'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:tlou',
+    collection_name: 'The Last of Us Saga',
+    totalUnits: 15,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['the last of us part 1', 'the last of us part i', 'tlou part 1', 'last of us part 1', 'last of us remake'],
+  },
+  {
+    id: 'playstation:tlou-part-2',
+    external_id: 'playstation:tlou-part-2',
+    title: 'The Last of Us Part II',
+    originalTitle: 'The Last of Us Part II',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co216l.jpg',
+    releaseDate: '2020-06-19',
+    summary: 'Fünf Jahre nach den Ereignissen begibt sich Ellie auf einen unerbittlichen Rachefeldzug durch die Ruinen von Seattle.',
+    genres: ['Action-Adventure', 'Drama', 'Survival'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:tlou',
+    collection_name: 'The Last of Us Saga',
+    totalUnits: 25,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['the last of us part 2', 'the last of us part ii', 'tlou 2', 'last of us 2'],
+  },
+  {
+    id: 'playstation:tlou-part-2-remastered',
+    external_id: 'playstation:tlou-part-2-remastered',
+    title: 'The Last of Us Part II Remastered',
+    originalTitle: 'The Last of Us Part II Remastered',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co216l.jpg',
+    releaseDate: '2024-01-19',
+    summary: 'Die native PS5-Version mit dem Roguelike-Überlebensmodus No Return und Lost Levels.',
+    genres: ['Action-Adventure', 'Survival'],
+    creator: 'Naughty Dog',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:tlou',
+    collection_name: 'The Last of Us Saga',
+    totalUnits: 30,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['the last of us part 2 remastered', 'tlou 2 remastered', 'last of us 2 ps5'],
+  },
+
+  // ================= WEITERE MEISTERWERKE & KLASSIKER =================
+  {
+    id: 'playstation:gow-2018',
+    external_id: 'playstation:gow-2018',
+    title: 'God of War',
+    originalTitle: 'God of War',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1tmu.jpg',
+    releaseDate: '2018-04-20',
+    summary: 'Kratos beginnt ein neues Leben in der nordischen Mythologie und reist mit seinem Sohn Atreus zum höchsten Gipfel aller Reiche.',
+    genres: ['Action-Adventure', 'Mythologie', 'GOTY'],
+    creator: 'Santa Monica Studio',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:gow',
+    collection_name: 'God of War Saga',
+    totalUnits: 35,
+    unit: 'hours',
+    rating: 5.0,
+    aliases: ['god of war 2018', 'god of war 4', 'gow 2018', 'gow 4'],
+  },
+  {
+    id: 'playstation:gow-ragnarok',
+    external_id: 'playstation:gow-ragnarok',
+    title: 'God of War Ragnarök',
+    originalTitle: 'God of War Ragnarök',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co5s5v.jpg',
+    releaseDate: '2022-11-09',
+    summary: 'Kratos und Atreus müssen alle Neun Welten bereisen, um sich auf die prophezeite Schlacht von Ragnarök vorzubereiten.',
+    genres: ['Action-Adventure', 'Epos'],
+    creator: 'Santa Monica Studio',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:gow',
+    collection_name: 'God of War Saga',
+    totalUnits: 40,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['god of war ragnarok', 'gow ragnarok', 'gow ragnarök'],
+  },
+  {
+    id: 'playstation:ghost-of-tsushima',
+    external_id: 'playstation:ghost-of-tsushima',
+    title: 'Ghost of Tsushima',
+    originalTitle: 'Ghost of Tsushima',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co2767.jpg',
+    releaseDate: '2020-07-17',
+    summary: 'Jin Sakai muss seinen Ehrenkodex als Samurai hinter sich lassen, um die Insel Tsushima vor der mongolischen Invasion zu befreien.',
+    genres: ['Action-Adventure', 'Open World', 'Samurai'],
+    creator: 'Sucker Punch Productions',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:tsushima',
+    collection_name: 'Ghost of Tsushima',
+    totalUnits: 45,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['ghost of tsushima', 'tsushima'],
+  },
+  {
+    id: 'playstation:bloodborne',
+    external_id: 'playstation:bloodborne',
+    title: 'Bloodborne',
+    originalTitle: 'Bloodborne',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1rba.jpg',
+    releaseDate: '2015-03-24',
+    summary: 'Ein Jäger erwacht in der viktorianischen Stadt Yharnam, in der eine uralte Seuche die Menschen in bestialische Monster verwandelt.',
+    genres: ['Action-RPG', 'Souls-like', 'Gothic-Horror'],
+    creator: 'FromSoftware',
+    publisher: 'Sony Computer Entertainment',
+    franchise_id: 'playstation:franchise:bloodborne',
+    collection_name: 'Bloodborne',
+    totalUnits: 35,
+    unit: 'hours',
+    rating: 5.0,
+    aliases: ['bloodborne', 'bloodborn'],
+  },
+  {
+    id: 'playstation:demons-souls',
+    external_id: 'playstation:demons-souls',
+    title: "Demon's Souls",
+    originalTitle: "Demon's Souls",
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co246l.jpg',
+    releaseDate: '2020-11-12',
+    summary: 'Vollständiges PS5-Remake des Souls-Pioniers in der finsteren, nebelverhangenen Welt von Boletaria.',
+    genres: ['Action-RPG', 'Souls-like', 'Dark Fantasy'],
+    creator: 'Bluepoint Games / FromSoftware',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:demonsouls',
+    collection_name: "Demon's Souls",
+    totalUnits: 30,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['demons souls', "demon's souls", 'demon souls'],
+  },
+  {
+    id: 'playstation:horizon-zd',
+    external_id: 'playstation:horizon-zd',
+    title: 'Horizon Zero Dawn',
+    originalTitle: 'Horizon Zero Dawn',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r08.jpg',
+    releaseDate: '2017-02-28',
+    summary: 'Aloy erkundet eine postapokalyptische Erde, auf der riesige tierähnliche Maschinen die Herrschaft übernommen haben.',
+    genres: ['Action-RPG', 'Open World', 'Sci-Fi'],
+    creator: 'Guerrilla Games',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:horizon',
+    collection_name: 'Horizon Series',
+    totalUnits: 45,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['horizon zero dawn', 'horizon 1', 'zero dawn'],
+  },
+  {
+    id: 'playstation:horizon-fw',
+    external_id: 'playstation:horizon-fw',
+    title: 'Horizon Forbidden West',
+    originalTitle: 'Horizon Forbidden West',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co2u6l.jpg',
+    releaseDate: '2022-02-18',
+    summary: 'Aloy bricht in den Verbotenen Westen auf, um das Geheimnis einer verheerenden biologischen Plage zu lüften.',
+    genres: ['Action-RPG', 'Open World'],
+    creator: 'Guerrilla Games',
+    publisher: 'Sony Interactive Entertainment',
+    franchise_id: 'playstation:franchise:horizon',
+    collection_name: 'Horizon Series',
+    totalUnits: 50,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['horizon forbidden west', 'horizon 2', 'forbidden west'],
+  },
   {
     id: 'rawg:eldenring',
     external_id: 'rawg:eldenring',
@@ -37,11 +523,13 @@ export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
     summary: 'Erhebe dich, Befleckter, und lasse dich von der Gnade leiten, um der Eldenfürst im Zwischenland zu werden.',
     genres: ['Action-RPG', 'Open World', 'Souls-like'],
     creator: 'FromSoftware / Bandai Namco',
+    publisher: 'Bandai Namco Entertainment',
     franchise_id: 'rawg:franchise:eldenring',
     collection_name: 'Elden Ring Universe',
     totalUnits: 120,
     unit: 'hours',
     rating: 4.9,
+    aliases: ['elden ring', 'shadow of the erdtree'],
   },
   {
     id: 'rawg:witcher3',
@@ -54,11 +542,13 @@ export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
     summary: 'Als Hexer Geralt von Riva durchstreifst du eine vom Krieg verwüstete Welt auf der Suche nach dem Kind der Prophezeiung.',
     genres: ['RPG', 'Open World', 'Story-Rich'],
     creator: 'CD Projekt RED',
+    publisher: 'CD Projekt',
     franchise_id: 'rawg:franchise:witcher',
     collection_name: 'The Witcher Universe',
     totalUnits: 100,
     unit: 'hours',
     rating: 4.9,
+    aliases: ['witcher 3', 'the witcher 3', 'wild hunt'],
   },
   {
     id: 'rawg:cyberpunk2077',
@@ -71,45 +561,13 @@ export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
     summary: 'Ein Open-World-Action-Adventure in der futuristischen Metropole Night City, besessen von Macht und Cyberware.',
     genres: ['Action', 'RPG', 'Cyberpunk'],
     creator: 'CD Projekt RED',
+    publisher: 'CD Projekt',
     franchise_id: 'rawg:franchise:cyberpunk',
     collection_name: 'Cyberpunk Universe',
     totalUnits: 65,
     unit: 'hours',
     rating: 4.6,
-  },
-  {
-    id: 'rawg:silksong',
-    external_id: 'rawg:hollowknight',
-    title: 'Hollow Knight',
-    originalTitle: 'Hollow Knight',
-    type: 'game',
-    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/367520/library_600x900_2x.jpg',
-    releaseDate: '2017-02-24',
-    summary: 'Erkunde ein verlassenes Insekten-Königreich in diesem handgezeichneten 2D-Metroidvania voller Geheimnisse.',
-    genres: ['Metroidvania', 'Souls-like', 'Indie'],
-    creator: 'Team Cherry',
-    franchise_id: 'rawg:franchise:hollowknight',
-    collection_name: 'Hollow Knight Series',
-    totalUnits: 40,
-    unit: 'hours',
-    rating: 4.8,
-  },
-  {
-    id: 'rawg:gta5',
-    external_id: 'rawg:gta5',
-    title: 'Grand Theft Auto V',
-    originalTitle: 'Grand Theft Auto V',
-    type: 'game',
-    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/271590/library_600x900_2x.jpg',
-    releaseDate: '2013-09-17',
-    summary: 'Drei völlig unterschiedliche Kriminelle planen eine Reihe gefährlicher Überfälle in der Metropole Los Santos.',
-    genres: ['Action', 'Open World', 'Crime'],
-    creator: 'Rockstar Games',
-    franchise_id: 'rawg:franchise:gta',
-    collection_name: 'Grand Theft Auto',
-    totalUnits: 50,
-    unit: 'hours',
-    rating: 4.7,
+    aliases: ['cyberpunk', 'cyberpunk 2077', 'phantom liberty'],
   },
   {
     id: 'rawg:bg3',
@@ -122,11 +580,13 @@ export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
     summary: 'Ein episches Party-basiertes D&D-Rollenspiel voller Entscheidungen, Magie und Abenteuer in den Vergessenen Reichen.',
     genres: ['RPG', 'Turn-Based', 'Story-Rich'],
     creator: 'Larian Studios',
+    publisher: 'Larian Studios',
     franchise_id: 'rawg:franchise:bg',
     collection_name: "Baldur's Gate",
     totalUnits: 110,
     unit: 'hours',
     rating: 5.0,
+    aliases: ['baldurs gate 3', "baldur's gate 3", 'bg3'],
   },
   {
     id: 'rawg:rdr2',
@@ -139,11 +599,51 @@ export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
     summary: 'Amerika, 1899: Arthur Morgan und die Van-der-Linde-Bande sind Gesetzlose auf der Flucht vor Bundesagenten und Kopfgeldjägern.',
     genres: ['Open World', 'Story-Rich', 'Western'],
     creator: 'Rockstar Games',
+    publisher: 'Rockstar Games',
     franchise_id: 'rawg:franchise:rdr',
     collection_name: 'Red Dead',
     totalUnits: 80,
     unit: 'hours',
     rating: 4.9,
+    aliases: ['rdr2', 'red dead redemption 2', 'red dead 2'],
+  },
+  {
+    id: 'rawg:gta5',
+    external_id: 'rawg:gta5',
+    title: 'Grand Theft Auto V',
+    originalTitle: 'Grand Theft Auto V',
+    type: 'game',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/271590/library_600x900_2x.jpg',
+    releaseDate: '2013-09-17',
+    summary: 'Drei völlig unterschiedliche Kriminelle planen eine Reihe gefährlicher Überfälle in der Metropole Los Santos.',
+    genres: ['Action', 'Open World', 'Crime'],
+    creator: 'Rockstar Games',
+    publisher: 'Rockstar Games',
+    franchise_id: 'rawg:franchise:gta',
+    collection_name: 'Grand Theft Auto',
+    totalUnits: 50,
+    unit: 'hours',
+    rating: 4.7,
+    aliases: ['gta 5', 'gta v', 'grand theft auto 5', 'grand theft auto v'],
+  },
+  {
+    id: 'nintendo:zelda-botw',
+    external_id: 'nintendo:zelda-botw',
+    title: 'The Legend of Zelda: Breath of the Wild',
+    originalTitle: 'The Legend of Zelda: Breath of the Wild',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co3p2d.jpg',
+    releaseDate: '2017-03-03',
+    summary: 'Erwache aus einem 100-jährigen Schlaf und erkunde das ungezähmte Königreich Hyrule in völliger Freiheit.',
+    genres: ['Action-Adventure', 'Open World'],
+    creator: 'Nintendo',
+    publisher: 'Nintendo',
+    franchise_id: 'rawg:franchise:zelda',
+    collection_name: 'The Legend of Zelda',
+    totalUnits: 80,
+    unit: 'hours',
+    rating: 5.0,
+    aliases: ['zelda breath of the wild', 'botw', 'breath of the wild'],
   },
   {
     id: 'rawg:zelda-totk',
@@ -156,11 +656,51 @@ export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
     summary: 'Link erkundet das Land Hyrule und die endlosen Himmelsinseln mit neuen Baufähigkeiten und Artefakten.',
     genres: ['Action-Adventure', 'Open World'],
     creator: 'Nintendo',
+    publisher: 'Nintendo',
     franchise_id: 'rawg:franchise:zelda',
     collection_name: 'The Legend of Zelda',
     totalUnits: 90,
     unit: 'hours',
     rating: 4.9,
+    aliases: ['zelda tears of the kingdom', 'totk', 'tears of the kingdom'],
+  },
+  {
+    id: 'nintendo:mario-odyssey',
+    external_id: 'nintendo:mario-odyssey',
+    title: 'Super Mario Odyssey',
+    originalTitle: 'Super Mario Odyssey',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1m76.jpg',
+    releaseDate: '2017-10-27',
+    summary: 'Begleite Mario und Cappy auf einer weltumspannenden 3D-Reise mit dem Luftschiff Odyssey, um Prinzessin Peach zu retten.',
+    genres: ['3D-Plattformer', 'Abenteuer'],
+    creator: 'Nintendo',
+    publisher: 'Nintendo',
+    franchise_id: 'nintendo:franchise:mario',
+    collection_name: 'Super Mario Series',
+    totalUnits: 25,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['mario odyssey', 'super mario odyssey'],
+  },
+  {
+    id: 'rawg:silksong',
+    external_id: 'rawg:hollowknight',
+    title: 'Hollow Knight',
+    originalTitle: 'Hollow Knight',
+    type: 'game',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/367520/library_600x900_2x.jpg',
+    releaseDate: '2017-02-24',
+    summary: 'Erkunde ein verlassenes Insekten-Königreich in diesem handgezeichneten 2D-Metroidvania voller Geheimnisse.',
+    genres: ['Metroidvania', 'Souls-like', 'Indie'],
+    creator: 'Team Cherry',
+    publisher: 'Team Cherry',
+    franchise_id: 'rawg:franchise:hollowknight',
+    collection_name: 'Hollow Knight Series',
+    totalUnits: 40,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['hollow knight', 'hollowknight'],
   },
   {
     id: 'rawg:wukong',
@@ -173,26 +713,121 @@ export const POPULAR_GAMES_CATALOG: SearchResultItem[] = [
     summary: 'Tauche ein in die faszinierende chinesische Mythologie als der Auserkorene auf den Spuren des Affenkönigs Sun Wukong.',
     genres: ['Action-RPG', 'Souls-like'],
     creator: 'Game Science',
+    publisher: 'Game Science',
     franchise_id: 'rawg:franchise:wukong',
     totalUnits: 45,
     unit: 'hours',
     rating: 4.8,
+    aliases: ['black myth wukong', 'wukong'],
+  },
+  {
+    id: 'playstation:ff7-remake',
+    external_id: 'playstation:ff7-remake',
+    title: 'Final Fantasy VII Remake',
+    originalTitle: 'Final Fantasy VII Remake',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r76.jpg',
+    releaseDate: '2020-04-10',
+    summary: 'Cloud Strife kämpft in der Industriemetropole Midgar an der Seite von Avalanche gegen den Megakonzern Shinra.',
+    genres: ['Action-RPG', 'JRPG'],
+    creator: 'Square Enix',
+    publisher: 'Square Enix',
+    franchise_id: 'square:franchise:ff7',
+    collection_name: 'Final Fantasy VII Remake Project',
+    totalUnits: 35,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: ['final fantasy 7 remake', 'ff7 remake', 'ffvii remake'],
+  },
+  {
+    id: 'playstation:ff7-rebirth',
+    external_id: 'playstation:ff7-rebirth',
+    title: 'Final Fantasy VII Rebirth',
+    originalTitle: 'Final Fantasy VII Rebirth',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co7df4.jpg',
+    releaseDate: '2024-02-29',
+    summary: 'Cloud und seine Gefährten verlassen Midgar und erkunden die weite Welt auf der Jagd nach Sephiroth.',
+    genres: ['Action-RPG', 'Open World', 'JRPG'],
+    creator: 'Square Enix',
+    publisher: 'Square Enix',
+    franchise_id: 'square:franchise:ff7',
+    collection_name: 'Final Fantasy VII Remake Project',
+    totalUnits: 65,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: ['final fantasy 7 rebirth', 'ff7 rebirth', 'ffvii rebirth'],
+  },
+  {
+    id: 'atlus:persona-5-royal',
+    external_id: 'atlus:persona-5-royal',
+    title: 'Persona 5 Royal',
+    originalTitle: 'Persona 5 Royal',
+    type: 'game',
+    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1nic.jpg',
+    releaseDate: '2019-10-31',
+    summary: 'Schlüpfe in die Rolle von Joker und stiehl die verkommenen Begierden korrupter Herzen in Tokyo.',
+    genres: ['JRPG', 'Social Sim', 'Turn-Based'],
+    creator: 'Atlus',
+    publisher: 'Sega',
+    franchise_id: 'atlus:franchise:persona',
+    collection_name: 'Persona Series',
+    totalUnits: 100,
+    unit: 'hours',
+    rating: 5.0,
+    aliases: ['persona 5', 'p5r', 'persona 5 royal'],
   },
 ];
 
 export class RAWGAdapter implements MediaAdapter {
   async search(query: string): Promise<SearchResultItem[]> {
-    const q = query.trim().toLowerCase();
-    if (!q) {
+    const rawLower = query.trim().toLowerCase();
+    if (!rawLower) {
       return POPULAR_GAMES_CATALOG;
     }
 
-    const items: SearchResultItem[] = [];
+    const queryVariants = normalizeGameQuery(rawLower);
+    const catalogMatches: SearchResultItem[] = [];
 
-    // 1. Live Steam Store Search API (Completely FREE, public, returns real official 2:3 vertical covers!)
+    // 1. Check popular and curated console catalog with alias and substring intelligence
+    for (const game of POPULAR_GAMES_CATALOG) {
+      const isMatch = queryVariants.some((v) => {
+        if (game.title.toLowerCase().includes(v)) return true;
+        if (game.originalTitle?.toLowerCase().includes(v)) return true;
+        if (game.creator?.toLowerCase().includes(v)) return true;
+        if (game.publisher?.toLowerCase().includes(v)) return true;
+        if (game.collection_name?.toLowerCase().includes(v)) return true;
+        if (game.aliases && game.aliases.some((a) => a.toLowerCase().includes(v) || v.includes(a.toLowerCase()))) {
+          return true;
+        }
+
+        // Check if all words of the variant match anywhere in title or aliases
+        const words = v.split(/\s+/).filter((w) => w.length > 1);
+        if (words.length > 0) {
+          const haystack = (
+            game.title +
+            ' ' +
+            (game.originalTitle || '') +
+            ' ' +
+            (game.aliases ? game.aliases.join(' ') : '')
+          ).toLowerCase();
+          if (words.every((w) => haystack.includes(w))) return true;
+        }
+        return false;
+      });
+
+      if (isMatch) {
+        catalogMatches.push(game);
+      }
+    }
+
+    const items: SearchResultItem[] = [...catalogMatches];
+
+    // 2. Live Steam Store Search API (Completely FREE, public)
     try {
+      const primaryQuery = queryVariants[1] || queryVariants[0];
       const steamRes = await fetch(
-        `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(q)}&l=german&cc=DE`
+        `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(primaryQuery)}&l=german&cc=DE`
       );
       if (steamRes.ok) {
         const data = await steamRes.json();
@@ -201,51 +836,64 @@ export class RAWGAdapter implements MediaAdapter {
           const external_id = `steam:${game.id}`;
           const coverUrl = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.id}/library_600x900_2x.jpg`;
 
-          items.push({
-            id: external_id,
-            external_id,
-            title: game.name,
-            type: 'game',
-            coverUrl,
-            summary: `Videospiel auf Steam (App-ID: ${game.id}).`,
-            genres: ['Videospiel', 'PC / Konsole'],
-            creator: 'Steam Store',
-            franchise_id: `steam:franchise:${game.id}`,
-            totalUnits: 40,
-            unit: 'hours',
-            rating: 4.6,
-          });
+          // Do not duplicate if already matched from catalog
+          if (
+            !items.some(
+              (x) => x.title.toLowerCase() === game.name.toLowerCase() || x.external_id === external_id
+            )
+          ) {
+            items.push({
+              id: external_id,
+              external_id,
+              title: game.name,
+              type: 'game',
+              coverUrl,
+              summary: `Videospiel auf Steam (App-ID: ${game.id}).`,
+              genres: ['Videospiel', 'PC / Konsole'],
+              creator: 'Steam Store',
+              franchise_id: `steam:franchise:${game.id}`,
+              totalUnits: 40,
+              unit: 'hours',
+              rating: 4.6,
+            });
+          }
         }
       }
     } catch (e) {
       console.warn('Steam Store Search failed:', e);
     }
 
-    // 2. RAWG Live API if configured
+    // 3. RAWG Live API if configured
     if (RAWG_API_KEY) {
       try {
         const res = await fetch(
-          `${RAWG_BASE_URL}/games?search=${encodeURIComponent(q)}&key=${RAWG_API_KEY}&page_size=8`
+          `${RAWG_BASE_URL}/games?search=${encodeURIComponent(queryVariants[0])}&key=${RAWG_API_KEY}&page_size=8`
         );
         if (res.ok) {
           const data = await res.json();
           for (const game of data.results || []) {
             const external_id = `rawg:${game.id}`;
-            items.push({
-              id: external_id,
-              external_id,
-              title: game.name,
-              type: 'game',
-              coverUrl: game.background_image || createGameSvgCover(game.name),
-              releaseDate: game.released,
-              summary: `Plattformen: ${game.platforms?.map((p: any) => p.platform.name).join(', ') || 'PC, Konsolen'}`,
-              genres: game.genres?.map((g: any) => g.name) || ['Game'],
-              creator: game.developers?.[0]?.name || 'Entwicklerstudio',
-              franchise_id: `rawg:franchise:${game.slug}`,
-              totalUnits: game.playtime || 40,
-              unit: 'hours',
-              rating: game.rating ? Math.round(game.rating * 10) / 10 : 4.5,
-            });
+            if (
+              !items.some(
+                (x) => x.title.toLowerCase() === game.name.toLowerCase() || x.external_id === external_id
+              )
+            ) {
+              items.push({
+                id: external_id,
+                external_id,
+                title: game.name,
+                type: 'game',
+                coverUrl: game.background_image || createNoCoverSvg(game.name, 'game'),
+                releaseDate: game.released,
+                summary: `Plattformen: ${game.platforms?.map((p: any) => p.platform.name).join(', ') || 'PC, Konsolen'}`,
+                genres: game.genres?.map((g: any) => g.name) || ['Game'],
+                creator: game.developers?.[0]?.name || 'Entwicklerstudio',
+                franchise_id: `rawg:franchise:${game.slug}`,
+                totalUnits: game.playtime || 40,
+                unit: 'hours',
+                rating: game.rating ? Math.round(game.rating * 10) / 10 : 4.5,
+              });
+            }
           }
         }
       } catch (e) {
@@ -253,26 +901,11 @@ export class RAWGAdapter implements MediaAdapter {
       }
     }
 
-    // 3. Search in popular catalog
-    const matches = POPULAR_GAMES_CATALOG.filter(
-      (m) =>
-        m.title.toLowerCase().includes(q) ||
-        (m.creator && m.creator.toLowerCase().includes(q)) ||
-        (m.genres && m.genres.some((g) => g.toLowerCase().includes(q)))
-    );
-
-    const combined = [...items];
-    for (const match of matches) {
-      if (!combined.some((x) => x.title.toLowerCase() === match.title.toLowerCase())) {
-        combined.push(match);
-      }
+    if (items.length > 0) {
+      return items;
     }
 
-    if (combined.length > 0) {
-      return combined;
-    }
-
-    // Dynamic fallback with dedicated game artwork (Never shows the wrong cover!)
+    // Dynamic fallback with dark no-cover placeholder
     const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     return [
       {
@@ -280,7 +913,7 @@ export class RAWGAdapter implements MediaAdapter {
         external_id: `custom:game:${Date.now()}`,
         title: capitalized,
         type: 'game',
-        coverUrl: createGameSvgCover(capitalized),
+        coverUrl: createNoCoverSvg(capitalized, 'game'),
         releaseDate: new Date().toISOString().split('T')[0],
         summary: undefined,
         genres: ['Action', 'Videospiel'],
@@ -295,7 +928,137 @@ export class RAWGAdapter implements MediaAdapter {
   async checkSequels(item: MediaItem): Promise<SequelNotification | null> {
     const titleLower = item.title.toLowerCase();
 
-    // 1. Elden Ring -> Shadow of the Erdtree
+    // 1. Uncharted 1 -> Uncharted 2
+    if (
+      (item.external_id === 'playstation:uncharted-1' || titleLower.includes('drakes schicksal') || (titleLower.includes('uncharted') && (titleLower.includes('fortune') || titleLower.includes(' 1')))) &&
+      !titleLower.includes('among thieves') &&
+      !titleLower.includes('uncharted 2')
+    ) {
+      return {
+        id: `seq-uncharted-2-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: 'Uncharted 2: Among Thieves',
+        sequelType: 'game',
+        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7g.jpg',
+        releaseDate: '2009-10-13',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'playstation:uncharted-2',
+        franchise_id: 'playstation:franchise:uncharted',
+        description: 'Das gefeierte Sequel: Nathan Drake folgt Marco Polos Spuren nach Shambhala.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 11, unit: 'hours' },
+      };
+    }
+
+    // 2. Uncharted 2 -> Uncharted 3
+    if (
+      (item.external_id === 'playstation:uncharted-2' || (titleLower.includes('uncharted') && (titleLower.includes('among thieves') || titleLower.includes(' 2')))) &&
+      !titleLower.includes('deception') &&
+      !titleLower.includes('uncharted 3')
+    ) {
+      return {
+        id: `seq-uncharted-3-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: "Uncharted 3: Drake's Deception",
+        sequelType: 'game',
+        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.jpg',
+        releaseDate: '2011-11-01',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'playstation:uncharted-3',
+        franchise_id: 'playstation:franchise:uncharted',
+        description: 'Nathan Drake und Sully durchqueren die Wüste auf der Suche nach dem Atlantis des Sandes.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 11, unit: 'hours' },
+      };
+    }
+
+    // 3. Astro's Playroom -> Astro Bot (2024)
+    if (
+      (item.external_id === 'playstation:astros-playroom' || titleLower.includes('playroom')) &&
+      !titleLower.includes('2024') &&
+      item.title !== 'Astro Bot'
+    ) {
+      return {
+        id: `seq-astro-bot-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: 'Astro Bot (PS5)',
+        sequelType: 'game',
+        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co88e5.jpg',
+        releaseDate: '2024-09-06',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'playstation:astro-bot-2024',
+        franchise_id: 'playstation:franchise:astrobot',
+        description: 'Das große 3D-Plattformer-Meisterwerk von Team ASOBI mit über 300 VIP-Bots.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 15, unit: 'hours' },
+      };
+    }
+
+    // 4. Spider-Man -> Spider-Man 2
+    if (
+      (item.external_id === 'playstation:spiderman-ps4' || item.external_id === 'playstation:spiderman-remastered' || (titleLower.includes('spider-man') && !titleLower.includes(' 2') && !titleLower.includes('miles'))) &&
+      !titleLower.includes('spider-man 2') &&
+      !titleLower.includes('spiderman 2')
+    ) {
+      return {
+        id: `seq-spiderman-2-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: "Marvel's Spider-Man 2",
+        sequelType: 'game',
+        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co6nn4.jpg',
+        releaseDate: '2023-10-20',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'playstation:spiderman-2',
+        franchise_id: 'playstation:franchise:spiderman',
+        description: 'Peter Parker und Miles Morales kämpfen gemeinsam gegen Venom und Kraven den Jäger.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 20, unit: 'hours' },
+      };
+    }
+
+    // 5. The Last of Us -> The Last of Us Part II
+    if (
+      (item.external_id === 'playstation:tlou-original' || item.external_id === 'playstation:tlou-remastered' || item.external_id === 'playstation:tlou-part-1' || (titleLower.includes('last of us') && !titleLower.includes('part ii') && !titleLower.includes('part 2') && !titleLower.includes('part 1'))) &&
+      !titleLower.includes('part 2') &&
+      !titleLower.includes('part ii')
+    ) {
+      return {
+        id: `seq-tlou-2-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: 'The Last of Us Part II',
+        sequelType: 'game',
+        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co216l.jpg',
+        releaseDate: '2020-06-19',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'playstation:tlou-part-2',
+        franchise_id: 'playstation:franchise:tlou',
+        description: 'Fünf Jahre später: Ellie begibt sich auf einen unerbittlichen Vergeltungszug durch Seattle.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 25, unit: 'hours' },
+      };
+    }
+
+    // 6. Elden Ring -> Shadow of the Erdtree
     if (
       (item.external_id === 'rawg:eldenring' || titleLower.includes('elden ring')) &&
       !titleLower.includes('shadow of the erdtree')
@@ -321,7 +1084,33 @@ export class RAWGAdapter implements MediaAdapter {
       };
     }
 
-    // 2. The Witcher 3 -> The Witcher 4: Polaris
+    // 7. God of War -> God of War Ragnarök
+    if (
+      (item.external_id === 'playstation:gow-2018' || (titleLower.includes('god of war') && !titleLower.includes('ragnar'))) &&
+      !titleLower.includes('ragnarok') &&
+      !titleLower.includes('ragnarök')
+    ) {
+      return {
+        id: `seq-gow-ragnarok-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: 'God of War Ragnarök',
+        sequelType: 'game',
+        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co5s5v.jpg',
+        releaseDate: '2022-11-09',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'playstation:gow-ragnarok',
+        franchise_id: 'playstation:franchise:gow',
+        description: 'Kratos und Atreus reisen durch die Neun Welten vor Beginn von Ragnarök.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 40, unit: 'hours' },
+      };
+    }
+
+    // 8. The Witcher 3 -> The Witcher 4: Polaris
     if (
       (item.external_id === 'rawg:witcher3' || titleLower.includes('witcher 3')) &&
       !titleLower.includes('witcher 4') &&
@@ -348,7 +1137,7 @@ export class RAWGAdapter implements MediaAdapter {
       };
     }
 
-    // 3. Hollow Knight -> Silksong
+    // 9. Hollow Knight -> Silksong
     if (
       (item.external_id === 'rawg:hollowknight' || titleLower.includes('hollow knight')) &&
       !titleLower.includes('silksong')
@@ -374,7 +1163,7 @@ export class RAWGAdapter implements MediaAdapter {
       };
     }
 
-    // 4. GTA V -> GTA VI
+    // 10. GTA V -> GTA VI
     if (
       (item.external_id === 'rawg:gta5' || titleLower.includes('gta 5') || titleLower.includes('grand theft auto v')) &&
       !titleLower.includes('vi') &&
