@@ -365,11 +365,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={onResetLibrary}
-          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
-          title="Setzt die Mediensammlung auf die interaktive Demo-Standard-Sammlung zurück"
+          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium text-zinc-500 hover:text-rose-400 transition-colors"
+          title="Setzt die gesamte Mediensammlung zurück"
         >
           <RotateCcw className="w-3 h-3" />
-          <span>Demo-Daten zurücksetzen</span>
+          <span>Sammlung zurücksetzen</span>
         </button>
       </div>
     </aside>

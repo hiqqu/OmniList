@@ -1,11 +1,12 @@
 import { MediaItem, SequelNotification, MediaStatus, ProgressUnit } from '@/types/media';
-import { INITIAL_MEDIA_ITEMS, INITIAL_SEQUEL_NOTIFICATIONS } from './seed-data';
+import { INITIAL_MEDIA_ITEMS, INITIAL_SEQUEL_NOTIFICATIONS, LEGACY_DEMO_MEDIA_IDS, LEGACY_DEMO_SEQUEL_IDS } from './seed-data';
 import { createBookSvgCover } from './book-cover';
 
 const MEDIA_STORAGE_KEY = 'omnilist_media_library_v1';
 const LEGACY_MEDIA_STORAGE_KEY = 'omnitrack_media_library_v1';
 const SEQUELS_STORAGE_KEY = 'omnilist_sequels_v1';
 const LEGACY_SEQUELS_STORAGE_KEY = 'omnitrack_sequels_v1';
+const DEMO_CLEARED_FLAG_KEY = 'omnilist_demo_cleared_v1';
 
 export function getStoredMedia(): MediaItem[] {
   if (typeof window === 'undefined') return INITIAL_MEDIA_ITEMS;
@@ -15,14 +16,23 @@ export function getStoredMedia(): MediaItem[] {
     const legacyRaw = !raw ? localStorage.getItem(LEGACY_MEDIA_STORAGE_KEY) : null;
     const sourceRaw = raw || legacyRaw;
     if (!sourceRaw) {
-      localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(INITIAL_MEDIA_ITEMS));
-      return INITIAL_MEDIA_ITEMS;
+      localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify([]));
+      localStorage.setItem(DEMO_CLEARED_FLAG_KEY, 'true');
+      return [];
     }
     const parsed: MediaItem[] = JSON.parse(sourceRaw);
     
-    // Auto-migrate legacy Unsplash covers or mismatched placeholders to official posters
+    // Auto-purge legacy demo items from existing storage
     let hasMigrated = Boolean(legacyRaw);
-    const upgraded = parsed.map((item) => {
+    let workingList = parsed;
+    if (!localStorage.getItem(DEMO_CLEARED_FLAG_KEY)) {
+      workingList = parsed.filter((item) => !LEGACY_DEMO_MEDIA_IDS.has(item.id));
+      localStorage.setItem(DEMO_CLEARED_FLAG_KEY, 'true');
+      hasMigrated = true;
+    }
+    
+    // Auto-migrate legacy Unsplash covers or mismatched placeholders to official posters
+    const upgraded = workingList.map((item) => {
       // Fix Spider-Man saved with old Dune/Severance placeholder from earlier searches
       if (
         item.title.toLowerCase().includes('spider-man') &&
@@ -212,30 +222,18 @@ export function getStoredSequels(): SequelNotification[] {
     const legacyRaw = !raw ? localStorage.getItem(LEGACY_SEQUELS_STORAGE_KEY) : null;
     const sourceRaw = raw || legacyRaw;
     if (!sourceRaw) {
-      localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(INITIAL_SEQUEL_NOTIFICATIONS));
-      return INITIAL_SEQUEL_NOTIFICATIONS;
+      localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify([]));
+      return [];
     }
     const parsed: SequelNotification[] = JSON.parse(sourceRaw);
 
-    // Auto-migrate legacy Unsplash covers to official posters
+    // Auto-purge legacy demo sequels
     let hasMigrated = Boolean(legacyRaw);
-    const upgraded = parsed.map((seq) => {
-      if (
-        (seq.sequelCoverUrl && seq.sequelCoverUrl.includes('images.unsplash.com')) ||
-        (seq.parentCoverUrl && seq.parentCoverUrl.includes('images.unsplash.com'))
-      ) {
-        const matchingSeed = INITIAL_SEQUEL_NOTIFICATIONS.find((s) => s.id === seq.id);
-        if (matchingSeed) {
-          hasMigrated = true;
-          return {
-            ...seq,
-            sequelCoverUrl: matchingSeed.sequelCoverUrl,
-            parentCoverUrl: matchingSeed.parentCoverUrl,
-          };
-        }
-      }
-      return seq;
-    });
+    const nonDemoSequels = parsed.filter((s) => !LEGACY_DEMO_SEQUEL_IDS.has(s.id));
+    if (nonDemoSequels.length !== parsed.length) {
+      hasMigrated = true;
+    }
+    const upgraded = nonDemoSequels;
 
     if (hasMigrated) {
       localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(upgraded));
@@ -409,10 +407,13 @@ export function acceptSequel(
 }
 
 export function resetLibraryToDefault(): { media: MediaItem[]; sequels: SequelNotification[] } {
-  saveStoredMedia(INITIAL_MEDIA_ITEMS);
-  saveStoredSequels(INITIAL_SEQUEL_NOTIFICATIONS);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(DEMO_CLEARED_FLAG_KEY, 'true');
+  }
+  saveStoredMedia([]);
+  saveStoredSequels([]);
   return {
-    media: INITIAL_MEDIA_ITEMS,
-    sequels: INITIAL_SEQUEL_NOTIFICATIONS,
+    media: [],
+    sequels: [],
   };
 }

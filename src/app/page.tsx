@@ -310,13 +310,13 @@ export default function Home() {
     }
   };
 
-  // Reset to default seed
+  // Reset library
   const handleResetLibrary = () => {
-    if (window.confirm('Möchtest du die Mediensammlung auf die Standard-Demodaten zurücksetzen?')) {
+    if (window.confirm('Möchtest du wirklich alle Einträge aus deiner Mediensammlung löschen?')) {
       const reset = resetLibraryToDefault();
       setMedia(reset.media);
       setSequels(reset.sequels);
-      addToast('info', 'Demo-Daten wiederhergestellt', 'Vorbefüllte Medien & Sequel-Meldungen geladen.');
+      addToast('info', 'Sammlung geleert', 'Deine Mediensammlung wurde vollständig zurückgesetzt.');
     }
   };
 
@@ -535,6 +535,8 @@ export default function Home() {
                   <p className="text-xs text-zinc-400 max-w-sm mt-1 mb-5">
                     {searchQuery
                       ? `Keine Einträge für "${searchQuery}" mit den aktuellen Filtern.`
+                      : selectedType === 'all'
+                      ? 'Deine Sammlung ist aktuell noch leer. Füge dein erstes Medium hinzu.'
                       : 'In dieser Kategorie befinden sich noch keine Medien.'}
                   </p>
                   <button
