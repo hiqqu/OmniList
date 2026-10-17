@@ -176,6 +176,38 @@ export default function Home() {
     }
   };
 
+  // Toggle Game Achievements Handler
+  const handleToggleGameAchievements = (id: string) => {
+    const item = media.find((m) => m.id === id);
+    if (!item) return;
+    const existing = item.gameTracker?.achievements || { current: 0, total: 40 };
+    const total = existing.total > 0 ? existing.total : 40;
+    const isAllDone = existing.current >= total && total > 0;
+    const newCurr = isAllDone ? 0 : total;
+    const updated = updateMediaItem(id, {
+      gameTracker: {
+        ...(item.gameTracker || {}),
+        achievements: {
+          current: newCurr,
+          total: total,
+        },
+        completionist100: !isAllDone ? true : item.gameTracker?.completionist100,
+        storyCompleted: !isAllDone ? true : item.gameTracker?.storyCompleted,
+      },
+      status: !isAllDone && item.status !== 'owned' ? 'completed' : item.status,
+    });
+    if (updated) {
+      setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      addToast(
+        'info',
+        item.title,
+        !isAllDone
+          ? `Alle ${total} Achievements als freigeschaltet markiert`
+          : 'Achievements zurückgesetzt'
+      );
+    }
+  };
+
   // Status Change Handler
   const handleUpdateStatus = (id: string, newStatus: MediaStatus) => {
     const item = media.find((m) => m.id === id);
@@ -197,7 +229,11 @@ export default function Home() {
       addToast(
         'info',
         `Status aktualisiert: ${updated.title}`,
-        isCompleted && total ? `Alle ${total} Einheiten als abgeschlossen markiert.` : undefined
+        newStatus === 'dropped'
+          ? 'Medium als abgebrochen markiert.'
+          : isCompleted && total
+          ? `Alle ${total} Einheiten als abgeschlossen markiert.`
+          : undefined
       );
     }
   };
@@ -248,7 +284,30 @@ export default function Home() {
   const handleAddMedia = (newItemData: Omit<MediaItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     const created = addMediaItem(newItemData);
     setMedia((prev) => [created, ...prev]);
-    addToast('success', `Hinzugefügt!`, `${created.title} ist jetzt in deiner Sammlung.`);
+
+    const isGame = created.type === 'game';
+    const is100 = created.gameTracker?.completionist100;
+    const isAchievements = Boolean(
+      created.gameTracker?.achievements &&
+      created.gameTracker.achievements.current >= created.gameTracker.achievements.total
+    );
+
+    let statusLabel = 'deiner Mediensammlung';
+    if (isGame && isAchievements) {
+      statusLabel = '„Alle Achievements (100%)“';
+    } else if (isGame && is100) {
+      statusLabel = '„100% Meisterung“';
+    } else if (created.status === 'in_progress') {
+      statusLabel = '„Gerade dabei“';
+    } else if (created.status === 'planned') {
+      statusLabel = '„Geplant“';
+    } else if (created.status === 'completed') {
+      statusLabel = '„Beendet“';
+    } else if (created.status === 'dropped') {
+      statusLabel = '„Abgebrochen“';
+    }
+
+    addToast('success', `Hinzugefügt!`, `"${created.title}" wurde zu ${statusLabel} hinzugefügt.`);
   };
 
   // Sequel Radar Actions
@@ -520,6 +579,7 @@ export default function Home() {
                       onToggleOwned={handleToggleOwned}
                       onToggleGameStory={handleToggleGameStory}
                       onToggleGame100={handleToggleGame100}
+                      onToggleGameAchievements={handleToggleGameAchievements}
                       onEdit={setEditingItem}
                       onDelete={handleDeleteMedia}
                     />

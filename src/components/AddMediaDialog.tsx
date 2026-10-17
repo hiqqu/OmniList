@@ -19,6 +19,9 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
+  Trophy,
+  Award,
+  XCircle,
 } from 'lucide-react';
 import { MediaType, SearchResultItem, MediaStatus, MediaItem } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
@@ -43,7 +46,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
-  const [selectedStatus, setSelectedStatus] = useState<MediaStatus>('in_progress');
+  const [selectedStatus, setSelectedStatus] = useState<MediaStatus | '100_percent' | 'all_achievements'>('in_progress');
   const [isOwned, setIsOwned] = useState<boolean>(false);
 
   // Book edition switcher state
@@ -152,6 +155,9 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   const handleSelectTab = (tab: MediaType) => {
     setActiveTab(tab);
     executeSearch(searchQuery, tab);
+    if (tab !== 'game' && (selectedStatus === '100_percent' || selectedStatus === 'all_achievements')) {
+      setSelectedStatus('completed');
+    }
   };
 
   const handleToggleEditions = async (result: SearchResultItem) => {
@@ -188,14 +194,18 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   };
 
   const handleAddEdition = (result: SearchResultItem, edition: BookEditionItem) => {
-    const isCompleted = selectedStatus === 'completed';
+    const effectiveStatus: MediaStatus =
+      selectedStatus === '100_percent' || selectedStatus === 'all_achievements'
+        ? 'completed'
+        : (selectedStatus as MediaStatus);
+    const isCompleted = effectiveStatus === 'completed';
     const totalUnits = edition.pages || result.totalUnits || 350;
 
     onAddMedia({
       title: edition.title || result.title,
       originalTitle: edition.subtitle || result.originalTitle,
       type: 'book',
-      status: selectedStatus,
+      status: effectiveStatus,
       coverUrl: edition.coverUrl || result.coverUrl,
       bannerUrl: result.bannerUrl,
       rating: undefined,
@@ -208,14 +218,14 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       publisher: edition.publisher,
       isbn: edition.isbn,
       progress: {
-        current: isCompleted ? totalUnits : selectedStatus === 'in_progress' ? 1 : 0,
+        current: isCompleted ? totalUnits : effectiveStatus === 'in_progress' ? 1 : 0,
         total: totalUnits,
         unit: 'pages',
       },
       external_id: edition.isbn ? `isbn:${edition.isbn}` : result.external_id,
       franchise_id: result.franchise_id,
       collection_name: edition.publisher ? `${edition.publisher} Ausgabe` : result.collection_name,
-      isOwned: isOwned || selectedStatus === 'owned',
+      isOwned: isOwned || effectiveStatus === 'owned',
       last_sequel_check: new Date().toISOString(),
     });
 
@@ -228,8 +238,14 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   };
 
   const handleAdd = (result: SearchResultItem) => {
-    const isCompleted = selectedStatus === 'completed';
     const isGame = result.type === 'game';
+    const is100Option = isGame && selectedStatus === '100_percent';
+    const isAchievementsOption = isGame && selectedStatus === 'all_achievements';
+    const effectiveStatus: MediaStatus =
+      is100Option || isAchievementsOption
+        ? 'completed'
+        : (selectedStatus as MediaStatus);
+    const isCompleted = effectiveStatus === 'completed' || is100Option || isAchievementsOption;
     const isMovie = result.type === 'movie';
     const totalUnits = isGame ? undefined : (result.totalUnits || (isMovie ? 120 : 10));
 
@@ -237,7 +253,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       title: result.title,
       originalTitle: result.originalTitle,
       type: result.type,
-      status: selectedStatus,
+      status: effectiveStatus,
       coverUrl: result.coverUrl,
       bannerUrl: result.bannerUrl,
       rating: undefined,
@@ -250,7 +266,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       publisher: result.publisher,
       isbn: result.isbn,
       progress: {
-        current: isCompleted ? (totalUnits || 0) : selectedStatus === 'in_progress' ? 1 : 0,
+        current: isCompleted ? (totalUnits || 0) : effectiveStatus === 'in_progress' ? 1 : 0,
         total: totalUnits,
         unit: isMovie ? 'minutes' : result.unit,
         currentSeason: result.totalSeasons ? 1 : undefined,
@@ -259,14 +275,15 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       gameTracker: isGame
         ? {
             storyCompleted: isCompleted,
-            completionist100: false,
+            completionist100: is100Option || isAchievementsOption,
+            achievements: isAchievementsOption ? { current: 40, total: 40 } : undefined,
             playtimeHours: 0,
           }
         : undefined,
       external_id: result.external_id,
       franchise_id: result.franchise_id,
       collection_name: result.collection_name,
-      isOwned: isOwned || selectedStatus === 'owned',
+      isOwned: isOwned || effectiveStatus === 'owned',
       last_sequel_check: new Date().toISOString(),
     });
 
@@ -278,31 +295,39 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
     const title = searchQuery.trim().replace(/\b\w/g, (c) => c.toUpperCase());
     const isGame = activeTab === 'game';
     const isMovie = activeTab === 'movie';
+    const is100Option = isGame && selectedStatus === '100_percent';
+    const isAchievementsOption = isGame && selectedStatus === 'all_achievements';
+    const effectiveStatus: MediaStatus =
+      is100Option || isAchievementsOption
+        ? 'completed'
+        : (selectedStatus as MediaStatus);
+    const isCompleted = effectiveStatus === 'completed' || is100Option || isAchievementsOption;
     const unit = activeTab === 'book' ? 'pages' : isGame ? 'hours' : isMovie ? 'minutes' : 'episodes';
     const total = isGame ? undefined : (activeTab === 'book' ? 350 : isMovie ? 120 : 12);
 
     onAddMedia({
       title,
       type: activeTab,
-      status: selectedStatus,
+      status: effectiveStatus,
       coverUrl: createNoCoverSvg(title, activeTab),
       rating: undefined,
       releaseDate: new Date().toISOString().split('T')[0],
       summary: undefined,
       genres: [activeTab.toUpperCase()],
       progress: {
-        current: selectedStatus === 'completed' ? (total || 0) : selectedStatus === 'in_progress' ? 1 : 0,
+        current: isCompleted ? (total || 0) : effectiveStatus === 'in_progress' ? 1 : 0,
         total,
         unit,
       },
       gameTracker: isGame
         ? {
-            storyCompleted: selectedStatus === 'completed',
-            completionist100: false,
+            storyCompleted: isCompleted,
+            completionist100: is100Option || isAchievementsOption,
+            achievements: isAchievementsOption ? { current: 40, total: 40 } : undefined,
             playtimeHours: 0,
           }
         : undefined,
-      isOwned: isOwned || selectedStatus === 'owned',
+      isOwned: isOwned || effectiveStatus === 'owned',
       external_id: `custom:${activeTab}:${Date.now()}`,
     });
 
@@ -417,21 +442,116 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[11px] text-zinc-400 hidden sm:inline">Status:</span>
-              {(['in_progress', 'planned', 'completed'] as MediaStatus[]).map((st) => (
-                <button
-                  key={st}
-                  type="button"
-                  onClick={() => setSelectedStatus(st)}
-                  className={cn(
-                    'px-3 py-1 rounded-full font-bold transition-colors text-[11px]',
-                    selectedStatus === st
-                      ? 'bg-zinc-100 text-zinc-950 shadow-sm'
-                      : 'bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] border border-[#282D37]'
-                  )}
-                >
-                  {st === 'in_progress' ? 'Gerade dabei' : st === 'planned' ? 'Geplant' : 'Beendet'}
-                </button>
-              ))}
+              {activeTab === 'game' ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus('in_progress')}
+                    className={cn(
+                      'px-3 py-1 rounded-full font-bold transition-colors text-[11px]',
+                      selectedStatus === 'in_progress'
+                        ? 'bg-zinc-100 text-zinc-950 shadow-sm'
+                        : 'bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] border border-[#282D37]'
+                    )}
+                  >
+                    Gerade dabei
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus('planned')}
+                    className={cn(
+                      'px-3 py-1 rounded-full font-bold transition-colors text-[11px]',
+                      selectedStatus === 'planned'
+                        ? 'bg-zinc-100 text-zinc-950 shadow-sm'
+                        : 'bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] border border-[#282D37]'
+                    )}
+                  >
+                    Geplant
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus('completed')}
+                    className={cn(
+                      'px-3 py-1 rounded-full font-bold transition-colors text-[11px]',
+                      selectedStatus === 'completed'
+                        ? 'bg-zinc-100 text-zinc-950 shadow-sm'
+                        : 'bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] border border-[#282D37]'
+                    )}
+                  >
+                    Beendet
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus('100_percent')}
+                    className={cn(
+                      'px-3 py-1 rounded-full font-bold transition-colors text-[11px] flex items-center gap-1',
+                      selectedStatus === '100_percent'
+                        ? 'bg-amber-400 text-zinc-950 shadow-sm'
+                        : 'bg-[#0F1117] text-amber-300/80 hover:text-amber-300 border border-[#282D37]'
+                    )}
+                  >
+                    <Trophy className="w-3 h-3" />
+                    <span>100%</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus('all_achievements')}
+                    className={cn(
+                      'px-3 py-1 rounded-full font-bold transition-colors text-[11px] flex items-center gap-1',
+                      selectedStatus === 'all_achievements'
+                        ? 'bg-amber-400 text-zinc-950 shadow-sm'
+                        : 'bg-[#0F1117] text-amber-300/80 hover:text-amber-300 border border-[#282D37]'
+                    )}
+                  >
+                    <Award className="w-3 h-3" />
+                    <span>Alle Achievements</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus('dropped')}
+                    className={cn(
+                      'px-3 py-1 rounded-full font-bold transition-colors text-[11px] flex items-center gap-1',
+                      selectedStatus === 'dropped'
+                        ? 'bg-rose-500 text-white shadow-sm'
+                        : 'bg-[#0F1117] text-rose-400/80 hover:text-rose-400 border border-[#282D37]'
+                    )}
+                  >
+                    <XCircle className="w-3 h-3" />
+                    <span>Abgebrochen</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {(['in_progress', 'planned', 'completed'] as MediaStatus[]).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setSelectedStatus(st)}
+                      className={cn(
+                        'px-3 py-1 rounded-full font-bold transition-colors text-[11px]',
+                        selectedStatus === st
+                          ? 'bg-zinc-100 text-zinc-950 shadow-sm'
+                          : 'bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] border border-[#282D37]'
+                      )}
+                    >
+                      {st === 'in_progress' ? 'Gerade dabei' : st === 'planned' ? 'Geplant' : 'Beendet'}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus('dropped')}
+                    className={cn(
+                      'px-3 py-1 rounded-full font-bold transition-colors text-[11px] flex items-center gap-1',
+                      selectedStatus === 'dropped'
+                        ? 'bg-rose-500 text-white shadow-sm'
+                        : 'bg-[#0F1117] text-rose-400/80 hover:text-rose-400 border border-[#282D37]'
+                    )}
+                  >
+                    <XCircle className="w-3 h-3" />
+                    <span>Abgebrochen</span>
+                  </button>
+                </>
+              )}
 
               <div className="h-4 w-[1px] bg-zinc-700 mx-1 hidden sm:block" />
 

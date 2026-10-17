@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers } from 'lucide-react';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
@@ -14,6 +14,7 @@ interface MediaCardProps {
   onToggleOwned?: (id: string) => void;
   onToggleGameStory?: (id: string) => void;
   onToggleGame100?: (id: string) => void;
+  onToggleGameAchievements?: (id: string) => void;
   onEdit: (item: MediaItem) => void;
   onDelete: (id: string) => void;
 }
@@ -25,6 +26,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   onToggleOwned,
   onToggleGameStory,
   onToggleGame100,
+  onToggleGameAchievements,
   onEdit,
   onDelete,
 }) => {
@@ -39,6 +41,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const isGameStoryDone = Boolean(item.gameTracker?.storyCompleted);
   const isGame100Done = Boolean(item.gameTracker?.completionist100);
   const achievements = item.gameTracker?.achievements;
+  const isGameAchievementsDone = Boolean(
+    achievements && achievements.total > 0 && achievements.current >= achievements.total
+  );
   const achievementPercentage =
     achievements && achievements.total > 0
       ? Math.min(100, Math.round((achievements.current / achievements.total) * 100))
@@ -273,6 +278,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               </div>
               {item.status === 'paused' && <span className="text-[10px] text-amber-400 ml-1">✓</span>}
             </button>
+            <button
+              onClick={() => {
+                onUpdateStatus(item.id, 'dropped');
+                setShowMenu(false);
+              }}
+              className={cn(
+                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                item.status === 'dropped' ? "text-rose-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+              )}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span className="truncate">Abgebrochen</span>
+              </div>
+              {item.status === 'dropped' && <span className="text-[10px] text-rose-400 ml-1">✓</span>}
+            </button>
 
             <div className="border-t border-[#282D37] my-1" />
 
@@ -337,7 +358,28 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   "text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ml-1",
                   isGame100Done ? "bg-amber-500/20 text-amber-300" : "bg-zinc-800 text-zinc-500"
                 )}>
-                  {isGame100Done ? 'Meister' : 'Offen'}
+                  {isGame100Done ? 'Meister ✓' : 'Offen'}
+                </span>
+              </button>
+            )}
+
+            {isGame && onToggleGameAchievements && (
+              <button
+                onClick={() => {
+                  onToggleGameAchievements(item.id);
+                  setShowMenu(false);
+                }}
+                className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left text-amber-300"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="truncate">Alle Achievements</span>
+                </div>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ml-1",
+                  isGameAchievementsDone ? "bg-amber-500/20 text-amber-300" : "bg-zinc-800 text-zinc-500"
+                )}>
+                  {isGameAchievementsDone ? 'Alle ✓' : 'Offen'}
                 </span>
               </button>
             )}
@@ -491,14 +533,28 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               </button>
 
               {achievements && achievements.total > 0 && (
-                <span
-                  className="text-[10px] font-medium text-zinc-400 ml-auto flex items-center gap-1"
-                  title={`${achievements.current} von ${achievements.total} Erfolgen (${achievementPercentage}%)`}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleGameAchievements?.(item.id);
+                  }}
+                  className={cn(
+                    "text-[10px] font-medium ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded transition-all",
+                    isGameAchievementsDone
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 font-bold"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
+                  )}
+                  title={
+                    onToggleGameAchievements
+                      ? "Klicken: Alle Erfolge freischalten / zurücksetzen"
+                      : `${achievements.current} von ${achievements.total} Erfolgen (${achievementPercentage}%)`
+                  }
                 >
-                  <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
-                  <span className="font-bold text-zinc-200">{achievements.current}</span>
+                  <Trophy className={cn("w-3 h-3 shrink-0", isGameAchievementsDone ? "text-amber-400" : "text-zinc-400")} />
+                  <span className={cn("font-bold", isGameAchievementsDone ? "text-amber-300" : "text-zinc-200")}>{achievements.current}</span>
                   <span className="text-zinc-500">/{achievements.total}</span>
-                </span>
+                </button>
               )}
             </div>
 

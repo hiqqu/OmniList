@@ -18,6 +18,7 @@ import {
   RotateCcw,
   Cloud,
   Check,
+  XCircle,
 } from 'lucide-react';
 import { MediaType, MediaStatus } from '@/types/media';
 import { cn } from '@/lib/utils';
@@ -156,6 +157,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <PauseCircle className="w-3.5 h-3.5 text-amber-400" />,
       activeStyle: 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-sm font-semibold',
       hoverStyle: 'text-zinc-400 hover:bg-amber-500/10 hover:text-amber-300',
+    },
+    {
+      id: 'dropped',
+      label: 'Abgebrochen',
+      icon: <XCircle className="w-3.5 h-3.5 text-rose-400" />,
+      activeStyle: 'bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-sm font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-rose-500/10 hover:text-rose-300',
     },
   ];
 
