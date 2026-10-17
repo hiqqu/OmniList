@@ -54,7 +54,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Uncharted: Drakes Schicksal',
     originalTitle: "Uncharted: Drake's Fortune",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7f.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1tp7.jpg',
     releaseDate: '2007-11-19',
     summary: 'Nathan Drake begibt sich auf die Suche nach dem sagenumwobenen Schatz von El Dorado.',
     genres: ['Action-Adventure', 'Third-Person-Shooter'],
@@ -73,7 +73,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Uncharted 2: Among Thieves',
     originalTitle: 'Uncharted 2: Among Thieves',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7g.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1tnb.jpg',
     releaseDate: '2009-10-13',
     summary: 'Nathan Drake folgt den Spuren von Marco Polo auf der Suche nach dem Cintamani-Stein im Himalaja.',
     genres: ['Action-Adventure', 'Story-Rich'],
@@ -92,7 +92,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: "Uncharted 3: Drake's Deception",
     originalTitle: "Uncharted 3: Drake's Deception",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1tp8.jpg',
     releaseDate: '2011-11-01',
     summary: 'Auf der Suche nach dem Atlantis der Wüste verschlägt es Nathan Drake und Sully in die Rub al-Chali-Wüste.',
     genres: ['Action-Adventure', 'Shooter'],
@@ -111,7 +111,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: "Uncharted 4: A Thief's End",
     originalTitle: "Uncharted 4: A Thief's End",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7b.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1r7h.jpg',
     releaseDate: '2016-05-10',
     summary: 'Drei Jahre nach seinem letzten Abenteuer kehrt Nathan Drake zurück, um seinem Bruder Sam zu helfen.',
     genres: ['Action-Adventure', 'Meisterwerk'],
@@ -130,7 +130,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Uncharted: The Nathan Drake Collection',
     originalTitle: 'Uncharted: The Nathan Drake Collection',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1t9g.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1un2.jpg',
     releaseDate: '2015-10-07',
     summary: 'Enthält die ersten drei Abenteuer: Uncharted 1, Uncharted 2 und Uncharted 3 komplett überarbeitet für PS4.',
     genres: ['Action-Adventure', 'Trilogie'],
@@ -149,7 +149,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Uncharted: The Lost Legacy',
     originalTitle: 'Uncharted: The Lost Legacy',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7c.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1tp9.jpg',
     releaseDate: '2017-08-22',
     summary: 'Chloe Frazer verbündet sich mit Nadine Ross, um das Goldene Horn von Ganesha in Indien zu finden.',
     genres: ['Action-Adventure'],
@@ -170,7 +170,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Astro Bot',
     originalTitle: 'Astro Bot',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co88e5.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co8aad.jpg',
     releaseDate: '2024-09-06',
     summary: 'Das gefeierte 3D-Plattform-Meisterwerk für PS5: Rette über 300 VIP-Bots aus der gesamten PlayStation-Geschichte.',
     genres: ['3D-Plattformer', 'Familie', 'GOTY'],
@@ -189,7 +189,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: "Astro's Playroom",
     originalTitle: "Astro's Playroom",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co20u5.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co2gw7.jpg',
     releaseDate: '2020-11-12',
     summary: 'Erkunde die Wunder der PS5-Hardware in einem kreativen Plattformer voller Nostalgie und DualSense-Effekte.',
     genres: ['Plattformer', 'DualSense Showcase'],
@@ -210,7 +210,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: "Marvel's Spider-Man",
     originalTitle: "Marvel's Spider-Man",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r77.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1r77.jpg',
     releaseDate: '2018-09-07',
     summary: 'Das gefeierte Original für PS4: Schwinge als Peter Parker durch Manhattan und rette New York vor den Sinister Six.',
     genres: ['Action-Adventure', 'Superhelden', 'Open World'],
@@ -229,7 +229,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: "Marvel's Spider-Man Remastered",
     originalTitle: "Marvel's Spider-Man Remastered",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co246a.jpg',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1817070/library_600x900_2x.jpg',
     releaseDate: '2020-11-12',
     summary: 'Grafisch überarbeitete Version von Marvel\'s Spider-Man für PS5 und PC mit Raytracing und allen DLCs.',
     genres: ['Action-Adventure', 'Superhelden'],
@@ -248,7 +248,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: "Marvel's Spider-Man: Miles Morales",
     originalTitle: "Marvel's Spider-Man: Miles Morales",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co246a.jpg',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1817190/library_600x900_2x.jpg',
     releaseDate: '2020-11-12',
     summary: 'Miles Morales tritt als neuer Spider-Man an, um sein Zuhause Harlem vor einem Krieg zwischen Roxxon und dem Underground zu schützen.',
     genres: ['Action-Adventure', 'Superhelden'],
@@ -267,7 +267,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: "Marvel's Spider-Man 2",
     originalTitle: "Marvel's Spider-Man 2",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co6nn4.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co3swf.jpg',
     releaseDate: '2023-10-20',
     summary: 'Peter Parker und Miles Morales stellen sich gemeinsam Venom, Kraven dem Jäger und ihren eigenen Dämonen.',
     genres: ['Action-Adventure', 'Superhelden'],
@@ -288,7 +288,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'The Last of Us',
     originalTitle: 'The Last of Us',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r0k.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1r7f.jpg',
     releaseDate: '2013-06-14',
     summary: 'Das legendäre Original-Meisterwerk: Joel und die 14-jährige Ellie schlagen sich durch ein postapokalyptisches Amerika.',
     genres: ['Action-Adventure', 'Survival-Horror', 'Story-Rich'],
@@ -307,7 +307,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'The Last of Us Remastered',
     originalTitle: 'The Last of Us Remastered',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r0k.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1ile.jpg',
     releaseDate: '2014-07-29',
     summary: 'Die aufpolierte PS4-Fassung des preisgekrönten Action-Adventures inklusive des Prequels Left Behind.',
     genres: ['Action-Adventure', 'Survival-Horror'],
@@ -326,7 +326,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'The Last of Us Part I',
     originalTitle: 'The Last of Us Part I',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co4x4e.jpg',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1888930/library_600x900_2x.jpg',
     releaseDate: '2022-09-02',
     summary: 'Das von Grund auf neu entwickelte Remake für PS5 und PC mit modernisiertem Gameplay und fotorealistischer Grafik.',
     genres: ['Action-Adventure', 'Remake'],
@@ -345,7 +345,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'The Last of Us Part II',
     originalTitle: 'The Last of Us Part II',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co216l.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1r0o.jpg',
     releaseDate: '2020-06-19',
     summary: 'Fünf Jahre nach den Ereignissen begibt sich Ellie auf einen unerbittlichen Rachefeldzug durch die Ruinen von Seattle.',
     genres: ['Action-Adventure', 'Drama', 'Survival'],
@@ -364,7 +364,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'The Last of Us Part II Remastered',
     originalTitle: 'The Last of Us Part II Remastered',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co216l.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co7irs.jpg',
     releaseDate: '2024-01-19',
     summary: 'Die native PS5-Version mit dem Roguelike-Überlebensmodus No Return und Lost Levels.',
     genres: ['Action-Adventure', 'Survival'],
@@ -385,7 +385,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'God of War',
     originalTitle: 'God of War',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1tmu.jpg',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1593500/library_600x900_2x.jpg',
     releaseDate: '2018-04-20',
     summary: 'Kratos beginnt ein neues Leben in der nordischen Mythologie und reist mit seinem Sohn Atreus zum höchsten Gipfel aller Reiche.',
     genres: ['Action-Adventure', 'Mythologie', 'GOTY'],
@@ -404,7 +404,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'God of War Ragnarök',
     originalTitle: 'God of War Ragnarök',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co5s5v.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co3swk.jpg',
     releaseDate: '2022-11-09',
     summary: 'Kratos und Atreus müssen alle Neun Welten bereisen, um sich auf die prophezeite Schlacht von Ragnarök vorzubereiten.',
     genres: ['Action-Adventure', 'Epos'],
@@ -423,7 +423,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Ghost of Tsushima',
     originalTitle: 'Ghost of Tsushima',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co2767.jpg',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2215430/library_600x900_2x.jpg',
     releaseDate: '2020-07-17',
     summary: 'Jin Sakai muss seinen Ehrenkodex als Samurai hinter sich lassen, um die Insel Tsushima vor der mongolischen Invasion zu befreien.',
     genres: ['Action-Adventure', 'Open World', 'Samurai'],
@@ -442,7 +442,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Bloodborne',
     originalTitle: 'Bloodborne',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1rba.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1rba.jpg',
     releaseDate: '2015-03-24',
     summary: 'Ein Jäger erwacht in der viktorianischen Stadt Yharnam, in der eine uralte Seuche die Menschen in bestialische Monster verwandelt.',
     genres: ['Action-RPG', 'Souls-like', 'Gothic-Horror'],
@@ -461,7 +461,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: "Demon's Souls",
     originalTitle: "Demon's Souls",
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co246l.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co2kj9.jpg',
     releaseDate: '2020-11-12',
     summary: 'Vollständiges PS5-Remake des Souls-Pioniers in der finsteren, nebelverhangenen Welt von Boletaria.',
     genres: ['Action-RPG', 'Souls-like', 'Dark Fantasy'],
@@ -480,7 +480,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Horizon Zero Dawn',
     originalTitle: 'Horizon Zero Dawn',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r08.jpg',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1151640/library_600x900_2x.jpg',
     releaseDate: '2017-02-28',
     summary: 'Aloy erkundet eine postapokalyptische Erde, auf der riesige tierähnliche Maschinen die Herrschaft übernommen haben.',
     genres: ['Action-RPG', 'Open World', 'Sci-Fi'],
@@ -499,7 +499,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Horizon Forbidden West',
     originalTitle: 'Horizon Forbidden West',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co2u6l.jpg',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420110/library_600x900_2x.jpg',
     releaseDate: '2022-02-18',
     summary: 'Aloy bricht in den Verbotenen Westen auf, um das Geheimnis einer verheerenden biologischen Plage zu lüften.',
     genres: ['Action-RPG', 'Open World'],
@@ -632,7 +632,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'The Legend of Zelda: Breath of the Wild',
     originalTitle: 'The Legend of Zelda: Breath of the Wild',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co3p2d.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co3p2d.jpg',
     releaseDate: '2017-03-03',
     summary: 'Erwache aus einem 100-jährigen Schlaf und erkunde das ungezähmte Königreich Hyrule in völliger Freiheit.',
     genres: ['Action-Adventure', 'Open World'],
@@ -651,7 +651,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'The Legend of Zelda: Tears of the Kingdom',
     originalTitle: 'The Legend of Zelda: Tears of the Kingdom',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co5vmg.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/co5vmg.png',
     releaseDate: '2023-05-12',
     summary: 'Link erkundet das Land Hyrule und die endlosen Himmelsinseln mit neuen Baufähigkeiten und Artefakten.',
     genres: ['Action-Adventure', 'Open World'],
@@ -670,7 +670,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Super Mario Odyssey',
     originalTitle: 'Super Mario Odyssey',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1m76.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1m76.jpg',
     releaseDate: '2017-10-27',
     summary: 'Begleite Mario und Cappy auf einer weltumspannenden 3D-Reise mit dem Luftschiff Odyssey, um Prinzessin Peach zu retten.',
     genres: ['3D-Plattformer', 'Abenteuer'],
@@ -726,7 +726,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Final Fantasy VII Remake',
     originalTitle: 'Final Fantasy VII Remake',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r76.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1r76.jpg',
     releaseDate: '2020-04-10',
     summary: 'Cloud Strife kämpft in der Industriemetropole Midgar an der Seite von Avalanche gegen den Megakonzern Shinra.',
     genres: ['Action-RPG', 'JRPG'],
@@ -745,7 +745,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Final Fantasy VII Rebirth',
     originalTitle: 'Final Fantasy VII Rebirth',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co7df4.jpg',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co7320.jpg',
     releaseDate: '2024-02-29',
     summary: 'Cloud und seine Gefährten verlassen Midgar und erkunden die weite Welt auf der Jagd nach Sephiroth.',
     genres: ['Action-RPG', 'Open World', 'JRPG'],
@@ -764,7 +764,7 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     title: 'Persona 5 Royal',
     originalTitle: 'Persona 5 Royal',
     type: 'game',
-    coverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1nic.jpg',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1687950/library_600x900_2x.jpg',
     releaseDate: '2019-10-31',
     summary: 'Schlüpfe in die Rolle von Joker und stiehl die verkommenen Begierden korrupter Herzen in Tokyo.',
     genres: ['JRPG', 'Social Sim', 'Turn-Based'],
@@ -822,12 +822,74 @@ export class RAWGAdapter implements MediaAdapter {
     }
 
     const items: SearchResultItem[] = [...catalogMatches];
+    const primaryQuery = queryVariants[1] || queryVariants[0];
 
-    // 2. Live Steam Store Search API (Completely FREE, public)
+    // 2. Live Lutris Open Video Games Database Search API (Multiplatform: PlayStation, Nintendo, Xbox, PC, Retro)
     try {
-      const primaryQuery = queryVariants[1] || queryVariants[0];
+      const lutrisRes = await fetch(
+        `https://lutris.net/api/games?search=${encodeURIComponent(primaryQuery)}`,
+        { signal: AbortSignal.timeout(4000) }
+      );
+      if (lutrisRes.ok) {
+        const lutrisData = await lutrisRes.json();
+        const qLower = primaryQuery.toLowerCase().trim();
+        const validGames = (lutrisData.results || [])
+          .filter((g: any) => g.name && g.coverart)
+          .sort((a: any, b: any) => {
+            const aLower = a.name.toLowerCase();
+            const bLower = b.name.toLowerCase();
+            if (aLower === qLower && bLower !== qLower) return -1;
+            if (bLower === qLower && aLower !== qLower) return 1;
+            const aStarts = aLower.startsWith(qLower);
+            const bStarts = bLower.startsWith(qLower);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            const aIsMod = aLower.includes('mod') || aLower.includes('edition');
+            const bIsMod = bLower.includes('mod') || bLower.includes('edition');
+            if (!aIsMod && bIsMod) return -1;
+            if (aIsMod && !bIsMod) return 1;
+            return 0;
+          })
+          .slice(0, 8);
+
+        for (const game of validGames) {
+          const external_id = `lutris:${game.slug || game.id}`;
+          const isDuplicate = items.some(
+            (x) =>
+              x.title.toLowerCase() === game.name.toLowerCase() ||
+              x.external_id === external_id
+          );
+          if (!isDuplicate) {
+            const platformsStr = game.platforms?.map((p: any) => p.name).join(', ');
+            items.push({
+              id: external_id,
+              external_id,
+              title: game.name,
+              type: 'game',
+              coverUrl: game.coverart,
+              releaseDate: game.year ? `${game.year}-01-01` : undefined,
+              summary: platformsStr
+                ? `Plattformen: ${platformsStr}`
+                : `Videospiel in der offenen Spieledatenbank.`,
+              genres: ['Videospiel', platformsStr ? platformsStr.split(', ')[0] : 'Multiplattform'],
+              creator: platformsStr || 'Videospiel',
+              franchise_id: `lutris:franchise:${game.slug || game.id}`,
+              totalUnits: 30,
+              unit: 'hours',
+              rating: 4.7,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Lutris search failed:', e);
+    }
+
+    // 3. Live Steam Store Search API (Completely FREE, public)
+    try {
       const steamRes = await fetch(
-        `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(primaryQuery)}&l=german&cc=DE`
+        `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(primaryQuery)}&l=german&cc=DE`,
+        { signal: AbortSignal.timeout(4000) }
       );
       if (steamRes.ok) {
         const data = await steamRes.json();
@@ -836,7 +898,7 @@ export class RAWGAdapter implements MediaAdapter {
           const external_id = `steam:${game.id}`;
           const coverUrl = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.id}/library_600x900_2x.jpg`;
 
-          // Do not duplicate if already matched from catalog
+          // Do not duplicate if already matched from catalog or Lutris
           if (
             !items.some(
               (x) => x.title.toLowerCase() === game.name.toLowerCase() || x.external_id === external_id
@@ -863,7 +925,7 @@ export class RAWGAdapter implements MediaAdapter {
       console.warn('Steam Store Search failed:', e);
     }
 
-    // 3. RAWG Live API if configured
+    // 4. RAWG Live API if configured
     if (RAWG_API_KEY) {
       try {
         const res = await fetch(
@@ -942,7 +1004,7 @@ export class RAWGAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Uncharted 2: Among Thieves',
         sequelType: 'game',
-        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7g.jpg',
+        sequelCoverUrl: 'https://lutris.net/media/igdb/cover_big/co1tnb.jpg',
         releaseDate: '2009-10-13',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -968,7 +1030,7 @@ export class RAWGAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: "Uncharted 3: Drake's Deception",
         sequelType: 'game',
-        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r7h.jpg',
+        sequelCoverUrl: 'https://lutris.net/media/igdb/cover_big/co1tp8.jpg',
         releaseDate: '2011-11-01',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -994,7 +1056,7 @@ export class RAWGAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'Astro Bot (PS5)',
         sequelType: 'game',
-        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co88e5.jpg',
+        sequelCoverUrl: 'https://lutris.net/media/igdb/cover_big/co8aad.jpg',
         releaseDate: '2024-09-06',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -1020,7 +1082,7 @@ export class RAWGAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: "Marvel's Spider-Man 2",
         sequelType: 'game',
-        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co6nn4.jpg',
+        sequelCoverUrl: 'https://lutris.net/media/igdb/cover_big/co3swf.jpg',
         releaseDate: '2023-10-20',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -1046,7 +1108,7 @@ export class RAWGAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'The Last of Us Part II',
         sequelType: 'game',
-        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co216l.jpg',
+        sequelCoverUrl: 'https://lutris.net/media/igdb/cover_big/co1r0o.jpg',
         releaseDate: '2020-06-19',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -1098,7 +1160,7 @@ export class RAWGAdapter implements MediaAdapter {
         parentCoverUrl: item.coverUrl,
         sequelTitle: 'God of War Ragnarök',
         sequelType: 'game',
-        sequelCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co5s5v.jpg',
+        sequelCoverUrl: 'https://lutris.net/media/igdb/cover_big/co3swk.jpg',
         releaseDate: '2022-11-09',
         status: 'released',
         badgeText: 'Jetzt verfügbar',
@@ -1178,7 +1240,7 @@ export class RAWGAdapter implements MediaAdapter {
         sequelTitle: 'Grand Theft Auto VI',
         sequelType: 'game',
         sequelCoverUrl:
-          'https://images.igdb.com/igdb/image/upload/t_cover_big/co7s44.jpg',
+          'https://lutris.net/media/igdb/cover_big/co7g61.jpg',
         releaseDate: '2025-10-01',
         status: 'announced',
         badgeText: 'Startet im Herbst 2025',
