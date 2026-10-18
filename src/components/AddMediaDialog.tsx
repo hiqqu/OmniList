@@ -295,7 +295,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
         ? {
             storyCompleted: isCompleted,
             completionist100: is100Option || isAchievementsOption,
-            achievements: isAchievementsOption ? { current: 40, total: 40 } : undefined,
+            allAchievementsCompleted: isAchievementsOption,
             playtimeHours: 0,
           }
         : undefined,
@@ -342,7 +342,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
         ? {
             storyCompleted: isCompleted,
             completionist100: is100Option || isAchievementsOption,
-            achievements: isAchievementsOption ? { current: 40, total: 40 } : undefined,
+            allAchievementsCompleted: isAchievementsOption,
             playtimeHours: 0,
           }
         : undefined,

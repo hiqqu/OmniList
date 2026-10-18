@@ -127,15 +127,21 @@ export function getStoredMedia(): MediaItem[] {
           changed = true;
           const isComp = item.status === 'completed';
           tracker = {
-            storyCompleted: isComp || item.id === 'media-cyberpunk-1' || item.id === 'media-eldenring-1',
-            completionist100: item.id === 'media-eldenring-1',
-            achievements:
-              item.id === 'media-eldenring-1'
-                ? { current: 42, total: 42 }
-                : item.id === 'media-cyberpunk-1'
-                ? { current: 34, total: 45 }
-                : undefined,
+            storyCompleted: isComp,
+            completionist100: isComp,
+            allAchievementsCompleted: isComp,
             playtimeHours: item.progress.current,
+          };
+        } else if (tracker.achievements) {
+          changed = true;
+          const isAllDone = Boolean(
+            tracker.allAchievementsCompleted ||
+            (tracker.achievements.total > 0 && tracker.achievements.current >= tracker.achievements.total)
+          );
+          tracker = {
+            ...tracker,
+            allAchievementsCompleted: isAllDone,
+            achievements: undefined,
           };
         }
         let progressObj = item.progress;

@@ -128,11 +128,12 @@ export default function MediaDetailPage() {
   const gamePlaytime = item.gameTracker?.playtimeHours ?? item.progress.current;
   const isGameStoryDone = Boolean(item.gameTracker?.storyCompleted);
   const isGame100Done = Boolean(item.gameTracker?.completionist100);
-  const achievements = item.gameTracker?.achievements;
-  const achievementPercentage =
-    achievements && achievements.total > 0
-      ? Math.min(100, Math.round((achievements.current / achievements.total) * 100))
-      : 0;
+  const isGameAchievementsDone = Boolean(
+    item.gameTracker?.allAchievementsCompleted ||
+    (item.gameTracker?.achievements &&
+      item.gameTracker.achievements.total > 0 &&
+      item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
+  );
 
   const currentProgress = item.progress.current;
   const totalProgress = item.progress.total || 0;
@@ -228,22 +229,25 @@ export default function MediaDetailPage() {
     if (updated) setItem(updated);
   };
 
-  // Update Game Achievements
-  const handleUpdateAchievements = (currentDelta: number) => {
+  // Toggle Game Achievements Checkbox
+  const handleToggleAchievements = () => {
     if (!item) return;
-    const existing = item.gameTracker?.achievements || { current: 0, total: 40 };
-    const newCurr = Math.max(0, existing.current + currentDelta);
-    const finalCurr = existing.total > 0 ? Math.min(existing.total, newCurr) : newCurr;
-    const isNow100 = existing.total > 0 && finalCurr >= existing.total;
+    const isCurrentlyDone = Boolean(
+      item.gameTracker?.allAchievementsCompleted ||
+      (item.gameTracker?.achievements &&
+        item.gameTracker.achievements.total > 0 &&
+        item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
+    );
+    const newDone = !isCurrentlyDone;
     const updated = updateMediaItem(item.id, {
       gameTracker: {
         ...(item.gameTracker || {}),
-        completionist100: isNow100 ? true : item.gameTracker?.completionist100,
-        achievements: {
-          current: finalCurr,
-          total: existing.total,
-        },
+        allAchievementsCompleted: newDone,
+        achievements: undefined,
+        completionist100: newDone ? true : item.gameTracker?.completionist100,
+        storyCompleted: newDone ? true : item.gameTracker?.storyCompleted,
       },
+      status: newDone && item.status !== 'owned' ? 'completed' : item.status,
     });
     if (updated) setItem(updated);
   };
@@ -1171,59 +1175,39 @@ export default function MediaDetailPage() {
                   </div>
                 </div>
 
-                {/* 3. Achievements / Trophies Tracker */}
-                <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-4">
-                  <div className="flex items-center justify-between">
+                {/* 3. Achievements / Trophies Tracker (Checkbox) */}
+                <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <h3 className="text-base font-bold text-[#F1F3F7] flex items-center gap-2">
-                        <Trophy className="w-4 h-4 text-amber-400" />
-                        <span>Erfolge &amp; Trophäen</span>
+                        <Award className="w-5 h-5 text-amber-400" />
+                        <span>Alle Erfolge &amp; Trophäen (100% Achievements)</span>
                       </h3>
-                      <p className="text-xs text-zinc-400">
-                        {achievements && achievements.total > 0
-                          ? `${achievements.current} von ${achievements.total} Erfolgen (${achievementPercentage}%)`
-                          : 'Erfolge für dieses Spiel erfassen'}
+                      <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
+                        {isGameAchievementsDone
+                          ? 'Alle Trophäen bzw. Steam-/Konsolen-Erfolge wurden für dieses Spiel vollständig freigeschaltet (Platin / 100%).'
+                          : 'Markiere, ob du alle Erfolge dieses Spiels vollständig erreicht hast (entweder alle oder offen).'}
                       </p>
                     </div>
 
-                    {achievements && achievements.total > 0 && (
-                      <span className="text-sm font-bold text-[#F1F3F7]">
-                        {achievements.current} / {achievements.total} Erfolge
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Progress Bar */}
-                  {achievements && achievements.total > 0 && (
-                    <div className="w-full h-2 bg-[#0F1117] rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          'h-full rounded-full transition-all duration-300',
-                          isGame100Done ? 'bg-amber-400' : 'bg-purple-500'
-                        )}
-                        style={{ width: `${achievementPercentage}%` }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Achievement Buttons */}
-                  <div className="flex items-center gap-2 pt-1 flex-wrap">
-                    <button
-                      onClick={() => handleUpdateAchievements(1)}
-                      className="px-4 py-2 rounded-full font-bold text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition-all active:scale-95 flex items-center gap-1.5"
+                    <label
+                      className={cn(
+                        'inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer select-none transition-all active:scale-95 shrink-0',
+                        isGameAchievementsDone
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-950/30 font-bold'
+                          : 'bg-[#0F1117] text-zinc-400 border-[#282D37] hover:border-zinc-600 hover:text-zinc-200'
+                      )}
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>+1 Erfolg freigeschaltet</span>
-                    </button>
-                    {achievements && achievements.current > 0 && (
-                      <button
-                        onClick={() => handleUpdateAchievements(-1)}
-                        className="px-4 py-2 rounded-full font-semibold text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all active:scale-95 flex items-center gap-1.5"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                        <span>-1 Erfolg</span>
-                      </button>
-                    )}
+                      <input
+                        type="checkbox"
+                        checked={isGameAchievementsDone}
+                        onChange={handleToggleAchievements}
+                        className="w-5 h-5 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500"
+                      />
+                      <span className="text-xs font-bold">
+                        {isGameAchievementsDone ? 'Alle Erfolge freigeschaltet ✓' : 'Erfolge offen'}
+                      </span>
+                    </label>
                   </div>
                 </div>
               </div>

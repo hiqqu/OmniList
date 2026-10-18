@@ -40,14 +40,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const gamePlaytime = item.gameTracker?.playtimeHours ?? item.progress.current;
   const isGameStoryDone = Boolean(item.gameTracker?.storyCompleted);
   const isGame100Done = Boolean(item.gameTracker?.completionist100);
-  const achievements = item.gameTracker?.achievements;
   const isGameAchievementsDone = Boolean(
-    achievements && achievements.total > 0 && achievements.current >= achievements.total
+    item.gameTracker?.allAchievementsCompleted ||
+    (item.gameTracker?.achievements &&
+      item.gameTracker.achievements.total > 0 &&
+      item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
   );
-  const achievementPercentage =
-    achievements && achievements.total > 0
-      ? Math.min(100, Math.round((achievements.current / achievements.total) * 100))
-      : 0;
 
   const currentProgress = item.progress.current;
   const totalProgress = item.progress.total || 0;
@@ -532,54 +530,26 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 </span>
               </button>
 
-              {achievements && achievements.total > 0 && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleGameAchievements?.(item.id);
-                  }}
-                  className={cn(
-                    "text-[10px] font-medium ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded transition-all",
-                    isGameAchievementsDone
-                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 font-bold"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
-                  )}
-                  title={
-                    onToggleGameAchievements
-                      ? "Klicken: Alle Erfolge freischalten / zurücksetzen"
-                      : `${achievements.current} von ${achievements.total} Erfolgen (${achievementPercentage}%)`
-                  }
-                >
-                  <Trophy className={cn("w-3 h-3 shrink-0", isGameAchievementsDone ? "text-amber-400" : "text-zinc-400")} />
-                  <span className={cn("font-bold", isGameAchievementsDone ? "text-amber-300" : "text-zinc-200")}>{achievements.current}</span>
-                  <span className="text-zinc-500">/{achievements.total}</span>
-                </button>
-              )}
-            </div>
-
-            {/* Mini Progress Bar for Achievements or Game Completion */}
-            <div className="w-full h-1.5 bg-[#0F1117] rounded-full overflow-hidden">
-              <div
-                className={cn(
-                  'h-full transition-all duration-300 rounded-full',
-                  isGame100Done
-                    ? 'bg-amber-400'
-                    : isGameStoryDone
-                    ? 'bg-purple-400'
-                    : 'bg-purple-500/40'
-                )}
-                style={{
-                  width:
-                    achievements && achievements.total > 0
-                      ? `${achievementPercentage}%`
-                      : isGame100Done
-                      ? '100%'
-                      : isGameStoryDone
-                      ? '100%'
-                      : `${Math.min(100, Math.max(10, gamePlaytime * 2))}%`,
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleGameAchievements?.(item.id);
                 }}
-              />
+                className={cn(
+                  'text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
+                  isGameAchievementsDone
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
+                )}
+                title="Klicken zum Umschalten: Alle Erfolge (100% Achievements)"
+              >
+                <Award className={cn("w-3 h-3 shrink-0", isGameAchievementsDone ? "text-amber-400" : "text-zinc-400")} />
+                <span>Erfolge</span>
+                <span className={isGameAchievementsDone ? "text-amber-400 font-extrabold" : "text-zinc-500"}>
+                  {isGameAchievementsDone ? '✓' : '—'}
+                </span>
+              </button>
             </div>
           </div>
         ) : isMovie ? (

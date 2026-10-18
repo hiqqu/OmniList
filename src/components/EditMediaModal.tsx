@@ -48,8 +48,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   // Dedicated Game Tracker State
   const [gameStoryCompleted, setGameStoryCompleted] = useState<boolean>(false);
   const [gameCompletionist100, setGameCompletionist100] = useState<boolean>(false);
-  const [gameAchievementsCurrent, setGameAchievementsCurrent] = useState<number>(0);
-  const [gameAchievementsTotal, setGameAchievementsTotal] = useState<number>(0);
+  const [gameAllAchievementsCompleted, setGameAllAchievementsCompleted] = useState<boolean>(false);
 
   useEffect(() => {
     if (item) {
@@ -79,8 +78,12 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       if (item.type === 'game') {
         setGameStoryCompleted(Boolean(item.gameTracker?.storyCompleted));
         setGameCompletionist100(Boolean(item.gameTracker?.completionist100));
-        setGameAchievementsCurrent(item.gameTracker?.achievements?.current || 0);
-        setGameAchievementsTotal(item.gameTracker?.achievements?.total || 0);
+        setGameAllAchievementsCompleted(Boolean(
+          item.gameTracker?.allAchievementsCompleted ||
+          (item.gameTracker?.achievements &&
+            item.gameTracker.achievements.total > 0 &&
+            item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
+        ));
       }
 
       if (item.type === 'book') {
@@ -226,10 +229,8 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
             playtimeHours: currentNum,
             storyCompleted: gameStoryCompleted,
             completionist100: gameCompletionist100,
-            achievements:
-              gameAchievementsTotal > 0
-                ? { current: gameAchievementsCurrent, total: gameAchievementsTotal }
-                : item.gameTracker?.achievements,
+            allAchievementsCompleted: gameAllAchievementsCompleted,
+            achievements: undefined,
           }
         : item.gameTracker,
     });
@@ -423,14 +424,14 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                 />
               </div>
 
-              {/* Checkboxes: Story & 100% */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Checkboxes: Story, 100% & Alle Achievements */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <label className="flex items-center gap-2 p-2.5 rounded-xl bg-[#181B22] border border-[#282D37] cursor-pointer hover:border-purple-500/40 transition-colors">
                   <input
                     type="checkbox"
                     checked={gameStoryCompleted}
                     onChange={(e) => setGameStoryCompleted(e.target.checked)}
-                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-purple-500 focus:ring-purple-500 cursor-pointer"
+                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-purple-500 focus:ring-purple-500 cursor-pointer accent-purple-500"
                   />
                   <span className="text-xs font-bold text-zinc-300">Story beendet</span>
                 </label>
@@ -440,39 +441,20 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                     type="checkbox"
                     checked={gameCompletionist100}
                     onChange={(e) => setGameCompletionist100(e.target.checked)}
-                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500"
                   />
-                  <span className="text-xs font-bold text-zinc-300">100% Meisterung</span>
+                  <span className="text-xs font-bold text-zinc-300">100% Meister</span>
                 </label>
-              </div>
 
-              {/* Achievements Tracker */}
-              <div>
-                <span className="text-[10px] text-zinc-400 block mb-1">Erfolge &amp; Trophäen (optional)</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-[10px] text-zinc-500 block mb-0.5">Erreichte Erfolge</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={gameAchievementsCurrent}
-                      onChange={(e) => setGameAchievementsCurrent(Math.max(0, parseInt(e.target.value) || 0))}
-                      placeholder="z. B. 34"
-                      className="w-full bg-[#181B22] border border-[#282D37] focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-[#F1F3F7] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-zinc-500 block mb-0.5">Gesamte Erfolge</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={gameAchievementsTotal}
-                      onChange={(e) => setGameAchievementsTotal(Math.max(0, parseInt(e.target.value) || 0))}
-                      placeholder="z. B. 45"
-                      className="w-full bg-[#181B22] border border-[#282D37] focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-[#F1F3F7] focus:outline-none"
-                    />
-                  </div>
-                </div>
+                <label className="flex items-center gap-2 p-2.5 rounded-xl bg-[#181B22] border border-[#282D37] cursor-pointer hover:border-amber-500/40 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={gameAllAchievementsCompleted}
+                    onChange={(e) => setGameAllAchievementsCompleted(e.target.checked)}
+                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500"
+                  />
+                  <span className="text-xs font-bold text-zinc-300">Alle Erfolge</span>
+                </label>
               </div>
             </div>
           ) : item.type === 'movie' ? (

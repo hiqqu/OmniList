@@ -7,6 +7,7 @@ export type ProgressUnit = 'episodes' | 'pages' | 'hours' | 'minutes' | 'seasons
 export interface GameTracker {
   storyCompleted?: boolean;
   completionist100?: boolean;
+  allAchievementsCompleted?: boolean; // Checkbox: Alle Erfolge freigeschaltet (100% Achievements)
   achievements?: {
     current: number;
     total: number;

@@ -209,34 +209,35 @@ export default function Home() {
     }
   };
 
-  // Toggle Game Achievements Handler
+  // Toggle Game Achievements Handler (Checkbox)
   const handleToggleGameAchievements = (id: string) => {
     const item = media.find((m) => m.id === id);
     if (!item) return;
-    const existing = item.gameTracker?.achievements || { current: 0, total: 40 };
-    const total = existing.total > 0 ? existing.total : 40;
-    const isAllDone = existing.current >= total && total > 0;
-    const newCurr = isAllDone ? 0 : total;
+    const isCurrentlyDone = Boolean(
+      item.gameTracker?.allAchievementsCompleted ||
+      (item.gameTracker?.achievements &&
+        item.gameTracker.achievements.total > 0 &&
+        item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
+    );
+    const newDone = !isCurrentlyDone;
     const updated = updateMediaItem(id, {
       gameTracker: {
         ...(item.gameTracker || {}),
-        achievements: {
-          current: newCurr,
-          total: total,
-        },
-        completionist100: !isAllDone ? true : item.gameTracker?.completionist100,
-        storyCompleted: !isAllDone ? true : item.gameTracker?.storyCompleted,
+        allAchievementsCompleted: newDone,
+        achievements: undefined,
+        completionist100: newDone ? true : item.gameTracker?.completionist100,
+        storyCompleted: newDone ? true : item.gameTracker?.storyCompleted,
       },
-      status: !isAllDone && item.status !== 'owned' ? 'completed' : item.status,
+      status: newDone && item.status !== 'owned' ? 'completed' : item.status,
     });
     if (updated) {
       setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
       addToast(
         'info',
         item.title,
-        !isAllDone
-          ? `Alle ${total} Achievements als freigeschaltet markiert`
-          : 'Achievements zurückgesetzt'
+        newDone
+          ? 'Alle Erfolge (100% Achievements) als freigeschaltet markiert'
+          : 'Erfolgs-Status zurückgesetzt'
       );
     }
   };
@@ -321,8 +322,10 @@ export default function Home() {
     const isGame = created.type === 'game';
     const is100 = created.gameTracker?.completionist100;
     const isAchievements = Boolean(
-      created.gameTracker?.achievements &&
-      created.gameTracker.achievements.current >= created.gameTracker.achievements.total
+      created.gameTracker?.allAchievementsCompleted ||
+      (created.gameTracker?.achievements &&
+        created.gameTracker.achievements.total > 0 &&
+        created.gameTracker.achievements.current >= created.gameTracker.achievements.total)
     );
 
     let statusLabel = 'deiner Mediensammlung';
