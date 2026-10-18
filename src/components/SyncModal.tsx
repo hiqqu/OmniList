@@ -43,10 +43,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   const [syncCode, setSyncCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<{ isCloudConfigured: boolean; provider: string } | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved sync code from localStorage
+  // Load saved sync code and check sync status
   useEffect(() => {
     if (isOpen) {
       const savedCode =
@@ -59,6 +60,17 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       }
 
       setFeedback(null);
+
+      // Check server sync configuration
+      fetch('/api/sync')
+        .then((res) => res.json())
+        .then((data) => {
+          setSyncStatus({
+            isCloudConfigured: Boolean(data.isCloudConfigured),
+            provider: data.provider || (data.isCloudConfigured ? 'Cloud' : 'Lokaler Server'),
+          });
+        })
+        .catch(() => {});
     }
   }, [isOpen]);
 
@@ -109,23 +121,29 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       if (res.ok && data.success) {
         setFeedback({
           type: 'success',
-          message: `Erfolgreich in der Cloud gesichert! Gib auf deinem Zweitgerät einfach den Code "${cleanCode}" ein, um deine ${media.length} Medien zu laden.`,
+          message:
+            data.message ||
+            `Erfolgreich gesichert! Gib auf deinem Zweitgerät einfach den Code "${cleanCode}" ein, um deine ${media.length} Medien zu laden.`,
         });
-        addToast('success', 'In Cloud gesichert', `${media.length} Medien unter "${cleanCode}" gespeichert`);
+        addToast(
+          'success',
+          data.mode === 'cloud' ? 'In Cloud gesichert' : 'Auf Server gesichert',
+          `${media.length} Medien unter "${cleanCode}" gespeichert`
+        );
       } else {
         setFeedback({
           type: 'error',
-          message: data.error || data.hint || 'Cloud-Sicherung fehlgeschlagen.',
+          message: data.error || data.hint || 'Sicherung fehlgeschlagen.',
         });
       }
     } catch (err: any) {
-      setFeedback({ type: 'error', message: 'Netzwerkfehler beim Hochladen in die Cloud.' });
+      setFeedback({ type: 'error', message: 'Netzwerkfehler beim Hochladen.' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Pull data from Cloud to local
+  // Pull data from Cloud/Server to local
   const handlePullFromCloud = async () => {
     const cleanCode = syncCode.trim().toUpperCase();
     if (!cleanCode || cleanCode.length < 4) {
@@ -155,17 +173,17 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         onApplySync(pulledMedia, pulledSequels);
         setFeedback({
           type: 'success',
-          message: `Perfekt! ${pulledMedia.length} Medien wurden erfolgreich aus der Cloud synchronisiert.`,
+          message: data.message || `Perfekt! ${pulledMedia.length} Medien wurden erfolgreich synchronisiert.`,
         });
-        addToast('success', 'Aus Cloud geladen', `${pulledMedia.length} Medien synchronisiert`);
+        addToast('success', 'Synchronisiert', `${pulledMedia.length} Medien synchronisiert`);
       } else {
         setFeedback({
           type: 'error',
-          message: data.error || 'Kein Cloud-Backup unter diesem Code gefunden.',
+          message: data.error || 'Kein Backup unter diesem Code gefunden.',
         });
       }
     } catch (err: any) {
-      setFeedback({ type: 'error', message: 'Netzwerkfehler beim Abrufen aus der Cloud.' });
+      setFeedback({ type: 'error', message: 'Netzwerkfehler beim Abrufen der Daten.' });
     } finally {
       setIsLoading(false);
     }
@@ -301,6 +319,27 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           {activeTab === 'cloud' ? (
             /* ================= TAB 1: CLOUD SYNC CODE ================= */
             <div className="space-y-4">
+              {/* Connection Mode Indicator */}
+              <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#0F1117] border border-[#282D37] text-xs">
+                <span className="text-zinc-400">Verbindungs-Status:</span>
+                <span
+                  className={cn(
+                    'font-medium flex items-center gap-2',
+                    syncStatus?.isCloudConfigured ? 'text-emerald-400' : 'text-sky-400'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'w-2 h-2 rounded-full',
+                      syncStatus?.isCloudConfigured ? 'bg-emerald-400' : 'bg-sky-400'
+                    )}
+                  />
+                  {syncStatus?.isCloudConfigured
+                    ? `${syncStatus.provider} (Cloud aktiv)`
+                    : 'Lokaler Server-Modus aktiv'}
+                </span>
+              </div>
+
               <div className="p-4 rounded-2xl bg-[#0F1117] border border-[#282D37] space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
@@ -345,8 +384,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                   className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950/30 transition-all active:scale-95 disabled:opacity-50 gap-1.5 text-center"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>In Cloud sichern (Push)</span>
-                  <span className="text-[10px] font-normal text-emerald-200">PC-Daten hochladen</span>
+                  <span>
+                    {syncStatus?.isCloudConfigured ? 'In Cloud sichern (Push)' : 'Auf Server sichern (Push)'}
+                  </span>
+                  <span className="text-[10px] font-normal text-emerald-200">
+                    {syncStatus?.isCloudConfigured ? 'Weltweit in Cloud ablegen' : 'Lokal auf PC/Server ablegen'}
+                  </span>
                 </button>
 
                 <button
@@ -355,7 +398,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                   className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-[#181B22] hover:bg-zinc-800 text-zinc-200 hover:text-white font-bold text-xs border border-[#282D37] transition-all active:scale-95 disabled:opacity-50 gap-1.5 text-center"
                 >
                   <Download className="w-4 h-4 text-emerald-400" />
-                  <span>Aus Cloud laden (Pull)</span>
+                  <span>
+                    {syncStatus?.isCloudConfigured ? 'Aus Cloud laden (Pull)' : 'Vom Server laden (Pull)'}
+                  </span>
                   <span className="text-[10px] font-normal text-zinc-400">Auf diesem Gerät empfangen</span>
                 </button>
               </div>
