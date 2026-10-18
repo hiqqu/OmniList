@@ -26,7 +26,7 @@ import {
   resetLibraryToDefault,
 } from '@/lib/storage';
 import { getUnitIncrement, getMediaStatusBadge } from '@/lib/utils';
-import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck } from 'lucide-react';
+import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search } from 'lucide-react';
 
 export default function Home() {
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -43,10 +43,43 @@ export default function Home() {
 
   // Modals & States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addModalInitialTab, setAddModalInitialTab] = useState<MediaType | undefined>(undefined);
+  const [addModalInitialQuery, setAddModalInitialQuery] = useState<string>('');
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const handleOpenAddModal = (tab?: MediaType, query?: string) => {
+    let targetTab: MediaType | undefined = tab;
+    if (!targetTab) {
+      if (selectedType === 'game') targetTab = 'game';
+      else if (selectedType === 'anime') targetTab = 'anime';
+      else if (selectedType === 'book') targetTab = 'book';
+      else if (selectedType === 'movie' || selectedType === 'show') targetTab = 'movie';
+      else if (query) {
+        const qLower = query.toLowerCase();
+        if (
+          qLower.includes('arkham') ||
+          qLower.includes('game') ||
+          qLower.includes('zelda') ||
+          qLower.includes('mario') ||
+          qLower.includes('witcher') ||
+          qLower.includes('playstation') ||
+          qLower.includes('xbox') ||
+          qLower.includes('steam') ||
+          qLower.includes('elden ring') ||
+          qLower.includes('pokemon') ||
+          qLower.includes('gta')
+        ) {
+          targetTab = 'game';
+        }
+      }
+    }
+    setAddModalInitialTab(targetTab);
+    setAddModalInitialQuery(query || '');
+    setIsAddModalOpen(true);
+  };
 
   // Toast Helper
   const addToast = useCallback((type: 'success' | 'info' | 'warning' | 'error', title: string, description?: string) => {
@@ -490,7 +523,8 @@ export default function Home() {
           onSearchChange={setSearchQuery}
           sortBy={sortBy}
           onSortChange={setSortBy}
-          onOpenAddModal={() => setIsAddModalOpen(true)}
+          onOpenAddModal={() => handleOpenAddModal()}
+          onOpenAddModalWithQuery={(q) => handleOpenAddModal(undefined, q)}
           onOpenSyncModal={() => setIsSyncModalOpen(true)}
           totalFilteredCount={filteredAndSortedMedia.length}
         />
@@ -589,23 +623,39 @@ export default function Home() {
                 /* Empty state */
                 <div className="py-20 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-[#181B22]/40 border border-dashed border-[#282D37]">
                   <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-[#282D37] flex items-center justify-center text-zinc-400 mb-4">
-                    <Layers className="w-8 h-8" />
+                    {searchQuery ? <Search className="w-8 h-8 text-purple-400" /> : <Layers className="w-8 h-8" />}
                   </div>
-                  <h3 className="text-base font-bold text-[#F1F3F7]">Keine Medien gefunden</h3>
-                  <p className="text-xs text-zinc-400 max-w-sm mt-1 mb-5">
+                  <h3 className="text-base font-bold text-[#F1F3F7]">
                     {searchQuery
-                      ? `Keine Einträge für "${searchQuery}" mit den aktuellen Filtern.`
+                      ? `"${searchQuery}" nicht in deiner lokalen Sammlung`
+                      : 'Keine Medien gefunden'}
+                  </h3>
+                  <p className="text-xs text-zinc-400 max-w-sm mt-1 mb-5 leading-relaxed">
+                    {searchQuery
+                      ? 'In deiner persönlichen Bibliothek existiert noch kein Eintrag dazu. Möchtest du im globalen Katalog danach suchen und ihn zu deiner Sammlung hinzufügen?'
                       : selectedType === 'all'
                       ? 'Deine Sammlung ist aktuell noch leer. Füge dein erstes Medium hinzu.'
                       : 'In dieser Kategorie befinden sich noch keine Medien.'}
                   </p>
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-bold shadow-lg shadow-black/20 active:scale-95 transition-all"
-                  >
-                    <Plus className="w-4 h-4 stroke-[2.5]" />
-                    <span>Jetzt erstes Medium hinzufügen</span>
-                  </button>
+                  <div className="flex items-center gap-3 flex-wrap justify-center">
+                    {searchQuery ? (
+                      <button
+                        onClick={() => handleOpenAddModal(undefined, searchQuery)}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-950/40 active:scale-95 transition-all"
+                      >
+                        <Search className="w-4 h-4 stroke-[2.5]" />
+                        <span>Im externen Katalog nach &quot;{searchQuery}&quot; suchen</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleOpenAddModal()}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-bold shadow-lg shadow-black/20 active:scale-95 transition-all"
+                      >
+                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                        <span>Jetzt erstes Medium hinzufügen</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </>
@@ -676,6 +726,8 @@ export default function Home() {
         onClose={() => setIsAddModalOpen(false)}
         onAddMedia={handleAddMedia}
         existingExternalIds={existingExternalIds}
+        initialTab={addModalInitialTab}
+        initialQuery={addModalInitialQuery}
       />
 
       {/* Edit Media Modal */}

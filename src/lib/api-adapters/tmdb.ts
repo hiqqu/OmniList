@@ -463,39 +463,7 @@ export class TMDBAdapter implements MediaAdapter {
       return combined;
     }
 
-    // 4. Clean dynamic fallback with dedicated SVG artwork (Never shows the wrong poster!)
-    const capitalized = query.trim().replace(/\b\w/g, (c) => c.toUpperCase());
-    return [
-      {
-        id: `custom:movie:${Date.now()}`,
-        external_id: `custom:movie:${Date.now()}`,
-        title: capitalized,
-        type: 'movie',
-        coverUrl: createSvgPlaceholder(capitalized, 'movie'),
-        releaseDate: new Date().toISOString().split('T')[0],
-        summary: undefined,
-        genres: ['Film'],
-        creator: 'Produktion',
-        totalUnits: 120,
-        unit: 'hours',
-        rating: 4.5,
-      },
-      {
-        id: `custom:show:${Date.now()}`,
-        external_id: `custom:show:${Date.now()}`,
-        title: `${capitalized} (Serie)`,
-        type: 'show',
-        coverUrl: createSvgPlaceholder(capitalized, 'show'),
-        releaseDate: new Date().toISOString().split('T')[0],
-        summary: undefined,
-        genres: ['Serie'],
-        creator: 'TV Studio',
-        totalUnits: 10,
-        totalSeasons: 1,
-        unit: 'episodes',
-        rating: 4.5,
-      },
-    ];
+    return [];
   }
 
   async checkSequels(item: MediaItem): Promise<SequelNotification | null> {

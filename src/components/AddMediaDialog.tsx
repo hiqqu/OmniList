@@ -33,6 +33,8 @@ interface AddMediaDialogProps {
   onClose: () => void;
   onAddMedia: (item: Omit<MediaItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
   existingExternalIds: Set<string>;
+  initialTab?: MediaType;
+  initialQuery?: string;
 }
 
 export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
@@ -40,14 +42,22 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   onClose,
   onAddMedia,
   existingExternalIds,
+  initialTab,
+  initialQuery,
 }) => {
-  const [activeTab, setActiveTab] = useState<MediaType>('movie');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<MediaType>(initialTab || 'movie');
+  const [searchQuery, setSearchQuery] = useState(initialQuery || '');
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [selectedStatus, setSelectedStatus] = useState<MediaStatus | '100_percent' | 'all_achievements'>('in_progress');
   const [isOwned, setIsOwned] = useState<boolean>(false);
+  const [crossSuggestion, setCrossSuggestion] = useState<{
+    type: MediaType;
+    label: string;
+    count: number;
+    sampleTitle: string;
+  } | null>(null);
 
   // Book edition switcher state
   const [expandedEditionItemId, setExpandedEditionItemId] = useState<string | null>(null);
@@ -100,11 +110,15 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   const executeSearch = useCallback(
     async (query: string, tab: MediaType) => {
       setIsLoading(true);
+      setCrossSuggestion(null);
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&type=${tab}`);
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
+          if (data.crossCategorySuggestion) {
+            setCrossSuggestion(data.crossCategorySuggestion);
+          }
         }
       } catch (err) {
         console.error('Search request error:', err);
@@ -117,18 +131,23 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      const startTab = initialTab || activeTab || 'movie';
+      const startQuery = initialQuery !== undefined ? initialQuery : searchQuery;
+      setActiveTab(startTab);
+      setSearchQuery(startQuery);
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
-      executeSearch(searchQuery, activeTab);
+      executeSearch(startQuery, startTab);
     } else {
       setSearchQuery('');
       setResults([]);
       setIsLoading(false);
+      setCrossSuggestion(null);
       setExpandedEditionItemId(null);
       setEditionFilter('');
     }
-  }, [isOpen, activeTab, executeSearch]);
+  }, [isOpen, initialTab, initialQuery, executeSearch]);
 
   const handleInputChange = (val: string) => {
     setSearchQuery(val);
@@ -873,10 +892,30 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
               );
             })
           ) : (
-            <div className="py-12 text-center text-zinc-400 space-y-4">
+            <div className="py-8 text-center text-zinc-400 space-y-4">
+              {crossSuggestion && (
+                <div className="p-5 rounded-2xl bg-purple-950/40 border border-purple-500/40 text-left space-y-3">
+                  <div className="flex items-center gap-2 text-purple-300">
+                    <Gamepad2 className="w-5 h-5 text-purple-400" />
+                    <span className="font-bold text-sm text-[#F1F3F7]">
+                      Treffer in der Kategorie &quot;{crossSuggestion.label}&quot; gefunden!
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-300 leading-relaxed">
+                    Unter &quot;{tabs.find((t) => t.id === activeTab)?.label}&quot; gibt es keine Ergebnisse für &quot;{searchQuery}&quot;. In der Spieledatenbank wurden jedoch <strong className="text-purple-300 font-semibold">{crossSuggestion.count} Treffer</strong> gefunden (u. a. &quot;{crossSuggestion.sampleTitle}&quot;).
+                  </p>
+                  <button
+                    onClick={() => handleSelectTab(crossSuggestion.type)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-950/50 active:scale-95 transition-all"
+                  >
+                    <span>Jetzt zu &quot;{crossSuggestion.label}&quot; wechseln</span>
+                  </button>
+                </div>
+              )}
+
               <Search className="w-8 h-8 mx-auto text-zinc-600" />
               <div>
-                <p className="text-sm font-bold text-[#F1F3F7]">Keine externen Treffer für &quot;{searchQuery}&quot;</p>
+                <p className="text-sm font-bold text-[#F1F3F7]">Keine externen Treffer für &quot;{searchQuery}&quot; unter {tabs.find((t) => t.id === activeTab)?.label}</p>
                 <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
                   Du kannst diesen Titel trotzdem sofort als individuelles Medium mit Titel und Typ zu deiner Sammlung hinzufügen.
                 </p>

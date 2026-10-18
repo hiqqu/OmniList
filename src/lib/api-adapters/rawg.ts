@@ -13,6 +13,33 @@ export function normalizeGameQuery(q: string): string[] {
   const raw = q.trim().toLowerCase();
   const variants = new Set<string>([raw]);
 
+  // Split compound queries (e.g. "batman arkham city und arkham asylum", "zelda and mario", "gta, witcher")
+  const parts = raw
+    .split(/\s+(?:und|and|&|\+|\/)\s+|,\s*/i)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 1);
+
+  if (parts.length > 1) {
+    for (const part of parts) {
+      variants.add(part);
+      if (raw.includes('batman') && !part.includes('batman')) {
+        variants.add(`batman: ${part}`);
+        variants.add(`batman ${part}`);
+      }
+      if (raw.includes('arkham') && !part.includes('arkham')) {
+        variants.add(`arkham ${part}`);
+      }
+      if (raw.includes('uncharted') && !part.includes('uncharted')) {
+        variants.add(`uncharted: ${part}`);
+        variants.add(`uncharted ${part}`);
+      }
+      if (raw.includes('zelda') && !part.includes('zelda')) {
+        variants.add(`zelda: ${part}`);
+        variants.add(`zelda ${part}`);
+      }
+    }
+  }
+
   // Handle typos and common variations
   if (raw.includes('unchartet')) {
     variants.add(raw.replace(/unchartet/g, 'uncharted'));
@@ -43,18 +70,23 @@ export function normalizeGameQuery(q: string): string[] {
   if (raw.includes('arkham city') && raw.includes('arkham asylum')) {
     variants.add('batman: arkham asylum');
     variants.add('batman: arkham city');
+    variants.add('batman arkham asylum');
+    variants.add('batman arkham city');
     variants.add('batman arkham');
   }
   if (raw.includes('arkham city')) {
     variants.add('batman: arkham city');
+    variants.add('batman arkham city');
     variants.add('arkham city');
   }
   if (raw.includes('arkham asylum')) {
     variants.add('batman: arkham asylum');
+    variants.add('batman arkham asylum');
     variants.add('arkham asylum');
   }
   if (raw.includes('arkham knight')) {
     variants.add('batman: arkham knight');
+    variants.add('batman arkham knight');
     variants.add('arkham knight');
   }
   if (raw.includes('batman') && !raw.includes('arkham')) {
@@ -1012,9 +1044,22 @@ export class RAWGAdapter implements MediaAdapter {
 
     const queryVariants = normalizeGameQuery(rawLower);
 
-    // Multi-search target collection (handles compound searches like "Batman arkham city arkham asylum")
+    // Multi-search target collection (handles compound searches like "Batman arkham city arkham asylum" or "batman arkham city und arkham asylum")
     const searchTargets: string[] = [];
-    if (rawLower.includes('arkham city') && rawLower.includes('arkham asylum')) {
+    const parts = rawLower
+      .split(/\s+(?:und|and|&|\+|\/)\s+|,\s*/i)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 1);
+
+    if (parts.length > 1) {
+      for (const p of parts) {
+        if (rawLower.includes('batman') && !p.includes('batman')) {
+          searchTargets.push(`batman ${p}`);
+        } else {
+          searchTargets.push(p);
+        }
+      }
+    } else if (rawLower.includes('arkham city') && rawLower.includes('arkham asylum')) {
       searchTargets.push('batman: arkham asylum', 'batman: arkham city');
     } else {
       searchTargets.push(queryVariants[1] || queryVariants[0]);

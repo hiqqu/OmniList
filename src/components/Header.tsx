@@ -12,6 +12,7 @@ interface HeaderProps {
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   onOpenAddModal: () => void;
+  onOpenAddModalWithQuery?: (query: string) => void;
   onOpenSyncModal?: () => void;
   totalFilteredCount: number;
 }
@@ -22,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   sortBy,
   onSortChange,
   onOpenAddModal,
+  onOpenAddModalWithQuery,
   onOpenSyncModal,
   totalFilteredCount,
 }) => {
@@ -44,6 +46,21 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <X className="w-4 h-4" />
           </button>
+        )}
+
+        {/* Global Catalog Search Pill when 0 collection results */}
+        {searchQuery.trim().length > 0 && totalFilteredCount === 0 && onOpenAddModalWithQuery && (
+          <div className="absolute left-0 top-full mt-2 z-30 w-full bg-[#181B22] border border-purple-500/40 rounded-2xl p-2.5 shadow-2xl flex items-center justify-between gap-2 backdrop-blur-md">
+            <span className="text-xs text-zinc-300 truncate pl-1">
+              Nicht in Sammlung: &quot;{searchQuery}&quot;
+            </span>
+            <button
+              onClick={() => onOpenAddModalWithQuery(searchQuery)}
+              className="flex-shrink-0 px-3 py-1 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] shadow-sm transition-all"
+            >
+              Im Katalog suchen →
+            </button>
+          </div>
         )}
       </div>
 
