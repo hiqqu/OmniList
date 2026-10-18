@@ -350,7 +350,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
               Medium zur Sammlung hinzufügen
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Live-Suche über TMDB, AniList, Google Books &amp; RAWG
+              Live-Suche über TMDB, AniList, Open Library &amp; alle Konsolen / PC-Spieledatenbanken
             </p>
           </div>
           <button
@@ -401,7 +401,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                     ? 'Anime (z. B. Frieren, Solo Leveling, One Piece)...'
                     : activeTab === 'book'
                     ? 'Titel, Autor oder ISBN (z. B. 978-3-442-17858-2)...'
-                    : 'Videospielen (z. B. Elden Ring, Zelda, Cyberpunk 2077)...'
+                    : 'Videospielen (z. B. Batman Arkham, Zelda, Bloodborne, Mario, Elden Ring)...'
                 }`}
                 className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-full pl-10 pr-20 py-2.5 text-sm text-[#F1F3F7] placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition-all"
               />

@@ -39,6 +39,28 @@ export function normalizeGameQuery(q: string): string[] {
     variants.add('drakes schicksal');
   }
 
+  // Handle Batman Arkham queries and compound searches
+  if (raw.includes('arkham city') && raw.includes('arkham asylum')) {
+    variants.add('batman: arkham asylum');
+    variants.add('batman: arkham city');
+    variants.add('batman arkham');
+  }
+  if (raw.includes('arkham city')) {
+    variants.add('batman: arkham city');
+    variants.add('arkham city');
+  }
+  if (raw.includes('arkham asylum')) {
+    variants.add('batman: arkham asylum');
+    variants.add('arkham asylum');
+  }
+  if (raw.includes('arkham knight')) {
+    variants.add('batman: arkham knight');
+    variants.add('arkham knight');
+  }
+  if (raw.includes('batman') && !raw.includes('arkham')) {
+    variants.add('batman arkham');
+  }
+
   // Without special characters
   const cleanPunct = raw.replace(/[-':’]/g, ' ').replace(/\s+/g, ' ').trim();
   variants.add(cleanPunct);
@@ -512,6 +534,128 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
     rating: 4.8,
     aliases: ['horizon forbidden west', 'horizon 2', 'forbidden west'],
   },
+  // ================= BATMAN: ARKHAM REIHE =================
+  {
+    id: 'warner:batman-arkham-asylum',
+    external_id: 'warner:batman-arkham-asylum',
+    title: 'Batman: Arkham Asylum',
+    originalTitle: 'Batman: Arkham Asylum',
+    type: 'game',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1voj.jpg',
+    releaseDate: '2009-08-25',
+    summary: 'Batman bringt den Joker in die Arkham-Heilanstalt, doch dieser übernimmt die Kontrolle und sperrt den Dunklen Ritter ein.',
+    genres: ['Action-Adventure', 'Superhelden', 'Stealth'],
+    creator: 'Rocksteady Studios',
+    publisher: 'Warner Bros. Games / Eidos',
+    franchise_id: 'warner:franchise:batman-arkham',
+    collection_name: 'Batman Arkham Saga',
+    totalUnits: 12,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: [
+      'batman arkham asylum',
+      'arkham asylum',
+      'batman 1',
+      'batman asylum',
+      'asylum',
+      'batman arkham city arkham asylum'
+    ],
+  },
+  {
+    id: 'warner:batman-arkham-city',
+    external_id: 'warner:batman-arkham-city',
+    title: 'Batman: Arkham City',
+    originalTitle: 'Batman: Arkham City',
+    type: 'game',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1voh.jpg',
+    releaseDate: '2011-10-18',
+    summary: 'Ein riesiger offener Gefängnisdistrikt in Gotham City: Batman kämpft gegen Hugo Strange, den Joker und das gesamte Schurken-Aufgebot.',
+    genres: ['Action-Adventure', 'Open World', 'Meisterwerk'],
+    creator: 'Rocksteady Studios',
+    publisher: 'Warner Bros. Games',
+    franchise_id: 'warner:franchise:batman-arkham',
+    collection_name: 'Batman Arkham Saga',
+    totalUnits: 15,
+    unit: 'hours',
+    rating: 5.0,
+    aliases: [
+      'batman arkham city',
+      'arkham city',
+      'batman 2',
+      'batman city',
+      'city',
+      'batman arkham city arkham asylum'
+    ],
+  },
+  {
+    id: 'warner:batman-arkham-knight',
+    external_id: 'warner:batman-arkham-knight',
+    title: 'Batman: Arkham Knight',
+    originalTitle: 'Batman: Arkham Knight',
+    type: 'game',
+    coverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/208650/library_600x900_2x.jpg',
+    releaseDate: '2015-06-23',
+    summary: 'Das explosive Finale der Trilogie: Scarecrow und der mysteriöse Arkham Knight vereinen Gothams Superschurken, um Batman endgültig zu vernichten.',
+    genres: ['Action-Adventure', 'Open World', 'Batmobile'],
+    creator: 'Rocksteady Studios',
+    publisher: 'Warner Bros. Games',
+    franchise_id: 'warner:franchise:batman-arkham',
+    collection_name: 'Batman Arkham Saga',
+    totalUnits: 20,
+    unit: 'hours',
+    rating: 4.8,
+    aliases: [
+      'batman arkham knight',
+      'arkham knight',
+      'batman 3',
+      'batman knight'
+    ],
+  },
+  {
+    id: 'warner:batman-arkham-origins',
+    external_id: 'warner:batman-arkham-origins',
+    title: 'Batman: Arkham Origins',
+    originalTitle: 'Batman: Arkham Origins',
+    type: 'game',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1voi.jpg',
+    releaseDate: '2013-10-25',
+    summary: 'Heiligabend in Gotham City: Black Mask setzt ein Kopfgeld auf den jungen Batman aus und schickt acht tödliche Attentäter.',
+    genres: ['Action-Adventure', 'Open World', 'Prequel'],
+    creator: 'WB Games Montréal',
+    publisher: 'Warner Bros. Games',
+    franchise_id: 'warner:franchise:batman-arkham',
+    collection_name: 'Batman Arkham Saga',
+    totalUnits: 14,
+    unit: 'hours',
+    rating: 4.6,
+    aliases: ['batman arkham origins', 'arkham origins', 'batman origins'],
+  },
+  {
+    id: 'warner:batman-return-to-arkham',
+    external_id: 'warner:batman-return-to-arkham',
+    title: 'Batman: Return to Arkham',
+    originalTitle: 'Batman: Return to Arkham',
+    type: 'game',
+    coverUrl: 'https://lutris.net/media/igdb/cover_big/co1vok.jpg',
+    releaseDate: '2016-10-18',
+    summary: 'Enthält Batman: Arkham Asylum und Batman: Arkham City komplett überarbeitet für PS4, Xbox One und Konsolen.',
+    genres: ['Action-Adventure', 'Bundle', 'Remaster'],
+    creator: 'Virtuos / Rocksteady',
+    publisher: 'Warner Bros. Games',
+    franchise_id: 'warner:franchise:batman-arkham',
+    collection_name: 'Batman Arkham Saga',
+    totalUnits: 27,
+    unit: 'hours',
+    rating: 4.9,
+    aliases: [
+      'batman return to arkham',
+      'return to arkham',
+      'batman arkham collection',
+      'batman arkham city arkham asylum',
+      'arkham collection'
+    ],
+  },
+
   {
     id: 'rawg:eldenring',
     external_id: 'rawg:eldenring',
@@ -779,6 +923,86 @@ export const POPULAR_GAMES_CATALOG: CatalogGameItem[] = [
   },
 ];
 
+async function searchWikipediaGames(query: string): Promise<SearchResultItem[]> {
+  const items: SearchResultItem[] = [];
+  try {
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+      query
+    )}&srlimit=6&format=json&origin=*`;
+    const sRes = await fetch(searchUrl, {
+      headers: { 'User-Agent': 'OmniTrack/1.0 (https://omnitrack.app)' },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!sRes.ok) return [];
+    const sData = await sRes.json();
+    const hits = sData.query?.search || [];
+
+    for (const h of hits) {
+      try {
+        const sumUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(h.title)}`;
+        const sumRes = await fetch(sumUrl, {
+          headers: { 'User-Agent': 'OmniTrack/1.0 (https://omnitrack.app)' },
+          signal: AbortSignal.timeout(3000),
+        });
+        if (!sumRes.ok) continue;
+        const sumData = await sumRes.json();
+        const desc = (sumData.description || '').toLowerCase();
+        const extract = (sumData.extract || '').toLowerCase();
+
+        const isGame =
+          (desc.includes('video game') ||
+            desc.includes('arcade game') ||
+            desc.includes('role-playing game') ||
+            desc.includes('platform game') ||
+            desc.includes('action-adventure') ||
+            extract.includes('video game developed') ||
+            extract.includes('action-adventure game') ||
+            extract.includes('game developed and published') ||
+            extract.includes('gameplay')) &&
+          !desc.includes('film') &&
+          !desc.includes('television') &&
+          !desc.includes('director') &&
+          !desc.includes('producer') &&
+          !desc.includes('designer') &&
+          !desc.includes('composer') &&
+          !desc.includes('programmer') &&
+          !desc.includes('executive') &&
+          !desc.includes('born ') &&
+          !desc.includes('fictional character') &&
+          !desc.includes('soundtrack');
+
+        const coverUrl = sumData.thumbnail?.source || sumData.originalimage?.source;
+
+        if (isGame && coverUrl) {
+          const yearMatch = sumData.description?.match(/\b(19\d\d|20\d\d)\b/);
+          items.push({
+            id: `wiki:${sumData.pageid || h.title}`,
+            external_id: `wiki:${sumData.pageid || h.title}`,
+            title: sumData.title,
+            type: 'game',
+            coverUrl: coverUrl,
+            releaseDate: yearMatch ? `${yearMatch[0]}-01-01` : undefined,
+            summary: sumData.extract
+              ? sumData.extract.slice(0, 240) + '...'
+              : `Videospiel (${sumData.description || 'Konsole & PC'}).`,
+            genres: ['Videospiel', sumData.description ? sumData.description.replace(/\b\d{4}\b/, '').trim() : 'Konsole & PC'],
+            creator: sumData.description || 'Multiplattform',
+            totalUnits: 30,
+            unit: 'hours',
+            rating: 4.8,
+          });
+        }
+      } catch (err) {
+        // Continue to next hit
+      }
+      if (items.length >= 4) break;
+    }
+  } catch (e) {
+    console.warn('Wikipedia game search error:', e);
+  }
+  return items;
+}
+
 export class RAWGAdapter implements MediaAdapter {
   async search(query: string): Promise<SearchResultItem[]> {
     const rawLower = query.trim().toLowerCase();
@@ -787,6 +1011,15 @@ export class RAWGAdapter implements MediaAdapter {
     }
 
     const queryVariants = normalizeGameQuery(rawLower);
+
+    // Multi-search target collection (handles compound searches like "Batman arkham city arkham asylum")
+    const searchTargets: string[] = [];
+    if (rawLower.includes('arkham city') && rawLower.includes('arkham asylum')) {
+      searchTargets.push('batman: arkham asylum', 'batman: arkham city');
+    } else {
+      searchTargets.push(queryVariants[1] || queryVariants[0]);
+    }
+
     const catalogMatches: SearchResultItem[] = [];
 
     // 1. Check popular and curated console catalog with alias and substring intelligence
@@ -822,110 +1055,124 @@ export class RAWGAdapter implements MediaAdapter {
     }
 
     const items: SearchResultItem[] = [...catalogMatches];
-    const primaryQuery = queryVariants[1] || queryVariants[0];
+    const seenTitles = new Set<string>(items.map((i) => i.title.toLowerCase()));
 
-    // 2. Live Lutris Open Video Games Database Search API (Multiplatform: PlayStation, Nintendo, Xbox, PC, Retro)
-    try {
-      const lutrisRes = await fetch(
-        `https://lutris.net/api/games?search=${encodeURIComponent(primaryQuery)}`,
-        { signal: AbortSignal.timeout(4000) }
-      );
-      if (lutrisRes.ok) {
-        const lutrisData = await lutrisRes.json();
-        const qLower = primaryQuery.toLowerCase().trim();
-        const validGames = (lutrisData.results || [])
-          .filter((g: any) => g.name && g.coverart)
-          .sort((a: any, b: any) => {
-            const aLower = a.name.toLowerCase();
-            const bLower = b.name.toLowerCase();
-            if (aLower === qLower && bLower !== qLower) return -1;
-            if (bLower === qLower && aLower !== qLower) return 1;
-            const aStarts = aLower.startsWith(qLower);
-            const bStarts = bLower.startsWith(qLower);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            const aIsMod = aLower.includes('mod') || aLower.includes('edition');
-            const bIsMod = bLower.includes('mod') || bLower.includes('edition');
-            if (!aIsMod && bIsMod) return -1;
-            if (aIsMod && !bIsMod) return 1;
-            return 0;
-          })
-          .slice(0, 8);
-
-        for (const game of validGames) {
-          const external_id = `lutris:${game.slug || game.id}`;
-          const isDuplicate = items.some(
-            (x) =>
-              x.title.toLowerCase() === game.name.toLowerCase() ||
-              x.external_id === external_id
-          );
-          if (!isDuplicate) {
-            const platformsStr = game.platforms?.map((p: any) => p.name).join(', ');
-            items.push({
-              id: external_id,
-              external_id,
-              title: game.name,
-              type: 'game',
-              coverUrl: game.coverart,
-              releaseDate: game.year ? `${game.year}-01-01` : undefined,
-              summary: platformsStr
-                ? `Plattformen: ${platformsStr}`
-                : `Videospiel in der offenen Spieledatenbank.`,
-              genres: ['Videospiel', platformsStr ? platformsStr.split(', ')[0] : 'Multiplattform'],
-              creator: platformsStr || 'Videospiel',
-              franchise_id: `lutris:franchise:${game.slug || game.id}`,
-              totalUnits: 30,
-              unit: 'hours',
-              rating: 4.7,
-            });
+    // 2. Global Multi-Console & PC Search via Wikipedia Video Games DB
+    for (const target of searchTargets) {
+      try {
+        const wikiHits = await searchWikipediaGames(target);
+        for (const game of wikiHits) {
+          const norm = game.title.toLowerCase();
+          if (!seenTitles.has(norm)) {
+            seenTitles.add(norm);
+            items.push(game);
           }
         }
+      } catch (e) {
+        console.warn('Wikipedia game search failed for target:', target, e);
       }
-    } catch (e) {
-      console.warn('Lutris search failed:', e);
     }
 
-    // 3. Live Steam Store Search API (Completely FREE, public)
-    try {
-      const steamRes = await fetch(
-        `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(primaryQuery)}&l=german&cc=DE`,
-        { signal: AbortSignal.timeout(4000) }
-      );
-      if (steamRes.ok) {
-        const data = await steamRes.json();
-        for (const game of (data.items || []).slice(0, 6)) {
-          if (!game.name || !game.id) continue;
-          const external_id = `steam:${game.id}`;
-          const coverUrl = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.id}/library_600x900_2x.jpg`;
+    // 3. Live Lutris Open Video Games Database Search API (Multiplatform: PlayStation, Nintendo, Xbox, PC, Retro)
+    for (const target of searchTargets) {
+      try {
+        const lutrisRes = await fetch(
+          `https://lutris.net/api/games?search=${encodeURIComponent(target)}`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(4000) }
+        );
+        if (lutrisRes.ok) {
+          const lutrisData = await lutrisRes.json();
+          const qLower = target.toLowerCase().trim();
+          const validGames = (lutrisData.results || [])
+            .filter((g: any) => g.name && g.coverart)
+            .sort((a: any, b: any) => {
+              const aLower = a.name.toLowerCase();
+              const bLower = b.name.toLowerCase();
+              if (aLower === qLower && bLower !== qLower) return -1;
+              if (bLower === qLower && aLower !== qLower) return 1;
+              const aStarts = aLower.startsWith(qLower);
+              const bStarts = bLower.startsWith(qLower);
+              if (aStarts && !bStarts) return -1;
+              if (!aStarts && bStarts) return 1;
+              const aIsMod = aLower.includes('mod') || aLower.includes('edition');
+              const bIsMod = bLower.includes('mod') || bLower.includes('edition');
+              if (!aIsMod && bIsMod) return -1;
+              if (aIsMod && !bIsMod) return 1;
+              return 0;
+            })
+            .slice(0, 6);
 
-          // Do not duplicate if already matched from catalog or Lutris
-          if (
-            !items.some(
-              (x) => x.title.toLowerCase() === game.name.toLowerCase() || x.external_id === external_id
-            )
-          ) {
-            items.push({
-              id: external_id,
-              external_id,
-              title: game.name,
-              type: 'game',
-              coverUrl,
-              summary: `Videospiel auf Steam (App-ID: ${game.id}).`,
-              genres: ['Videospiel', 'PC / Konsole'],
-              creator: 'Steam Store',
-              franchise_id: `steam:franchise:${game.id}`,
-              totalUnits: 40,
-              unit: 'hours',
-              rating: 4.6,
-            });
+          for (const game of validGames) {
+            const external_id = `lutris:${game.slug || game.id}`;
+            const norm = game.name.toLowerCase();
+            if (!seenTitles.has(norm)) {
+              seenTitles.add(norm);
+              const platformsStr = game.platforms?.map((p: any) => p.name).join(', ');
+              items.push({
+                id: external_id,
+                external_id,
+                title: game.name,
+                type: 'game',
+                coverUrl: game.coverart,
+                releaseDate: game.year ? `${game.year}-01-01` : undefined,
+                summary: platformsStr
+                  ? `Plattformen: ${platformsStr}`
+                  : `Videospiel in der offenen Spieledatenbank.`,
+                genres: ['Videospiel', platformsStr ? platformsStr.split(', ')[0] : 'Multiplattform'],
+                creator: platformsStr || 'Videospiel',
+                franchise_id: `lutris:franchise:${game.slug || game.id}`,
+                totalUnits: 30,
+                unit: 'hours',
+                rating: 4.7,
+              });
+            }
           }
         }
+      } catch (e) {
+        console.warn('Lutris search failed for target:', target, e);
       }
-    } catch (e) {
-      console.warn('Steam Store Search failed:', e);
     }
 
-    // 4. RAWG Live API if configured
+    // 4. Live Steam Store Search API (Completely FREE, public)
+    for (const target of searchTargets) {
+      try {
+        const steamRes = await fetch(
+          `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(target)}&l=german&cc=DE`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(4000) }
+        );
+        if (steamRes.ok) {
+          const data = await steamRes.json();
+          for (const game of (data.items || []).slice(0, 4)) {
+            if (!game.name || !game.id) continue;
+            const external_id = `steam:${game.id}`;
+            const norm = game.name.toLowerCase();
+            const coverUrl = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.id}/library_600x900_2x.jpg`;
+
+            if (!seenTitles.has(norm)) {
+              seenTitles.add(norm);
+              items.push({
+                id: external_id,
+                external_id,
+                title: game.name,
+                type: 'game',
+                coverUrl,
+                summary: `Videospiel auf Steam (App-ID: ${game.id}).`,
+                genres: ['Videospiel', 'PC / Konsole'],
+                creator: 'Steam Store',
+                franchise_id: `steam:franchise:${game.id}`,
+                totalUnits: 40,
+                unit: 'hours',
+                rating: 4.6,
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Steam Store Search failed for target:', target, e);
+      }
+    }
+
+    // 5. RAWG Live API if configured
     if (RAWG_API_KEY) {
       try {
         const res = await fetch(
@@ -935,11 +1182,9 @@ export class RAWGAdapter implements MediaAdapter {
           const data = await res.json();
           for (const game of data.results || []) {
             const external_id = `rawg:${game.id}`;
-            if (
-              !items.some(
-                (x) => x.title.toLowerCase() === game.name.toLowerCase() || x.external_id === external_id
-              )
-            ) {
+            const norm = game.name.toLowerCase();
+            if (!seenTitles.has(norm)) {
+              seenTitles.add(norm);
               items.push({
                 id: external_id,
                 external_id,
@@ -1249,6 +1494,58 @@ export class RAWGAdapter implements MediaAdapter {
         description: 'Willkommen im sonnigen Vice City! Die lang erwartete Fortsetzung von Rockstar Games.',
         detectedAt: new Date().toISOString(),
         progressSuggestion: { current: 0, total: 70, unit: 'hours' },
+      };
+    }
+
+    // 11. Batman: Arkham Asylum -> Batman: Arkham City
+    if (
+      (item.external_id === 'warner:batman-arkham-asylum' || (titleLower.includes('arkham') && titleLower.includes('asylum'))) &&
+      !titleLower.includes('city') &&
+      !titleLower.includes('knight')
+    ) {
+      return {
+        id: `seq-arkham-city-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: 'Batman: Arkham City',
+        sequelType: 'game',
+        sequelCoverUrl: 'https://lutris.net/media/igdb/cover_big/co1voh.jpg',
+        releaseDate: '2011-10-18',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'warner:batman-arkham-city',
+        franchise_id: 'warner:franchise:batman-arkham',
+        description: 'Das gefeierte Meisterwerk: Batman wird in den offenen Gefängnis-Superdistrikt Arkham City eingeschleust.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 15, unit: 'hours' },
+      };
+    }
+
+    // 12. Batman: Arkham City -> Batman: Arkham Knight
+    if (
+      (item.external_id === 'warner:batman-arkham-city' || (titleLower.includes('arkham') && titleLower.includes('city'))) &&
+      !titleLower.includes('knight') &&
+      !titleLower.includes('origins')
+    ) {
+      return {
+        id: `seq-arkham-knight-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: 'Batman: Arkham Knight',
+        sequelType: 'game',
+        sequelCoverUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/208650/library_600x900_2x.jpg',
+        releaseDate: '2015-06-23',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'warner:batman-arkham-knight',
+        franchise_id: 'warner:franchise:batman-arkham',
+        description: 'Das finale Kapitel der Rocksteady-Trilogie: Scarecrow und der Arkham Knight greifen ganz Gotham City an.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 20, unit: 'hours' },
       };
     }
 
