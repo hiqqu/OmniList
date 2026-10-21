@@ -137,7 +137,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         body: JSON.stringify({
           action: 'push',
           code: cleanCode,
-          data: { media, sequels },
+          data: {
+            media,
+            sequels,
+            integrations: {
+              steam: {
+                steamInput: steamInput.trim(),
+                steamApiKey: steamApiKey.trim(),
+              },
+            },
+          },
         }),
       });
 
@@ -146,7 +155,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       if (res.ok && data.success) {
         setFeedback({
           type: 'success',
-          message: `Erfolgreich in der Cloud gesichert! Gib auf deinem Zweitgerät einfach den Code "${cleanCode}" ein, um deine ${media.length} Medien zu laden.`,
+          message: `Erfolgreich in der Cloud gesichert! Gib auf deinem Zweitgerät einfach den Code "${cleanCode}" ein, um deine ${media.length} Medien & Account-Verknüpfungen zu laden.`,
         });
         addToast('success', 'In Cloud gesichert', `${media.length} Medien unter "${cleanCode}" gespeichert`);
       } else {
@@ -189,12 +198,25 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       if (res.ok && data.success && data.data) {
         const pulledMedia = data.data.media || [];
         const pulledSequels = data.data.sequels || [];
+        const pulledIntegrations = data.data.integrations;
+
+        if (pulledIntegrations?.steam) {
+          if (pulledIntegrations.steam.steamInput) {
+            setSteamInput(pulledIntegrations.steam.steamInput);
+            localStorage.setItem(STORAGE_STEAM_INPUT_KEY, pulledIntegrations.steam.steamInput);
+          }
+          if (pulledIntegrations.steam.steamApiKey) {
+            setSteamApiKey(pulledIntegrations.steam.steamApiKey);
+            localStorage.setItem(STORAGE_STEAM_KEY_KEY, pulledIntegrations.steam.steamApiKey);
+          }
+        }
+
         onApplySync(pulledMedia, pulledSequels);
         setFeedback({
           type: 'success',
-          message: `Perfekt! ${pulledMedia.length} Medien wurden erfolgreich aus der Cloud synchronisiert.`,
+          message: `Perfekt! ${pulledMedia.length} Medien und deine Account-Verknüpfungen wurden erfolgreich synchronisiert.`,
         });
-        addToast('success', 'Aus Cloud geladen', `${pulledMedia.length} Medien synchronisiert`);
+        addToast('success', 'Aus Cloud geladen', `${pulledMedia.length} Medien & Accounts synchronisiert`);
       } else {
         setFeedback({
           type: 'error',
@@ -216,6 +238,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       itemCount: media.length,
       media,
       sequels,
+      integrations: {
+        steam: {
+          steamInput: steamInput.trim(),
+          steamApiKey: steamApiKey.trim(),
+        },
+      },
     };
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -228,7 +256,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    addToast('success', 'Backup exportiert', `${media.length} Medien als JSON-Datei gespeichert`);
+    addToast('success', 'Backup exportiert', `${media.length} Medien & Accounts gespeichert`);
   };
 
   // File Upload Restore (.json)
@@ -244,12 +272,24 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
         const restoredMedia = Array.isArray(parsed) ? parsed : parsed.media;
         const restoredSequels = parsed.sequels || [];
+        const restoredIntegrations = parsed.integrations;
+
+        if (restoredIntegrations?.steam) {
+          if (restoredIntegrations.steam.steamInput) {
+            setSteamInput(restoredIntegrations.steam.steamInput);
+            localStorage.setItem(STORAGE_STEAM_INPUT_KEY, restoredIntegrations.steam.steamInput);
+          }
+          if (restoredIntegrations.steam.steamApiKey) {
+            setSteamApiKey(restoredIntegrations.steam.steamApiKey);
+            localStorage.setItem(STORAGE_STEAM_KEY_KEY, restoredIntegrations.steam.steamApiKey);
+          }
+        }
 
         if (Array.isArray(restoredMedia) && restoredMedia.length >= 0) {
           onApplySync(restoredMedia, restoredSequels);
           setFeedback({
             type: 'success',
-            message: `Datei erfolgreich importiert! ${restoredMedia.length} Medien wurden geladen.`,
+            message: `Datei erfolgreich importiert! ${restoredMedia.length} Medien & Accounts wurden geladen.`,
           });
           addToast('success', 'Backup importiert', `${restoredMedia.length} Medien wiederhergestellt`);
         } else {

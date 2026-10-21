@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
       const payload = {
         media: data.media || [],
         sequels: data.sequels || [],
+        integrations: data.integrations || {},
         updatedAt: new Date().toISOString(),
         itemCount: (data.media || []).length,
       };
