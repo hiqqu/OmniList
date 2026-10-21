@@ -993,29 +993,32 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                       <div className="text-[11px] font-bold text-zinc-300">
                         {steamGames.length} Steam-Spiele geladen
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
                         <button
-                          onClick={handleSyncSteamExisting}
-                          disabled={isSteamSyncing}
-                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
+                          onClick={() => handleImportSteamGames(false)}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-all active:scale-95"
                         >
-                          <Trophy className={cn('w-3.5 h-3.5', isSteamSyncing && 'animate-spin')} />
-                          <span>Bestehende abgleichen</span>
+                          <Download className="w-4 h-4" />
+                          <span>Alle Steam-Spiele übernehmen ({steamGames.length} Titel inkl. Backlog)</span>
                         </button>
-                        <button
-                          onClick={() => handleImportSteamGames(true)}
-                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Gespielte in OmniList anzeigen</span>
-                        </button>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={handleSyncSteamExisting}
+                            disabled={isSteamSyncing}
+                            className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
+                          >
+                            <Trophy className={cn('w-3.5 h-3.5', isSteamSyncing && 'animate-spin')} />
+                            <span>Bestehende abgleichen</span>
+                          </button>
+                          <button
+                            onClick={() => handleImportSteamGames(true)}
+                            className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-[#181B22] hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-[#282D37] transition-all"
+                          >
+                            <span>Nur Gespielte (&gt;0 Std.)</span>
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => handleImportSteamGames(false)}
-                        className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-[#181B22] hover:bg-zinc-800 text-zinc-300 text-[11px] font-medium border border-[#282D37] transition-all"
-                      >
-                        <span>Ganze Bibliothek ({steamGames.length} Titel) in OmniList übernehmen</span>
-                      </button>
                     </div>
                   )}
                 </div>
