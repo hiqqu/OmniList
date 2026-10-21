@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award } from 'lucide-react';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award, Gamepad2 } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
@@ -439,6 +439,24 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
                 <PackageCheck className="w-3 h-3 text-emerald-400" />
                 <span>Im Besitz</span>
+              </span>
+            )}
+            {item.external_id?.startsWith('steam:') && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+                <Gamepad2 className="w-3 h-3 text-blue-400" />
+                <span>Steam</span>
+              </span>
+            )}
+            {item.external_id?.startsWith('psn:') && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+                <Gamepad2 className="w-3 h-3 text-sky-400" />
+                <span>PlayStation</span>
+              </span>
+            )}
+            {item.external_id?.startsWith('gog:') && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+                <Gamepad2 className="w-3 h-3 text-purple-400" />
+                <span>GOG</span>
               </span>
             )}
           </div>

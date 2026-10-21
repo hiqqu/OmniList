@@ -482,16 +482,23 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
   };
 
-  const handleImportSteamGames = (limit = 20) => {
+  const handleImportSteamGames = (onlyPlayed = true) => {
     const existingIds = new Set(media.map((m) => m.external_id));
     const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
 
-    const toImport = steamGames
-      .filter((sg) => sg.playtimeMinutes > 0 && !existingIds.has(`steam:${sg.appid}`) && !existingTitles.has(normalizeTitle(sg.name)))
-      .slice(0, limit);
+    const toImport = steamGames.filter(
+      (sg) => (onlyPlayed ? sg.playtimeMinutes > 0 : true) &&
+              !existingIds.has(`steam:${sg.appid}`) &&
+              !existingTitles.has(normalizeTitle(sg.name))
+    );
 
     if (toImport.length === 0) {
-      setFeedback({ type: 'info', message: 'Alle gespielten Steam-Spiele sind bereits vorhanden.' });
+      setFeedback({
+        type: 'info',
+        message: onlyPlayed
+          ? 'Alle gespielten Steam-Spiele sind bereits in deiner OmniList vorhanden.'
+          : 'Alle Steam-Spiele deiner Bibliothek sind bereits vorhanden.',
+      });
       return;
     }
 
@@ -504,6 +511,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       coverUrl: sg.coverUrl,
       bannerUrl: sg.headerUrl,
       external_id: `steam:${sg.appid}`,
+      publisher: 'Steam',
       progress: { current: sg.playtimeHours, unit: 'hours' },
       gameTracker: { playtimeHours: sg.playtimeHours, storyCompleted: false, completionist100: false },
       createdAt: new Date().toISOString(),
@@ -511,8 +519,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }));
 
     onApplySync([...newItems, ...media], sequels);
-    setFeedback({ type: 'success', message: `${newItems.length} Steam-Spiele hinzugefügt!` });
-    addToast('success', 'Spiele importiert', `${newItems.length} Steam-Titel hinzugefügt`);
+    setFeedback({ type: 'success', message: `${newItems.length} Steam-Spiele zu deiner OmniList hinzugefügt!` });
+    addToast('success', 'Spiele importiert', `${newItems.length} Steam-Titel in OmniList sichtbar`);
   };
 
   // ================= PLAYSTATION (PSN) HANDLERS =================
@@ -591,13 +599,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     addToast('success', 'PSN-Sync fertig', `${matches.length} Titel aktualisiert`);
   };
 
-  const handleImportPsnGames = (limit = 20) => {
+  const handleImportPsnGames = () => {
     const existingIds = new Set(media.map((m) => m.external_id));
     const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
 
-    const toImport = psnGames
-      .filter((pg) => !existingIds.has(pg.id) && !existingTitles.has(normalizeTitle(pg.name)))
-      .slice(0, limit);
+    const toImport = psnGames.filter(
+      (pg) => !existingIds.has(pg.id) && !existingTitles.has(normalizeTitle(pg.name))
+    );
 
     if (toImport.length === 0) {
       setFeedback({ type: 'info', message: 'Alle PlayStation-Spiele sind bereits in deiner Liste vorhanden.' });
@@ -625,8 +633,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }));
 
     onApplySync([...newItems, ...media], sequels);
-    setFeedback({ type: 'success', message: `${newItems.length} PlayStation-Spiele importiert!` });
-    addToast('success', 'Spiele importiert', `${newItems.length} PlayStation-Titel hinzugefügt`);
+    setFeedback({ type: 'success', message: `${newItems.length} PlayStation-Spiele zu deiner OmniList hinzugefügt!` });
+    addToast('success', 'Spiele importiert', `${newItems.length} PlayStation-Titel in OmniList sichtbar`);
   };
 
   // ================= GOG HANDLERS =================
@@ -706,13 +714,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     addToast('success', 'GOG-Sync fertig', `${matches.length} Spiele aktualisiert`);
   };
 
-  const handleImportGogGames = (limit = 20) => {
+  const handleImportGogGames = () => {
     const existingIds = new Set(media.map((m) => m.external_id));
     const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
 
-    const toImport = gogGames
-      .filter((gg) => !existingIds.has(gg.id) && !existingTitles.has(normalizeTitle(gg.title)))
-      .slice(0, limit);
+    const toImport = gogGames.filter(
+      (gg) => !existingIds.has(gg.id) && !existingTitles.has(normalizeTitle(gg.title))
+    );
 
     if (toImport.length === 0) {
       setFeedback({ type: 'info', message: 'Alle GOG-Spiele sind bereits in deiner Liste vorhanden.' });
@@ -741,8 +749,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }));
 
     onApplySync([...newItems, ...media], sequels);
-    setFeedback({ type: 'success', message: `${newItems.length} GOG-Spiele hinzugefügt!` });
-    addToast('success', 'Spiele importiert', `${newItems.length} GOG-Titel hinzugefügt`);
+    setFeedback({ type: 'success', message: `${newItems.length} GOG-Spiele zu deiner OmniList hinzugefügt!` });
+    addToast('success', 'Spiele importiert', `${newItems.length} GOG-Titel in OmniList sichtbar`);
   };
 
   return (
@@ -989,19 +997,25 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                         <button
                           onClick={handleSyncSteamExisting}
                           disabled={isSteamSyncing}
-                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
+                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
                         >
                           <Trophy className={cn('w-3.5 h-3.5', isSteamSyncing && 'animate-spin')} />
-                          <span>Bestehende aktualisieren</span>
+                          <span>Bestehende abgleichen</span>
                         </button>
                         <button
-                          onClick={() => handleImportSteamGames(20)}
-                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-all"
+                          onClick={() => handleImportSteamGames(true)}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all"
                         >
-                          <Download className="w-3.5 h-3.5 text-blue-400" />
-                          <span>Top-Spiele importieren</span>
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Gespielte in OmniList anzeigen</span>
                         </button>
                       </div>
+                      <button
+                        onClick={() => handleImportSteamGames(false)}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-[#181B22] hover:bg-zinc-800 text-zinc-300 text-[11px] font-medium border border-[#282D37] transition-all"
+                      >
+                        <span>Ganze Bibliothek ({steamGames.length} Titel) in OmniList übernehmen</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1061,17 +1075,17 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                         <button
                           onClick={handleSyncPsnExisting}
                           disabled={isPsnSyncing}
-                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
+                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
                         >
                           <Trophy className={cn('w-3.5 h-3.5', isPsnSyncing && 'animate-spin')} />
-                          <span>Bestehende aktualisieren</span>
+                          <span>Bestehende abgleichen</span>
                         </button>
                         <button
-                          onClick={() => handleImportPsnGames(20)}
-                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-all"
+                          onClick={handleImportPsnGames}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all"
                         >
-                          <Download className="w-3.5 h-3.5 text-blue-400" />
-                          <span>PSN-Spiele importieren</span>
+                          <Download className="w-3.5 h-3.5" />
+                          <span>In OmniList anzeigen ({psnGames.length})</span>
                         </button>
                       </div>
                     </div>
@@ -1147,17 +1161,17 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                         <button
                           onClick={handleSyncGogExisting}
                           disabled={isGogSyncing}
-                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
+                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
                         >
                           <Trophy className={cn('w-3.5 h-3.5', isGogSyncing && 'animate-spin')} />
-                          <span>Bestehende aktualisieren</span>
+                          <span>Bestehende abgleichen</span>
                         </button>
                         <button
-                          onClick={() => handleImportGogGames(20)}
-                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-all"
+                          onClick={handleImportGogGames}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all"
                         >
-                          <Download className="w-3.5 h-3.5 text-purple-400" />
-                          <span>GOG-Spiele importieren</span>
+                          <Download className="w-3.5 h-3.5" />
+                          <span>In OmniList anzeigen ({gogGames.length})</span>
                         </button>
                       </div>
                     </div>
