@@ -34,8 +34,13 @@ interface SyncModalProps {
 
 const STORAGE_SYNC_CODE_KEY = 'omnilist_last_sync_code_v1';
 const LEGACY_STORAGE_SYNC_CODE_KEY = 'omnitrack_last_sync_code_v1';
+
+// Integration LocalStorage Keys
 const STORAGE_STEAM_INPUT_KEY = 'omnilist_steam_input_v1';
 const STORAGE_STEAM_KEY_KEY = 'omnilist_steam_api_key_v1';
+const STORAGE_PSN_NPSSO_KEY = 'omnilist_psn_npsso_v1';
+const STORAGE_GOG_USER_KEY = 'omnilist_gog_username_v1';
+const STORAGE_GOG_TOKEN_KEY = 'omnilist_gog_token_v1';
 
 interface SteamGameItem {
   appid: number;
@@ -48,11 +53,37 @@ interface SteamGameItem {
   lastPlayed?: string;
 }
 
-interface SteamProfile {
-  steamId: string;
-  personaname: string;
-  avatar?: string;
-  profileurl?: string;
+interface PsnGameItem {
+  id: string;
+  name: string;
+  platform?: string;
+  coverUrl?: string;
+  playtimeHours: number;
+  trophies: {
+    current: number;
+    total: number;
+    hasPlatinum: boolean;
+    completionist100: boolean;
+    bronze: number;
+    silver: number;
+    gold: number;
+    platinum: number;
+  };
+}
+
+interface GogGameItem {
+  id: string;
+  gameId: string | number;
+  title: string;
+  playtimeMinutes: number;
+  playtimeHours: number;
+  coverUrl?: string;
+  bannerUrl?: string;
+  achievements?: {
+    current: number;
+    total: number;
+    completionist100: boolean;
+  };
 }
 
 export const SyncModal: React.FC<SyncModalProps> = ({
@@ -63,22 +94,37 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   onApplySync,
   addToast,
 }) => {
-  const [activeTab, setActiveTab] = useState<'cloud' | 'file' | 'steam'>('cloud');
+  const [activeTab, setActiveTab] = useState<'cloud' | 'gaming' | 'file'>('cloud');
+  const [gamingSubTab, setGamingSubTab] = useState<'steam' | 'psn' | 'gog'>('steam');
+
   const [syncCode, setSyncCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Steam-spezifischer State
+  // Steam State
   const [steamInput, setSteamInput] = useState('');
   const [steamApiKey, setSteamApiKey] = useState('');
-  const [steamProfile, setSteamProfile] = useState<SteamProfile | null>(null);
+  const [steamProfile, setSteamProfile] = useState<{ steamId: string; personaname: string; avatar?: string } | null>(null);
   const [steamGames, setSteamGames] = useState<SteamGameItem[]>([]);
   const [isSteamLoading, setIsSteamLoading] = useState(false);
   const [isSteamSyncing, setIsSteamSyncing] = useState(false);
 
-  // Load saved sync code & Steam settings from localStorage
+  // PSN State
+  const [psnNpsso, setPsnNpsso] = useState('');
+  const [psnGames, setPsnGames] = useState<PsnGameItem[]>([]);
+  const [isPsnLoading, setIsPsnLoading] = useState(false);
+  const [isPsnSyncing, setIsPsnSyncing] = useState(false);
+
+  // GOG State
+  const [gogUsername, setGogUsername] = useState('');
+  const [gogToken, setGogToken] = useState('');
+  const [gogGames, setGogGames] = useState<GogGameItem[]>([]);
+  const [isGogLoading, setIsGogLoading] = useState(false);
+  const [isGogSyncing, setIsGogSyncing] = useState(false);
+
+  // Load saved credentials from localStorage on mount/open
   useEffect(() => {
     if (isOpen) {
       const savedCode =
@@ -90,10 +136,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         generateRandomCode();
       }
 
-      const savedSteamInput = localStorage.getItem(STORAGE_STEAM_INPUT_KEY) || '';
-      const savedSteamKey = localStorage.getItem(STORAGE_STEAM_KEY_KEY) || '';
-      if (savedSteamInput) setSteamInput(savedSteamInput);
-      if (savedSteamKey) setSteamApiKey(savedSteamKey);
+      setSteamInput(localStorage.getItem(STORAGE_STEAM_INPUT_KEY) || '');
+      setSteamApiKey(localStorage.getItem(STORAGE_STEAM_KEY_KEY) || '');
+      setPsnNpsso(localStorage.getItem(STORAGE_PSN_NPSSO_KEY) || '');
+      setGogUsername(localStorage.getItem(STORAGE_GOG_USER_KEY) || '');
+      setGogToken(localStorage.getItem(STORAGE_GOG_TOKEN_KEY) || '');
 
       setFeedback(null);
     }
@@ -118,7 +165,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // Push local data to Cloud
+  const normalizeTitle = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // ================= CLOUD PUSH & PULL =================
   const handlePushToCloud = async () => {
     const cleanCode = syncCode.trim().toUpperCase();
     if (!cleanCode || cleanCode.length < 4) {
@@ -145,6 +194,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 steamInput: steamInput.trim(),
                 steamApiKey: steamApiKey.trim(),
               },
+              psn: {
+                npsso: psnNpsso.trim(),
+              },
+              gog: {
+                username: gogUsername.trim(),
+                token: gogToken.trim(),
+              },
             },
           },
         }),
@@ -155,9 +211,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       if (res.ok && data.success) {
         setFeedback({
           type: 'success',
-          message: `Erfolgreich in der Cloud gesichert! Gib auf deinem Zweitgerät einfach den Code "${cleanCode}" ein, um deine ${media.length} Medien & Account-Verknüpfungen zu laden.`,
+          message: `In der Cloud gesichert! Gib auf deinem Zweitgerät einfach den Code "${cleanCode}" ein, um deine ${media.length} Medien & Account-Verknüpfungen abzurufen.`,
         });
-        addToast('success', 'In Cloud gesichert', `${media.length} Medien unter "${cleanCode}" gespeichert`);
+        addToast('success', 'In Cloud gesichert', `${media.length} Medien & Accounts gespeichert`);
       } else {
         setFeedback({
           type: 'error',
@@ -171,7 +227,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
   };
 
-  // Pull data from Cloud to local
   const handlePullFromCloud = async () => {
     const cleanCode = syncCode.trim().toUpperCase();
     if (!cleanCode || cleanCode.length < 4) {
@@ -211,10 +266,26 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           }
         }
 
+        if (pulledIntegrations?.psn?.npsso) {
+          setPsnNpsso(pulledIntegrations.psn.npsso);
+          localStorage.setItem(STORAGE_PSN_NPSSO_KEY, pulledIntegrations.psn.npsso);
+        }
+
+        if (pulledIntegrations?.gog) {
+          if (pulledIntegrations.gog.username) {
+            setGogUsername(pulledIntegrations.gog.username);
+            localStorage.setItem(STORAGE_GOG_USER_KEY, pulledIntegrations.gog.username);
+          }
+          if (pulledIntegrations.gog.token) {
+            setGogToken(pulledIntegrations.gog.token);
+            localStorage.setItem(STORAGE_GOG_TOKEN_KEY, pulledIntegrations.gog.token);
+          }
+        }
+
         onApplySync(pulledMedia, pulledSequels);
         setFeedback({
           type: 'success',
-          message: `Perfekt! ${pulledMedia.length} Medien und deine Account-Verknüpfungen wurden erfolgreich synchronisiert.`,
+          message: `Perfekt! ${pulledMedia.length} Medien und deine Account-Verknüpfungen (Steam, PSN, GOG) wurden erfolgreich synchronisiert.`,
         });
         addToast('success', 'Aus Cloud geladen', `${pulledMedia.length} Medien & Accounts synchronisiert`);
       } else {
@@ -230,7 +301,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
   };
 
-  // File Download Backup (.json)
+  // ================= FILE BACKUP =================
   const handleDownloadFile = () => {
     const exportData = {
       version: 'omnilist_v1',
@@ -239,10 +310,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       media,
       sequels,
       integrations: {
-        steam: {
-          steamInput: steamInput.trim(),
-          steamApiKey: steamApiKey.trim(),
-        },
+        steam: { steamInput: steamInput.trim(), steamApiKey: steamApiKey.trim() },
+        psn: { npsso: psnNpsso.trim() },
+        gog: { username: gogUsername.trim(), token: gogToken.trim() },
       },
     };
 
@@ -259,7 +329,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     addToast('success', 'Backup exportiert', `${media.length} Medien & Accounts gespeichert`);
   };
 
-  // File Upload Restore (.json)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -285,6 +354,22 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           }
         }
 
+        if (restoredIntegrations?.psn?.npsso) {
+          setPsnNpsso(restoredIntegrations.psn.npsso);
+          localStorage.setItem(STORAGE_PSN_NPSSO_KEY, restoredIntegrations.psn.npsso);
+        }
+
+        if (restoredIntegrations?.gog) {
+          if (restoredIntegrations.gog.username) {
+            setGogUsername(restoredIntegrations.gog.username);
+            localStorage.setItem(STORAGE_GOG_USER_KEY, restoredIntegrations.gog.username);
+          }
+          if (restoredIntegrations.gog.token) {
+            setGogToken(restoredIntegrations.gog.token);
+            localStorage.setItem(STORAGE_GOG_TOKEN_KEY, restoredIntegrations.gog.token);
+          }
+        }
+
         if (Array.isArray(restoredMedia) && restoredMedia.length >= 0) {
           onApplySync(restoredMedia, restoredSequels);
           setFeedback({
@@ -292,11 +377,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             message: `Datei erfolgreich importiert! ${restoredMedia.length} Medien & Accounts wurden geladen.`,
           });
           addToast('success', 'Backup importiert', `${restoredMedia.length} Medien wiederhergestellt`);
-        } else {
-          setFeedback({
-            type: 'error',
-            message: 'Ungültiges Dateiformat. Die JSON-Datei enthält keine gültige Mediensammlung.',
-          });
         }
       } catch {
         setFeedback({ type: 'error', message: 'Fehler beim Lesen der JSON-Datei.' });
@@ -306,9 +386,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     e.target.value = '';
   };
 
-  // ================= STEAM INTEGRATION LOGIC =================
-  const normalizeTitle = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
-
+  // ================= STEAM HANDLERS =================
   const handleFetchSteam = async () => {
     if (!steamInput.trim()) {
       setFeedback({ type: 'error', message: 'Bitte gib deinen Steam-Profil-Link oder deine Steam-ID ein.' });
@@ -317,96 +395,52 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
     setIsSteamLoading(true);
     setFeedback(null);
-
-    // Save inputs
     localStorage.setItem(STORAGE_STEAM_INPUT_KEY, steamInput.trim());
-    if (steamApiKey.trim()) {
-      localStorage.setItem(STORAGE_STEAM_KEY_KEY, steamApiKey.trim());
-    }
+    if (steamApiKey.trim()) localStorage.setItem(STORAGE_STEAM_KEY_KEY, steamApiKey.trim());
 
     try {
-      // 1. Fetch Profile
       const profRes = await fetch('/api/sync/steam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'get-profile',
-          steamInput: steamInput.trim(),
-          apiKey: steamApiKey.trim(),
-        }),
+        body: JSON.stringify({ action: 'get-profile', steamInput: steamInput.trim(), apiKey: steamApiKey.trim() }),
       });
+      if (profRes.ok) setSteamProfile(await profRes.json());
 
-      if (profRes.ok) {
-        const profData = await profRes.json();
-        setSteamProfile(profData);
-      }
-
-      // 2. Fetch Games
       const gamesRes = await fetch('/api/sync/steam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'get-games',
-          steamInput: steamInput.trim(),
-          apiKey: steamApiKey.trim(),
-        }),
+        body: JSON.stringify({ action: 'get-games', steamInput: steamInput.trim(), apiKey: steamApiKey.trim() }),
       });
-
       const gamesData = await gamesRes.json();
-
-      if (!gamesRes.ok) {
-        setFeedback({
-          type: 'error',
-          message: gamesData.error || gamesData.hint || 'Konnte keine Steam-Spiele abrufen.',
-        });
-        return;
-      }
+      if (!gamesRes.ok) throw new Error(gamesData.error || 'Fehler beim Abrufen der Steam-Spiele');
 
       setSteamGames(gamesData.games || []);
-      setFeedback({
-        type: 'success',
-        message: `${gamesData.games?.length || 0} Spiele erfolgreich aus deinem Steam-Konto geladen!`,
-      });
-      addToast('success', 'Steam verbunden', `${gamesData.games?.length || 0} Spiele gefunden`);
-    } catch {
-      setFeedback({ type: 'error', message: 'Netzwerkfehler bei der Verbindung mit Steam.' });
+      setFeedback({ type: 'success', message: `${gamesData.games?.length || 0} Steam-Spiele geladen!` });
+      addToast('success', 'Steam geladen', `${gamesData.games?.length || 0} Spiele gefunden`);
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Verbindung zu Steam fehlgeschlagen.' });
     } finally {
       setIsSteamLoading(false);
     }
   };
 
-  // Sync playtime and achievements for games that are ALREADY in OmniList
-  const handleSyncExistingGames = async () => {
+  const handleSyncSteamExisting = async () => {
     if (steamGames.length === 0) return;
-
     setIsSteamSyncing(true);
-    setFeedback(null);
-
     try {
       const existingGames = media.filter((m) => m.type === 'game');
-      const matches: { mediaItem: MediaItem; steamGame: SteamGameItem }[] = [];
-
-      for (const item of existingGames) {
-        const matched = steamGames.find((sg) => {
-          if (item.external_id === `steam:${sg.appid}`) return true;
-          return normalizeTitle(sg.name) === normalizeTitle(item.title);
-        });
-        if (matched) {
-          matches.push({ mediaItem: item, steamGame: matched });
-        }
-      }
+      const matches = existingGames
+        .map((item) => ({
+          item,
+          match: steamGames.find((sg) => item.external_id === `steam:${sg.appid}` || normalizeTitle(sg.name) === normalizeTitle(item.title)),
+        }))
+        .filter((m): m is { item: MediaItem; match: SteamGameItem } => Boolean(m.match));
 
       if (matches.length === 0) {
-        setFeedback({
-          type: 'info',
-          message: 'Keine übereinstimmenden Spiele in deiner OmniList-Sammlung gefunden.',
-        });
-        setIsSteamSyncing(false);
+        setFeedback({ type: 'info', message: 'Keine übereinstimmenden Steam-Spiele in deiner OmniList gefunden.' });
         return;
       }
 
-      // Fetch achievements for matched games
-      const appIds = matches.map((m) => m.steamGame.appid);
       const achRes = await fetch('/api/sync/steam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -414,73 +448,54 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           action: 'get-achievements',
           steamInput: steamInput.trim(),
           apiKey: steamApiKey.trim(),
-          appIds,
+          appIds: matches.map((m) => m.match.appid),
         }),
       });
-
       const achData = achRes.ok ? await achRes.json() : { achievements: {} };
-      const achievementsMap = achData.achievements || {};
+      const achMap = achData.achievements || {};
 
-      // Update existing media
       const updatedMedia = media.map((item) => {
-        const match = matches.find((m) => m.mediaItem.id === item.id);
-        if (!match) return item;
-
-        const ach = achievementsMap[match.steamGame.appid];
-        const existingTracker = item.gameTracker || {};
-
+        const found = matches.find((m) => m.item.id === item.id);
+        if (!found) return item;
+        const ach = achMap[found.match.appid];
         return {
           ...item,
-          external_id: item.external_id?.startsWith('steam:') ? item.external_id : `steam:${match.steamGame.appid}`,
-          progress: {
-            ...item.progress,
-            current: match.steamGame.playtimeHours,
-            unit: 'hours' as const,
-          },
+          external_id: item.external_id?.startsWith('steam:') ? item.external_id : `steam:${found.match.appid}`,
+          progress: { ...item.progress, current: found.match.playtimeHours, unit: 'hours' as const },
           gameTracker: {
-            ...existingTracker,
-            playtimeHours: match.steamGame.playtimeHours,
-            achievements: ach ? { current: ach.current, total: ach.total } : existingTracker.achievements,
-            completionist100: ach ? ach.completionist100 : existingTracker.completionist100,
+            ...(item.gameTracker || {}),
+            playtimeHours: found.match.playtimeHours,
+            achievements: ach ? { current: ach.current, total: ach.total } : item.gameTracker?.achievements,
+            completionist100: ach ? ach.completionist100 : item.gameTracker?.completionist100,
           },
           updatedAt: new Date().toISOString(),
         };
       });
 
       onApplySync(updatedMedia, sequels);
-      setFeedback({
-        type: 'success',
-        message: `${matches.length} Spiele erfolgreich mit Steam-Spielzeiten & Achievements aktualisiert!`,
-      });
-      addToast('success', 'Steam-Sync abgeschlossen', `${matches.length} Spiele aktualisiert`);
+      setFeedback({ type: 'success', message: `${matches.length} Spiele mit Steam-Spielzeiten & Achievements aktualisiert!` });
+      addToast('success', 'Steam-Sync fertig', `${matches.length} Spiele aktualisiert`);
     } catch {
-      setFeedback({ type: 'error', message: 'Fehler beim Aktualisieren der Steam-Spieldaten.' });
+      setFeedback({ type: 'error', message: 'Fehler beim Steam-Sync.' });
     } finally {
       setIsSteamSyncing(false);
     }
   };
 
-  // Import top played games from Steam into OmniList
-  const handleImportPlayedGames = (limit = 20) => {
-    if (steamGames.length === 0) return;
-
-    const existingExternalIds = new Set(media.map((m) => m.external_id));
+  const handleImportSteamGames = (limit = 20) => {
+    const existingIds = new Set(media.map((m) => m.external_id));
     const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
 
     const toImport = steamGames
-      .filter((sg) => sg.playtimeMinutes > 0)
-      .filter((sg) => !existingExternalIds.has(`steam:${sg.appid}`) && !existingTitles.has(normalizeTitle(sg.name)))
+      .filter((sg) => sg.playtimeMinutes > 0 && !existingIds.has(`steam:${sg.appid}`) && !existingTitles.has(normalizeTitle(sg.name)))
       .slice(0, limit);
 
     if (toImport.length === 0) {
-      setFeedback({
-        type: 'info',
-        message: 'Alle gespielten Steam-Spiele sind bereits in deiner OmniList vorhanden.',
-      });
+      setFeedback({ type: 'info', message: 'Alle gespielten Steam-Spiele sind bereits vorhanden.' });
       return;
     }
 
-    const newMediaItems: MediaItem[] = toImport.map((sg) => ({
+    const newItems: MediaItem[] = toImport.map((sg) => ({
       id: `steam:${sg.appid}:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`,
       title: sg.name,
       type: 'game',
@@ -489,40 +504,251 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       coverUrl: sg.coverUrl,
       bannerUrl: sg.headerUrl,
       external_id: `steam:${sg.appid}`,
-      progress: {
-        current: sg.playtimeHours,
-        unit: 'hours',
-      },
+      progress: { current: sg.playtimeHours, unit: 'hours' },
+      gameTracker: { playtimeHours: sg.playtimeHours, storyCompleted: false, completionist100: false },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+
+    onApplySync([...newItems, ...media], sequels);
+    setFeedback({ type: 'success', message: `${newItems.length} Steam-Spiele hinzugefügt!` });
+    addToast('success', 'Spiele importiert', `${newItems.length} Steam-Titel hinzugefügt`);
+  };
+
+  // ================= PLAYSTATION (PSN) HANDLERS =================
+  const handleFetchPsn = async () => {
+    if (!psnNpsso.trim()) {
+      setFeedback({ type: 'error', message: 'Bitte gib deinen PlayStation NPSSO-Token ein.' });
+      return;
+    }
+
+    setIsPsnLoading(true);
+    setFeedback(null);
+    localStorage.setItem(STORAGE_PSN_NPSSO_KEY, psnNpsso.trim());
+
+    try {
+      const res = await fetch('/api/sync/psn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get-games', npsso: psnNpsso.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Fehler beim Abrufen der PlayStation-Daten');
+
+      setPsnGames(data.games || []);
+      setFeedback({ type: 'success', message: `${data.games?.length || 0} PlayStation-Titel & Trophäen geladen!` });
+      addToast('success', 'PSN verbunden', `${data.games?.length || 0} Titel gefunden`);
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Verbindung zu PlayStation Network fehlgeschlagen.' });
+    } finally {
+      setIsPsnLoading(false);
+    }
+  };
+
+  const handleSyncPsnExisting = () => {
+    if (psnGames.length === 0) return;
+    setIsPsnSyncing(true);
+
+    const matches = media
+      .filter((m) => m.type === 'game')
+      .map((item) => ({
+        item,
+        match: psnGames.find((pg) => item.external_id === pg.id || normalizeTitle(pg.name) === normalizeTitle(item.title)),
+      }))
+      .filter((m): m is { item: MediaItem; match: PsnGameItem } => Boolean(m.match));
+
+    if (matches.length === 0) {
+      setFeedback({ type: 'info', message: 'Keine übereinstimmenden PlayStation-Spiele in deiner Liste gefunden.' });
+      setIsPsnSyncing(false);
+      return;
+    }
+
+    const updatedMedia = media.map((item) => {
+      const found = matches.find((m) => m.item.id === item.id);
+      if (!found) return item;
+      const t = found.match.trophies;
+      return {
+        ...item,
+        external_id: item.external_id?.startsWith('psn:') ? item.external_id : found.match.id,
+        progress: {
+          ...item.progress,
+          current: found.match.playtimeHours > 0 ? found.match.playtimeHours : item.progress.current,
+          unit: 'hours' as const,
+        },
+        gameTracker: {
+          ...(item.gameTracker || {}),
+          playtimeHours: found.match.playtimeHours > 0 ? found.match.playtimeHours : item.gameTracker?.playtimeHours,
+          achievements: t.total > 0 ? { current: t.current, total: t.total } : item.gameTracker?.achievements,
+          completionist100: t.completionist100,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    onApplySync(updatedMedia, sequels);
+    setIsPsnSyncing(false);
+    setFeedback({ type: 'success', message: `${matches.length} Spiele mit PSN-Spielzeiten & Trophäen aktualisiert!` });
+    addToast('success', 'PSN-Sync fertig', `${matches.length} Titel aktualisiert`);
+  };
+
+  const handleImportPsnGames = (limit = 20) => {
+    const existingIds = new Set(media.map((m) => m.external_id));
+    const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
+
+    const toImport = psnGames
+      .filter((pg) => !existingIds.has(pg.id) && !existingTitles.has(normalizeTitle(pg.name)))
+      .slice(0, limit);
+
+    if (toImport.length === 0) {
+      setFeedback({ type: 'info', message: 'Alle PlayStation-Spiele sind bereits in deiner Liste vorhanden.' });
+      return;
+    }
+
+    const newItems: MediaItem[] = toImport.map((pg) => ({
+      id: `${pg.id}:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`,
+      title: pg.name,
+      type: 'game',
+      status: pg.trophies.completionist100 ? 'completed' : pg.playtimeHours > 0 ? 'in_progress' : 'planned',
+      isOwned: true,
+      coverUrl: pg.coverUrl || '',
+      external_id: pg.id,
+      publisher: `PlayStation (${pg.platform || 'PS5'})`,
+      progress: { current: pg.playtimeHours, unit: 'hours' },
       gameTracker: {
-        playtimeHours: sg.playtimeHours,
-        storyCompleted: false,
-        completionist100: false,
+        playtimeHours: pg.playtimeHours,
+        storyCompleted: pg.trophies.completionist100,
+        completionist100: pg.trophies.completionist100,
+        achievements: pg.trophies.total > 0 ? { current: pg.trophies.current, total: pg.trophies.total } : undefined,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }));
 
-    const combined = [...newMediaItems, ...media];
-    onApplySync(combined, sequels);
-
-    setFeedback({
-      type: 'success',
-      message: `${newMediaItems.length} Steam-Spiele wurden deiner Sammlung hinzugefügt!`,
-    });
-    addToast('success', 'Spiele importiert', `${newMediaItems.length} Steam-Titel hinzugefügt`);
+    onApplySync([...newItems, ...media], sequels);
+    setFeedback({ type: 'success', message: `${newItems.length} PlayStation-Spiele importiert!` });
+    addToast('success', 'Spiele importiert', `${newItems.length} PlayStation-Titel hinzugefügt`);
   };
 
-  const existingGamesCount = media.filter((m) => m.type === 'game').length;
-  const matchedGamesCount = steamGames.filter((sg) => {
-    return media.some(
-      (m) => m.type === 'game' && (m.external_id === `steam:${sg.appid}` || normalizeTitle(m.title) === normalizeTitle(sg.name))
-    );
-  }).length;
+  // ================= GOG HANDLERS =================
+  const handleFetchGog = async () => {
+    if (!gogUsername.trim() && !gogToken.trim()) {
+      setFeedback({ type: 'error', message: 'Bitte gib deinen GOG-Nutzernamen oder Token ein.' });
+      return;
+    }
+
+    setIsGogLoading(true);
+    setFeedback(null);
+    if (gogUsername.trim()) localStorage.setItem(STORAGE_GOG_USER_KEY, gogUsername.trim());
+    if (gogToken.trim()) localStorage.setItem(STORAGE_GOG_TOKEN_KEY, gogToken.trim());
+
+    try {
+      const res = await fetch('/api/sync/gog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: gogUsername.trim(), token: gogToken.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Fehler beim Abrufen der GOG-Spiele');
+
+      setGogGames(data.games || []);
+      setFeedback({ type: 'success', message: `${data.games?.length || 0} GOG-Spiele geladen!` });
+      addToast('success', 'GOG geladen', `${data.games?.length || 0} Spiele gefunden`);
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Verbindung zu GOG fehlgeschlagen.' });
+    } finally {
+      setIsGogLoading(false);
+    }
+  };
+
+  const handleSyncGogExisting = () => {
+    if (gogGames.length === 0) return;
+    setIsGogSyncing(true);
+
+    const matches = media
+      .filter((m) => m.type === 'game')
+      .map((item) => ({
+        item,
+        match: gogGames.find((gg) => item.external_id === gg.id || normalizeTitle(gg.title) === normalizeTitle(item.title)),
+      }))
+      .filter((m): m is { item: MediaItem; match: GogGameItem } => Boolean(m.match));
+
+    if (matches.length === 0) {
+      setFeedback({ type: 'info', message: 'Keine übereinstimmenden GOG-Spiele in deiner Liste gefunden.' });
+      setIsGogSyncing(false);
+      return;
+    }
+
+    const updatedMedia = media.map((item) => {
+      const found = matches.find((m) => m.item.id === item.id);
+      if (!found) return item;
+      const ach = found.match.achievements;
+      return {
+        ...item,
+        external_id: item.external_id?.startsWith('gog:') ? item.external_id : found.match.id,
+        progress: {
+          ...item.progress,
+          current: found.match.playtimeHours > 0 ? found.match.playtimeHours : item.progress.current,
+          unit: 'hours' as const,
+        },
+        gameTracker: {
+          ...(item.gameTracker || {}),
+          playtimeHours: found.match.playtimeHours > 0 ? found.match.playtimeHours : item.gameTracker?.playtimeHours,
+          achievements: ach ? { current: ach.current, total: ach.total } : item.gameTracker?.achievements,
+          completionist100: ach ? ach.completionist100 : item.gameTracker?.completionist100,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    onApplySync(updatedMedia, sequels);
+    setIsGogSyncing(false);
+    setFeedback({ type: 'success', message: `${matches.length} Spiele mit GOG-Spielzeiten & Achievements aktualisiert!` });
+    addToast('success', 'GOG-Sync fertig', `${matches.length} Spiele aktualisiert`);
+  };
+
+  const handleImportGogGames = (limit = 20) => {
+    const existingIds = new Set(media.map((m) => m.external_id));
+    const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
+
+    const toImport = gogGames
+      .filter((gg) => !existingIds.has(gg.id) && !existingTitles.has(normalizeTitle(gg.title)))
+      .slice(0, limit);
+
+    if (toImport.length === 0) {
+      setFeedback({ type: 'info', message: 'Alle GOG-Spiele sind bereits in deiner Liste vorhanden.' });
+      return;
+    }
+
+    const newItems: MediaItem[] = toImport.map((gg) => ({
+      id: `${gg.id}:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`,
+      title: gg.title,
+      type: 'game',
+      status: gg.playtimeHours > 0 ? 'in_progress' : 'planned',
+      isOwned: true,
+      coverUrl: gg.coverUrl || '',
+      bannerUrl: gg.bannerUrl,
+      external_id: gg.id,
+      publisher: 'GOG.com',
+      progress: { current: gg.playtimeHours, unit: 'hours' },
+      gameTracker: {
+        playtimeHours: gg.playtimeHours,
+        storyCompleted: false,
+        completionist100: gg.achievements?.completionist100 || false,
+        achievements: gg.achievements ? { current: gg.achievements.current, total: gg.achievements.total } : undefined,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+
+    onApplySync([...newItems, ...media], sequels);
+    setFeedback({ type: 'success', message: `${newItems.length} GOG-Spiele hinzugefügt!` });
+    addToast('success', 'Spiele importiert', `${newItems.length} GOG-Titel hinzugefügt`);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
       <div className="relative w-full max-w-lg bg-[#181B22] border border-[#282D37] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
+        {/* Modal Header */}
         <div className="p-4 border-b border-[#282D37] flex items-center justify-between bg-[#0F1117]/60">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
@@ -530,7 +756,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-[#F1F3F7] text-base">Geräte-Sync &amp; Accounts</h3>
-              <p className="text-[11px] text-zinc-400">Cloud-Backup, Offline-Dateien &amp; Steam-Verknüpfung</p>
+              <p className="text-[11px] text-zinc-400">Cloud-Backup &amp; Spiele-Accounts (Steam, PSN, GOG)</p>
             </div>
           </div>
           <button
@@ -557,16 +783,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveTab('steam')}
+            onClick={() => setActiveTab('gaming')}
             className={cn(
               'flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 whitespace-nowrap',
-              activeTab === 'steam'
+              activeTab === 'gaming'
                 ? 'border-blue-500 text-blue-300 bg-[#181B22]'
                 : 'border-transparent text-zinc-400 hover:text-zinc-200'
             )}
           >
             <Gamepad2 className="w-3.5 h-3.5 text-blue-400" />
-            <span>Steam (Gaming)</span>
+            <span>Gaming-Accounts</span>
           </button>
 
           <button
@@ -619,7 +845,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 </div>
 
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Nutze diesen Code auf all deinen Geräten (z. B. Smartphone), um deine Mediensammlung per Knopfdruck abzugleichen.
+                  Nutze diesen Code auf all deinen Geräten, um deine Mediensammlung &amp; verknüpfte Gaming-Konten per Knopfdruck abzugleichen.
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -649,7 +875,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 >
                   <Upload className="w-4 h-4" />
                   <span>In Cloud sichern (Push)</span>
-                  <span className="text-[10px] font-normal text-emerald-200">PC-Daten hochladen</span>
+                  <span className="text-[10px] font-normal text-emerald-200">Sammlung &amp; Accounts hochladen</span>
                 </button>
 
                 <button
@@ -665,119 +891,277 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             </div>
           )}
 
-          {activeTab === 'steam' && (
-            /* ================= TAB 2: STEAM INTEGRATION ================= */
+          {activeTab === 'gaming' && (
+            /* ================= TAB 2: GAMING ACCOUNTS (STEAM / PSN / GOG) ================= */
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-[#0F1117] border border-[#282D37] space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Gamepad2 className="w-4 h-4 text-blue-400" />
-                    <h4 className="text-xs font-bold text-zinc-200">Steam-Konto anbinden</h4>
-                  </div>
-                  <a
-                    href="https://steamcommunity.com/dev/apikey"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] text-blue-400 hover:underline flex items-center gap-1"
-                  >
-                    <span>API-Key holen</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Rufe deine Spielzeiten, Errungenschaften (Achievements) und Spiele automatisch aus deinem Steam-Profil ab.
-                </p>
-
-                <div className="space-y-2">
-                  <label className="text-[11px] font-semibold text-zinc-300">Steam-ID oder Profil-Link / Vanity-Name</label>
-                  <input
-                    type="text"
-                    value={steamInput}
-                    onChange={(e) => setSteamInput(e.target.value)}
-                    placeholder="z. B. 76561198... oder https://steamcommunity.com/id/name"
-                    className="w-full bg-[#181B22] border border-[#282D37] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] focus:outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-semibold text-zinc-300">Steam Web API-Key (Optional)</label>
-                    <span className="text-[10px] text-zinc-500">Falls in .env hinterlegt, leer lassen</span>
-                  </div>
-                  <input
-                    type="password"
-                    value={steamApiKey}
-                    onChange={(e) => setSteamApiKey(e.target.value)}
-                    placeholder="32-stelliger Hex-Key"
-                    className="w-full bg-[#181B22] border border-[#282D37] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] font-mono focus:outline-none"
-                  />
-                </div>
-
+              {/* Gaming Sub-Navigation */}
+              <div className="flex rounded-xl bg-[#0F1117] p-1 border border-[#282D37]">
                 <button
-                  onClick={handleFetchSteam}
-                  disabled={isSteamLoading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
+                  onClick={() => { setGamingSubTab('steam'); setFeedback(null); }}
+                  className={cn(
+                    'flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center',
+                    gamingSubTab === 'steam' ? 'bg-blue-600 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'
+                  )}
                 >
-                  <RefreshCw className={cn('w-3.5 h-3.5', isSteamLoading && 'animate-spin')} />
-                  <span>{isSteamLoading ? 'Verbinde mit Steam...' : 'Steam-Spiele abrufen'}</span>
+                  Steam
+                </button>
+                <button
+                  onClick={() => { setGamingSubTab('psn'); setFeedback(null); }}
+                  className={cn(
+                    'flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center',
+                    gamingSubTab === 'psn' ? 'bg-blue-700 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'
+                  )}
+                >
+                  PlayStation (PSN)
+                </button>
+                <button
+                  onClick={() => { setGamingSubTab('gog'); setFeedback(null); }}
+                  className={cn(
+                    'flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center',
+                    gamingSubTab === 'gog' ? 'bg-purple-600 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'
+                  )}
+                >
+                  GOG Galaxy
                 </button>
               </div>
 
-              {/* Profile Card & Sync Actions if Games loaded */}
-              {steamGames.length > 0 && (
-                <div className="p-4 rounded-2xl bg-[#0F1117] border border-blue-500/30 space-y-3.5 animate-fadeIn">
-                  {steamProfile && (
-                    <div className="flex items-center gap-3 pb-3 border-b border-[#282D37]">
-                      {steamProfile.avatar && (
-                        <img
-                          src={steamProfile.avatar}
-                          alt={steamProfile.personaname}
-                          className="w-10 h-10 rounded-full border border-blue-400"
-                        />
-                      )}
-                      <div>
-                        <div className="text-xs font-bold text-[#F1F3F7]">{steamProfile.personaname}</div>
-                        <div className="text-[10px] text-zinc-400">
-                          {steamGames.length} Spiele gefunden • {matchedGamesCount} in deiner OmniList
-                        </div>
+              {/* === SUBTAB 1: STEAM === */}
+              {gamingSubTab === 'steam' && (
+                <div className="space-y-3">
+                  <div className="p-4 rounded-2xl bg-[#0F1117] border border-[#282D37] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-2">
+                        <Gamepad2 className="w-4 h-4 text-blue-400" />
+                        <span>Steam-Konto anbinden</span>
+                      </h4>
+                      <a
+                        href="https://steamcommunity.com/dev/apikey"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-blue-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>API-Key holen</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-zinc-300">Steam-ID oder Profil-Link</label>
+                      <input
+                        type="text"
+                        value={steamInput}
+                        onChange={(e) => setSteamInput(e.target.value)}
+                        placeholder="z. B. 76561198... oder https://steamcommunity.com/id/name"
+                        className="w-full bg-[#181B22] border border-[#282D37] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[11px] font-semibold text-zinc-300">Steam Web API-Key (Optional)</label>
+                        <span className="text-[10px] text-zinc-500">Falls in .env, leer lassen</span>
+                      </div>
+                      <input
+                        type="password"
+                        value={steamApiKey}
+                        onChange={(e) => setSteamApiKey(e.target.value)}
+                        placeholder="32-stelliger Hex-Key"
+                        className="w-full bg-[#181B22] border border-[#282D37] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleFetchSteam}
+                      disabled={isSteamLoading}
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      <RefreshCw className={cn('w-3.5 h-3.5', isSteamLoading && 'animate-spin')} />
+                      <span>{isSteamLoading ? 'Verbinde mit Steam...' : 'Steam-Spiele laden'}</span>
+                    </button>
+                  </div>
+
+                  {steamGames.length > 0 && (
+                    <div className="p-3.5 rounded-2xl bg-[#0F1117] border border-blue-500/30 space-y-2.5 animate-fadeIn">
+                      <div className="text-[11px] font-bold text-zinc-300">
+                        {steamGames.length} Steam-Spiele geladen
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={handleSyncSteamExisting}
+                          disabled={isSteamSyncing}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
+                        >
+                          <Trophy className={cn('w-3.5 h-3.5', isSteamSyncing && 'animate-spin')} />
+                          <span>Bestehende aktualisieren</span>
+                        </button>
+                        <button
+                          onClick={() => handleImportSteamGames(20)}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-all"
+                        >
+                          <Download className="w-3.5 h-3.5 text-blue-400" />
+                          <span>Top-Spiele importieren</span>
+                        </button>
                       </div>
                     </div>
                   )}
+                </div>
+              )}
 
-                  <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                    <div className="p-2.5 rounded-xl bg-[#181B22] border border-[#282D37]">
-                      <div className="text-zinc-400 text-[10px]">Steam-Katalog</div>
-                      <div className="font-bold text-[#F1F3F7] text-sm">{steamGames.length}</div>
+              {/* === SUBTAB 2: PLAYSTATION NETWORK (PSN) === */}
+              {gamingSubTab === 'psn' && (
+                <div className="space-y-3">
+                  <div className="p-4 rounded-2xl bg-[#0F1117] border border-[#282D37] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-2">
+                        <Gamepad2 className="w-4 h-4 text-blue-400" />
+                        <span>PlayStation Network (PSN)</span>
+                      </h4>
+                      <a
+                        href="https://ca.account.sony.com/api/v1/ssocookie"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-blue-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>NPSSO Token holen</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-[#181B22] border border-[#282D37]">
-                      <div className="text-zinc-400 text-[10px]">Verknüpfte Spiele</div>
-                      <div className="font-bold text-emerald-400 text-sm">{matchedGamesCount}</div>
+
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Liest automatisch deine PlayStation-Spiele (PS5/PS4), Spielzeiten und Trophäen (Bronze, Silber, Gold, Platin) aus.
+                    </p>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-zinc-300">PlayStation NPSSO-Token (64 Zeichen)</label>
+                      <input
+                        type="password"
+                        value={psnNpsso}
+                        onChange={(e) => setPsnNpsso(e.target.value)}
+                        placeholder="Melde dich auf store.playstation.com an &amp; kopiere ssocookie"
+                        className="w-full bg-[#181B22] border border-[#282D37] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] font-mono focus:outline-none"
+                      />
                     </div>
+
+                    <button
+                      onClick={handleFetchPsn}
+                      disabled={isPsnLoading}
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      <RefreshCw className={cn('w-3.5 h-3.5', isPsnLoading && 'animate-spin')} />
+                      <span>{isPsnLoading ? 'Verbinde mit PSN...' : 'PlayStation-Spiele & Trophäen laden'}</span>
+                    </button>
                   </div>
 
-                  <div className="space-y-2 pt-1">
-                    <button
-                      onClick={handleSyncExistingGames}
-                      disabled={isSteamSyncing || matchedGamesCount === 0}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all active:scale-95 disabled:opacity-40"
-                    >
-                      <Trophy className={cn('w-4 h-4', isSteamSyncing && 'animate-spin')} />
-                      <span>
-                        {isSteamSyncing
-                          ? 'Aktualisiere Spielzeiten & Achievements...'
-                          : `Bestehende (${matchedGamesCount}) aktualisieren`}
-                      </span>
-                    </button>
+                  {psnGames.length > 0 && (
+                    <div className="p-3.5 rounded-2xl bg-[#0F1117] border border-blue-500/30 space-y-2.5 animate-fadeIn">
+                      <div className="text-[11px] font-bold text-zinc-300">
+                        {psnGames.length} PlayStation-Titel geladen
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={handleSyncPsnExisting}
+                          disabled={isPsnSyncing}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
+                        >
+                          <Trophy className={cn('w-3.5 h-3.5', isPsnSyncing && 'animate-spin')} />
+                          <span>Bestehende aktualisieren</span>
+                        </button>
+                        <button
+                          onClick={() => handleImportPsnGames(20)}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-all"
+                        >
+                          <Download className="w-3.5 h-3.5 text-blue-400" />
+                          <span>PSN-Spiele importieren</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* === SUBTAB 3: GOG GALAXY === */}
+              {gamingSubTab === 'gog' && (
+                <div className="space-y-3">
+                  <div className="p-4 rounded-2xl bg-[#0F1117] border border-[#282D37] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-2">
+                        <Gamepad2 className="w-4 h-4 text-purple-400" />
+                        <span>GOG Galaxy anbinden</span>
+                      </h4>
+                      <a
+                        href="https://www.gog.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-purple-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>GOG.com</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Synchronisiere deine GOG-Spiele, Spielzeiten und Galaxy-Achievements über deinen GOG-Nutzernamen oder Token.
+                    </p>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-zinc-300">GOG-Benutzername (für öffentliche Profile)</label>
+                      <input
+                        type="text"
+                        value={gogUsername}
+                        onChange={(e) => setGogUsername(e.target.value)}
+                        placeholder="z. B. dein GOG-Profilname"
+                        className="w-full bg-[#181B22] border border-[#282D37] focus:border-purple-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[11px] font-semibold text-zinc-300">GOG Galaxy Auth-Token (Optional)</label>
+                        <span className="text-[10px] text-zinc-500">Für private Bibliotheken</span>
+                      </div>
+                      <input
+                        type="password"
+                        value={gogToken}
+                        onChange={(e) => setGogToken(e.target.value)}
+                        placeholder="GOG Galaxy Auth Token"
+                        className="w-full bg-[#181B22] border border-[#282D37] focus:border-purple-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] font-mono focus:outline-none"
+                      />
+                    </div>
 
                     <button
-                      onClick={() => handleImportPlayedGames(25)}
-                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-all active:scale-95"
+                      onClick={handleFetchGog}
+                      disabled={isGogLoading}
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
                     >
-                      <Download className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Top Steam-Spiele in OmniList importieren</span>
+                      <RefreshCw className={cn('w-3.5 h-3.5', isGogLoading && 'animate-spin')} />
+                      <span>{isGogLoading ? 'Verbinde mit GOG...' : 'GOG-Spiele laden'}</span>
                     </button>
                   </div>
+
+                  {gogGames.length > 0 && (
+                    <div className="p-3.5 rounded-2xl bg-[#0F1117] border border-purple-500/30 space-y-2.5 animate-fadeIn">
+                      <div className="text-[11px] font-bold text-zinc-300">
+                        {gogGames.length} GOG-Spiele geladen
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={handleSyncGogExisting}
+                          disabled={isGogSyncing}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-40"
+                        >
+                          <Trophy className={cn('w-3.5 h-3.5', isGogSyncing && 'animate-spin')} />
+                          <span>Bestehende aktualisieren</span>
+                        </button>
+                        <button
+                          onClick={() => handleImportGogGames(20)}
+                          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition-all"
+                        >
+                          <Download className="w-3.5 h-3.5 text-purple-400" />
+                          <span>GOG-Spiele importieren</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -789,7 +1173,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
               <div className="p-4 rounded-2xl bg-[#0F1117] border border-[#282D37] space-y-2">
                 <h4 className="text-xs font-bold text-zinc-300">Offline JSON-Backup</h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Lade deine komplette Mediensammlung ({media.length} Einträge) als lesbare JSON-Datei herunter oder stelle ein früheres Backup wieder her.
+                  Lade deine komplette Mediensammlung ({media.length} Einträge) und verknüpfte Konten als lesbare JSON-Datei herunter oder stelle ein früheres Backup wieder her.
                 </p>
               </div>
 
