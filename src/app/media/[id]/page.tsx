@@ -40,7 +40,8 @@ import { getMediaCoverFallback } from '@/lib/book-cover';
 export default function MediaDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params?.id as string;
+  const rawId = (params?.id as string) || '';
+  const id = rawId ? decodeURIComponent(rawId) : '';
 
   const [item, setItem] = useState<MediaItem | null>(null);
   const [details, setDetails] = useState<EnrichedMediaDetails | null>(null);
@@ -51,9 +52,17 @@ export default function MediaDetailPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id && !rawId) return;
     const all = getStoredMedia();
-    const found = all.find((m) => m.id === id);
+    const found = all.find(
+      (m) =>
+        m.id === id ||
+        m.id === rawId ||
+        encodeURIComponent(m.id) === rawId ||
+        decodeURIComponent(m.id) === id ||
+        m.external_id === id ||
+        m.external_id === rawId
+    );
     if (found) {
       let active = found;
       if (found.progress.total && found.progress.total > 0 && found.progress.current > found.progress.total) {

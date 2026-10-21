@@ -503,7 +503,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
 
     const newItems: MediaItem[] = toImport.map((sg) => ({
-      id: `steam:${sg.appid}:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`,
+      id: `media-steam-${sg.appid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       title: sg.name,
       type: 'game',
       status: sg.playtimeHours > 0 ? 'in_progress' : 'planned',
@@ -613,7 +613,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
 
     const newItems: MediaItem[] = toImport.map((pg) => ({
-      id: `${pg.id}:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`,
+      id: `media-psn-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       title: pg.name,
       type: 'game',
       status: pg.trophies.completionist100 ? 'completed' : pg.playtimeHours > 0 ? 'in_progress' : 'planned',
@@ -728,7 +728,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
 
     const newItems: MediaItem[] = toImport.map((gg) => ({
-      id: `${gg.id}:${Date.now()}:${Math.random().toString(36).slice(2, 6)}`,
+      id: `media-gog-${gg.gameId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       title: gg.title,
       type: 'game',
       status: gg.playtimeHours > 0 ? 'in_progress' : 'planned',

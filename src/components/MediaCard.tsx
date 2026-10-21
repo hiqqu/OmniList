@@ -99,7 +99,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     >
       {/* 2:3 Aspect Ratio Poster Container - always overflow-hidden so cover image never bleeds out */}
       <div className="relative aspect-poster w-full bg-[#0F1117] overflow-hidden rounded-t-2xl">
-        <Link href={`/media/${item.id}`} className="block w-full h-full cursor-pointer">
+        <Link href={`/media/${encodeURIComponent(item.id)}`} className="block w-full h-full cursor-pointer">
           <img
             src={displayCover}
             alt={item.title}
@@ -387,7 +387,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             <div className="my-1 border-t border-[#282D37]" />
 
             <Link
-              href={`/media/${item.id}`}
+              href={`/media/${encodeURIComponent(item.id)}`}
               onClick={() => setShowMenu(false)}
               className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
             >
@@ -477,7 +477,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
           {/* Title */}
           <Link
-            href={`/media/${item.id}`}
+            href={`/media/${encodeURIComponent(item.id)}`}
             className={cn(
               'font-bold text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block mt-1.5',
               typeTextHover[item.type]
