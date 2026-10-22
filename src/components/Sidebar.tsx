@@ -43,7 +43,6 @@ interface SidebarProps {
   onCheckSequels: () => void;
   onResetLibrary: () => void;
   onOpenSyncModal?: () => void;
-  onOpenGameImportModal?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   className?: string;
@@ -67,7 +66,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCheckSequels,
   onResetLibrary,
   onOpenSyncModal,
-  onOpenGameImportModal,
   isMobileOpen = false,
   onCloseMobile,
   className,
@@ -380,17 +378,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           )}
                         </button>
                       </div>
-                    )}
-                    {tf.id === 'game' && onOpenGameImportModal && (
-                      <button
-                        type="button"
-                        onClick={() => handleItemClick(() => onOpenGameImportModal())}
-                        className="w-full flex items-center justify-between px-3 py-1.5 pl-9 rounded-xl text-[11px] font-semibold text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 transition-colors"
-                        title="Spiele aus Steam, PlayStation Network oder GOG Galaxy synchronisieren"
-                      >
-                        <span>Steam / PSN / GOG Sync</span>
-                        <RefreshCw className="w-3 h-3 text-purple-400" />
-                      </button>
                     )}
                   </div>
                 );

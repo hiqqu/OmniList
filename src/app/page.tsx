@@ -623,7 +623,6 @@ export default function Home() {
         onCheckSequels={handleCheckSequels}
         onResetLibrary={handleResetLibrary}
         onOpenSyncModal={() => handleOpenSyncModal('cloud')}
-        onOpenGameImportModal={handleOpenGamingSync}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
