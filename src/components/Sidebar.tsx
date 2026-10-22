@@ -386,10 +386,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         type="button"
                         onClick={() => handleItemClick(() => onOpenGameImportModal())}
                         className="w-full flex items-center justify-between px-3 py-1.5 pl-9 rounded-xl text-[11px] font-semibold text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 transition-colors"
-                        title="Spiele aus Steam, PSN oder GOG Galaxy importieren"
+                        title="Spiele aus Steam, PlayStation Network oder GOG Galaxy synchronisieren"
                       >
-                        <span>Steam / PSN / GOG Import</span>
-                        <Download className="w-3 h-3 text-purple-400" />
+                        <span>Steam / PSN / GOG Sync</span>
+                        <RefreshCw className="w-3 h-3 text-purple-400" />
                       </button>
                     )}
                   </div>

@@ -271,6 +271,15 @@ export function addMediaItem(
     updatedAt: new Date().toISOString(),
   };
 
+  // If a game is re-added manually, remove it from the ignored/deleted list
+  if (item.type === 'game') {
+    if (item.external_id) removeDeletedGameKey(item.external_id);
+    if (item.title) {
+      const norm = item.title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
+      removeDeletedGameKey(`title:${norm}`);
+    }
+  }
+
   const updated = [newItem, ...current];
   saveStoredMedia(updated);
   return newItem;
@@ -323,11 +332,85 @@ export function updateMediaItem(
   return updatedItem;
 }
 
+export const DELETED_GAMES_STORAGE_KEY = 'omnilist_deleted_game_external_ids_v1';
+
+export function getDeletedGameKeys(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DELETED_GAMES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addDeletedGameKey(key: string): void {
+  if (typeof window === 'undefined' || !key) return;
+  try {
+    const existing = new Set(getDeletedGameKeys());
+    existing.add(key.toLowerCase().trim());
+    localStorage.setItem(DELETED_GAMES_STORAGE_KEY, JSON.stringify(Array.from(existing)));
+  } catch (e) {
+    console.error('Failed to add deleted game key', e);
+  }
+}
+
+export function removeDeletedGameKey(key: string): void {
+  if (typeof window === 'undefined' || !key) return;
+  try {
+    const existing = new Set(getDeletedGameKeys());
+    existing.delete(key.toLowerCase().trim());
+    localStorage.setItem(DELETED_GAMES_STORAGE_KEY, JSON.stringify(Array.from(existing)));
+  } catch (e) {
+    console.error('Failed to remove deleted game key', e);
+  }
+}
+
+export function clearDeletedGameKeys(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(DELETED_GAMES_STORAGE_KEY);
+  } catch (e) {
+    console.error('Failed to clear deleted game keys', e);
+  }
+}
+
+export function isGameDeleted(externalId?: string, title?: string): boolean {
+  if (typeof window === 'undefined') return false;
+  const deletedSet = new Set(getDeletedGameKeys());
+  if (deletedSet.size === 0) return false;
+
+  if (externalId && deletedSet.has(externalId.toLowerCase().trim())) {
+    return true;
+  }
+  if (title) {
+    const norm = title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (deletedSet.has(`title:${norm}`)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function deleteMediaItem(id: string): void {
   const current = getStoredMedia();
   const target = current.find((m) => m.id === id);
   const filtered = current.filter((m) => m.id !== id);
   saveStoredMedia(filtered);
+
+  // If a game is deleted by user, track its ID/title so subsequent syncs do not re-add it
+  if (target && target.type === 'game') {
+    if (target.external_id) {
+      addDeletedGameKey(target.external_id);
+    }
+    if (target.title) {
+      const norm = target.title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
+      addDeletedGameKey(`title:${norm}`);
+    }
+    if (target.gameConnection?.service && target.gameConnection?.serviceId) {
+      addDeletedGameKey(`${target.gameConnection.service}:${target.gameConnection.serviceId}`);
+    }
+  }
 
   // Auto-remove any sequels tied to this media item
   if (typeof window !== 'undefined') {

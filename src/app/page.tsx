@@ -11,12 +11,12 @@ import { SequelCard } from '@/components/SequelCard';
 import { AddMediaDialog } from '@/components/AddMediaDialog';
 import { EditMediaModal } from '@/components/EditMediaModal';
 import { SyncModal } from '@/components/SyncModal';
-import { GameImportModal } from '@/components/GameImportModal';
 import { StatsBar } from '@/components/StatsBar';
 import { ImportResult, getItemPlatform } from '@/lib/game-import';
 import { getMediaMetacriticScore } from '@/lib/metacritic';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
 import { MediaItem, MediaType, MediaStatus, SequelNotification } from '@/types/media';
+import { runBackgroundAutoSync } from '@/lib/auto-sync';
 import {
   getStoredMedia,
   saveStoredMedia,
@@ -52,11 +52,21 @@ export default function Home() {
   const [addModalInitialTab, setAddModalInitialTab] = useState<MediaType | undefined>(undefined);
   const [addModalInitialQuery, setAddModalInitialQuery] = useState<string>('');
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
-  const [isGameImportModalOpen, setIsGameImportModalOpen] = useState(false);
+  const [syncModalTab, setSyncModalTab] = useState<'cloud' | 'gaming' | 'file'>('cloud');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const handleOpenGamingSync = () => {
+    setSyncModalTab('gaming');
+    setIsSyncModalOpen(true);
+  };
+
+  const handleOpenSyncModal = (tab: 'cloud' | 'gaming' | 'file' = 'cloud') => {
+    setSyncModalTab(tab);
+    setIsSyncModalOpen(true);
+  };
 
   const isFilterActive = selectedType !== 'all' || selectedStatus !== 'all' || onlyOwned || selectedPlatform !== 'all';
 
@@ -111,6 +121,12 @@ export default function Home() {
     setMedia(loadedMedia);
     setSequels(loadedSequels);
     setIsLoaded(true);
+
+    // Silent background auto-sync for connected game accounts (e.g. Steam)
+    runBackgroundAutoSync(loadedMedia, (syncedMedia, summary) => {
+      setMedia(syncedMedia);
+      addToast('info', 'Hintergrund-Sync', summary);
+    });
   }, []);
 
   // Quick-Increment Handler (Optimistic UI Update)
@@ -601,8 +617,8 @@ export default function Home() {
         isCheckingSequels={isCheckingSequels}
         onCheckSequels={handleCheckSequels}
         onResetLibrary={handleResetLibrary}
-        onOpenSyncModal={() => setIsSyncModalOpen(true)}
-        onOpenGameImportModal={() => setIsGameImportModalOpen(true)}
+        onOpenSyncModal={() => handleOpenSyncModal('cloud')}
+        onOpenGameImportModal={handleOpenGamingSync}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
@@ -617,7 +633,7 @@ export default function Home() {
           onSortChange={setSortBy}
           onOpenAddModal={() => handleOpenAddModal()}
           onOpenAddModalWithQuery={(q) => handleOpenAddModal(undefined, q)}
-          onOpenSyncModal={() => setIsSyncModalOpen(true)}
+          onOpenSyncModal={() => handleOpenSyncModal('cloud')}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           totalFilteredCount={filteredAndSortedMedia.length}
         />
@@ -671,12 +687,12 @@ export default function Home() {
                   {selectedType === 'game' && (
                     <button
                       type="button"
-                      onClick={() => setIsGameImportModalOpen(true)}
+                      onClick={handleOpenGamingSync}
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 transition-all active:scale-95 shadow-sm"
-                      title="Spiele aus Steam, PlayStation Network oder GOG importieren"
+                      title="Spiele aus Steam, PlayStation Network oder GOG synchronisieren"
                     >
                       <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Steam / PSN / GOG Import</span>
+                      <span>Steam / PSN / GOG Sync</span>
                     </button>
                   )}
 
@@ -821,11 +837,11 @@ export default function Home() {
                           <span>Alle Spiele anzeigen ({platformCounts.all})</span>
                         </button>
                         <button
-                          onClick={() => setIsGameImportModalOpen(true)}
+                          onClick={handleOpenGamingSync}
                           className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-950/40 active:scale-95 transition-all"
                         >
                           <Gamepad2 className="w-4 h-4" />
-                          <span>Spiele importieren</span>
+                          <span>Spiele synchronisieren</span>
                         </button>
                       </>
                     ) : searchQuery ? (
@@ -984,7 +1000,7 @@ export default function Home() {
         existingExternalIds={existingExternalIds}
         initialTab={addModalInitialTab}
         initialQuery={addModalInitialQuery}
-        onOpenGameImport={() => setIsGameImportModalOpen(true)}
+        onOpenGameImport={handleOpenGamingSync}
       />
 
       {/* Edit Media Modal */}
@@ -996,7 +1012,7 @@ export default function Home() {
         onDelete={handleDeleteMedia}
       />
 
-      {/* Cloud-Sync & Backup Modal */}
+      {/* Cloud-Sync & Gaming-Accounts Modal */}
       <SyncModal
         isOpen={isSyncModalOpen}
         onClose={() => setIsSyncModalOpen(false)}
@@ -1004,15 +1020,7 @@ export default function Home() {
         sequels={sequels}
         onApplySync={handleApplySync}
         addToast={addToast}
-      />
-
-      {/* Steam, PSN, GOG Game Library Import Modal */}
-      <GameImportModal
-        isOpen={isGameImportModalOpen}
-        onClose={() => setIsGameImportModalOpen(false)}
-        media={media}
-        onApplyImport={handleApplyGameImport}
-        addToast={addToast}
+        initialTab={syncModalTab}
       />
 
       {/* Toast Notifications */}
@@ -1027,7 +1035,7 @@ export default function Home() {
         }}
         onOpenMobileDrawer={() => setIsMobileMenuOpen((prev) => !prev)}
         onOpenAddModal={() => handleOpenAddModal()}
-        onOpenSyncModal={() => setIsSyncModalOpen(true)}
+        onOpenSyncModal={() => handleOpenSyncModal('cloud')}
         sequelCount={sequels.length}
         isFilterActive={isFilterActive}
       />
