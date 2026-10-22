@@ -428,6 +428,23 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       {/* Card Body & Progress Section */}
       <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 justify-between gap-2 sm:gap-3 bg-[#181B22]">
         <div>
+          {/* Title */}
+          <Link
+            href={`/media/${encodeURIComponent(item.id)}`}
+            className={cn(
+              'font-bold text-xs sm:text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block',
+              typeTextHover[item.type]
+            )}
+            title={item.title}
+          >
+            {item.title}
+          </Link>
+
+          {/* Creator / Release info */}
+          <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5 mb-2">
+            {item.creator || (item.releaseDate ? item.releaseDate.split('-')[0] : '—')}
+          </p>
+
           {/* Status & Ownership Badges line - side by side */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className={cn('text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
@@ -439,7 +456,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <span>Im Besitz</span>
               </span>
             )}
-{(item.connectedService || item.external_id?.startsWith('steam:') || item.external_id?.startsWith('psn:') || item.external_id?.startsWith('gog:')) && (
+            {(item.connectedService || item.external_id?.startsWith('steam:') || item.external_id?.startsWith('psn:') || item.external_id?.startsWith('gog:')) && (
               (() => {
                 const s = item.connectedService || (item.external_id?.startsWith('steam:') ? 'steam' : item.external_id?.startsWith('psn:') ? 'psn' : 'gog');
                 return (
@@ -464,7 +481,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
           {/* Publisher / Collection line underneath badges */}
           {displayPublisher && (
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-zinc-400 truncate mt-1 sm:mt-1.5" title={displayPublisher}>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-zinc-400 truncate mt-1.5" title={displayPublisher}>
               {item.type === 'book' ? (
                 <Building2 className="w-3 h-3 text-orange-400/80 shrink-0" />
               ) : (
@@ -475,23 +492,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               </span>
             </div>
           )}
-
-          {/* Title */}
-          <Link
-            href={`/media/${encodeURIComponent(item.id)}`}
-            className={cn(
-              'font-bold text-xs sm:text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block mt-1 sm:mt-1.5',
-              typeTextHover[item.type]
-            )}
-            title={item.title}
-          >
-            {item.title}
-          </Link>
-
-          {/* Creator / Release info */}
-          <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">
-            {item.creator || (item.releaseDate ? item.releaseDate.split('-')[0] : '—')}
-          </p>
         </div>
 
         {/* Progress Bar & Tracker Section */}

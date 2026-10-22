@@ -382,6 +382,23 @@ export default function MediaDetailPage() {
 
             {/* Main Info Header */}
             <div className="flex-1 space-y-4 text-center md:text-left">
+              {/* Title & Tagline */}
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#F1F3F7]">
+                  {item.title}
+                </h1>
+                {item.originalTitle && item.originalTitle !== item.title && (
+                  <p className="text-sm font-medium text-zinc-400 mt-1 italic">
+                    Originaltitel: {item.originalTitle}
+                  </p>
+                )}
+                {details.tagline && (
+                  <p className="text-sm text-zinc-300 mt-2 font-medium">
+                    &bdquo;{details.tagline}&ldquo;
+                  </p>
+                )}
+              </div>
+
               {/* Category & Status Badges */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                 <span className={cn('text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
@@ -418,23 +435,6 @@ export default function MediaDetailPage() {
                       {item.gameConnection?.accountUsername ? ` (${item.gameConnection.accountUsername})` : ' verknüpft'}
                     </span>
                   </span>
-                )}
-              </div>
-
-              {/* Title & Tagline */}
-              <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#F1F3F7]">
-                  {item.title}
-                </h1>
-                {item.originalTitle && item.originalTitle !== item.title && (
-                  <p className="text-sm font-medium text-zinc-400 mt-1 italic">
-                    Originaltitel: {item.originalTitle}
-                  </p>
-                )}
-                {details.tagline && (
-                  <p className="text-sm text-zinc-300 mt-2 font-medium">
-                    &bdquo;{details.tagline}&ldquo;
-                  </p>
                 )}
               </div>
 
