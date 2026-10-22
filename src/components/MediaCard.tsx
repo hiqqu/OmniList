@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award } from 'lucide-react';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award, Gamepad2 } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
@@ -97,7 +97,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
     >
       {/* 2:3 Aspect Ratio Poster Container - always overflow-hidden so cover image never bleeds out */}
       <div className="relative aspect-poster w-full bg-[#0F1117] overflow-hidden rounded-t-2xl">
-        <Link href={`/media/${item.id}`} className="block w-full h-full cursor-pointer">
+        <Link href={`/media/${encodeURIComponent(item.id)}`} className="block w-full h-full cursor-pointer">
           <img
             src={displayCover}
             alt={item.title}
@@ -385,7 +385,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             <div className="my-1 border-t border-[#282D37]" />
 
             <Link
-              href={`/media/${item.id}`}
+              href={`/media/${encodeURIComponent(item.id)}`}
               onClick={() => setShowMenu(false)}
               className="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#212631] text-left text-[#F1F3F7]"
             >
@@ -439,6 +439,24 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <span>Im Besitz</span>
               </span>
             )}
+            {item.external_id?.startsWith('steam:') && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+                <Gamepad2 className="w-3 h-3 text-blue-400" />
+                <span>Steam</span>
+              </span>
+            )}
+            {item.external_id?.startsWith('psn:') && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+                <Gamepad2 className="w-3 h-3 text-sky-400" />
+                <span>PlayStation</span>
+              </span>
+            )}
+            {item.external_id?.startsWith('gog:') && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+                <Gamepad2 className="w-3 h-3 text-purple-400" />
+                <span>GOG</span>
+              </span>
+            )}
           </div>
 
           {/* Publisher / Collection line underneath badges */}
@@ -457,7 +475,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
           {/* Title */}
           <Link
-            href={`/media/${item.id}`}
+            href={`/media/${encodeURIComponent(item.id)}`}
             className={cn(
               'font-bold text-xs sm:text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block mt-1 sm:mt-1.5',
               typeTextHover[item.type]
