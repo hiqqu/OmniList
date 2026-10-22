@@ -28,7 +28,7 @@ import {
   acceptSequel,
   resetLibraryToDefault,
 } from '@/lib/storage';
-import { getUnitIncrement, getMediaStatusBadge } from '@/lib/utils';
+import { getUnitIncrement, getMediaStatusBadge, cn } from '@/lib/utils';
 import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search } from 'lucide-react';
 
 export default function Home() {
@@ -43,6 +43,7 @@ export default function Home() {
   const [onlyOwned, setOnlyOwned] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('updated');
+  const [sequelFilterType, setSequelFilterType] = useState<MediaType | 'all'>('all');
 
   // Modals & States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -482,6 +483,23 @@ export default function Home() {
     });
   }, [media, selectedType, selectedStatus, searchQuery, sortBy]);
 
+  // Sequel Radar subcategories counts and filtered list
+  const sequelCounts = useMemo(() => {
+    return {
+      all: sequels.length,
+      game: sequels.filter((s) => s.sequelType === 'game' || s.parentMediaType === 'game').length,
+      movie: sequels.filter((s) => s.sequelType === 'movie' || s.parentMediaType === 'movie').length,
+      show: sequels.filter((s) => s.sequelType === 'show' || s.parentMediaType === 'show').length,
+      anime: sequels.filter((s) => s.sequelType === 'anime' || s.parentMediaType === 'anime').length,
+      book: sequels.filter((s) => s.sequelType === 'book' || s.parentMediaType === 'book').length,
+    };
+  }, [sequels]);
+
+  const filteredSequels = useMemo(() => {
+    if (sequelFilterType === 'all') return sequels;
+    return sequels.filter((s) => s.sequelType === sequelFilterType || s.parentMediaType === sequelFilterType);
+  }, [sequels, sequelFilterType]);
+
   // Apply Synced Data from Cloud or File
   const handleApplySync = (syncedMedia: MediaItem[], syncedSequels?: SequelNotification[]) => {
     saveStoredMedia(syncedMedia);
@@ -722,10 +740,52 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Subcategory Filter Tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                  { id: 'all' as const, label: 'Alle', icon: Layers, count: sequelCounts.all },
+                  { id: 'game' as const, label: 'Videospiele', icon: Gamepad2, count: sequelCounts.game, color: 'text-purple-400' },
+                  { id: 'movie' as const, label: 'Filme', icon: Film, count: sequelCounts.movie, color: 'text-rose-400' },
+                  { id: 'show' as const, label: 'Serien', icon: Film, count: sequelCounts.show, color: 'text-amber-400' },
+                  { id: 'anime' as const, label: 'Anime', icon: Sparkles, count: sequelCounts.anime, color: 'text-sky-400' },
+                  { id: 'book' as const, label: 'Bücher', icon: BookOpen, count: sequelCounts.book, color: 'text-orange-400' },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = sequelFilterType === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSequelFilterType(tab.id)}
+                      className={cn(
+                        'inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border',
+                        isActive
+                          ? 'bg-[#181B22] border-rose-500/60 text-white shadow-md shadow-rose-950/20'
+                          : 'bg-[#181B22]/60 hover:bg-[#181B22] border-[#282D37] text-zinc-400 hover:text-zinc-200'
+                      )}
+                    >
+                      <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-rose-400' : tab.color || 'text-zinc-400')} />
+                      <span>{tab.label}</span>
+                      <span
+                        className={cn(
+                          'px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none',
+                          isActive
+                            ? 'bg-rose-500 text-white'
+                            : tab.count > 0
+                            ? 'bg-zinc-800 text-zinc-300'
+                            : 'bg-zinc-800/50 text-zinc-500'
+                        )}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
               {/* Detected Sequels Cards */}
-              {sequels.length > 0 ? (
+              {filteredSequels.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {sequels.map((sequel) => (
+                  {filteredSequels.map((sequel) => (
                     <SequelCard
                       key={sequel.id}
                       sequel={sequel}
@@ -734,13 +794,37 @@ export default function Home() {
                     />
                   ))}
                 </div>
-              ) : (
-                <div className="py-20 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-surface/40 border border-dashed border-border">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mb-4">
-                    <Sparkles className="w-8 h-8 text-primary" />
+              ) : sequels.length > 0 ? (
+                /* Empty state for selected subcategory */
+                <div className="py-16 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-[#181B22]/40 border border-dashed border-[#282D37]">
+                  <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-[#282D37] flex items-center justify-center text-zinc-500 mb-3">
+                    {sequelFilterType === 'game' && <Gamepad2 className="w-7 h-7 text-purple-400" />}
+                    {sequelFilterType === 'movie' && <Film className="w-7 h-7 text-rose-400" />}
+                    {sequelFilterType === 'show' && <Film className="w-7 h-7 text-amber-400" />}
+                    {sequelFilterType === 'anime' && <Sparkles className="w-7 h-7 text-sky-400" />}
+                    {sequelFilterType === 'book' && <BookOpen className="w-7 h-7 text-orange-400" />}
                   </div>
-                  <h3 className="text-base font-bold text-white">Alles auf dem neuesten Stand!</h3>
-                  <p className="text-xs text-slate-400 max-w-sm mt-1">
+                  <h3 className="text-base font-bold text-[#F1F3F7]">
+                    Keine Fortsetzungen in dieser Kategorie
+                  </h3>
+                  <p className="text-xs text-zinc-400 max-w-sm mt-1 mb-4 leading-relaxed">
+                    Für {sequelFilterType === 'game' ? 'Videospiele' : sequelFilterType === 'movie' ? 'Filme' : sequelFilterType === 'show' ? 'Serien' : sequelFilterType === 'anime' ? 'Anime' : 'Bücher'} liegen aktuell keine offenen Fortsetzungs-Meldungen vor.
+                  </p>
+                  <button
+                    onClick={() => setSequelFilterType('all')}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold border border-zinc-700 transition-colors"
+                  >
+                    <span>Alle {sequels.length} Fortsetzungen anzeigen</span>
+                  </button>
+                </div>
+              ) : (
+                /* General empty state */
+                <div className="py-20 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-[#181B22]/40 border border-dashed border-[#282D37]">
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-[#282D37] flex items-center justify-center text-zinc-500 mb-4">
+                    <Sparkles className="w-8 h-8 text-rose-400" />
+                  </div>
+                  <h3 className="text-base font-bold text-[#F1F3F7]">Alles auf dem neuesten Stand!</h3>
+                  <p className="text-xs text-zinc-400 max-w-sm mt-1 leading-relaxed">
                     Aktuell liegen keine unbestätigten Fortsetzungen vor. Der Radar prüft deine Sammlung automatisch.
                   </p>
                 </div>
