@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Star, Trash2, Save, PackageCheck, BookOpen, Sparkles, Loader2, Image as ImageIcon, Gamepad2, Trophy, Clock, Building2, Layers, ChevronDown, ChevronUp, Infinity } from 'lucide-react';
+import { X, Star, Trash2, Save, PackageCheck, BookOpen, Sparkles, Loader2, Image as ImageIcon, Gamepad2, Trophy, Clock, Building2, Layers, ChevronDown, ChevronUp, Infinity, Film } from 'lucide-react';
 import { MediaItem, MediaStatus, ProgressUnit } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { formatIsbn } from '@/lib/api-adapters/googlebooks';
@@ -33,6 +33,8 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   const [currentProgress, setCurrentProgress] = useState<number>(0);
   const [totalProgress, setTotalProgress] = useState<number>(0);
   const [unit, setUnit] = useState<ProgressUnit>('episodes');
+  const [currentSeason, setCurrentSeason] = useState<number | ''>(1);
+  const [totalSeasons, setTotalSeasons] = useState<number | ''>(1);
   const [summary, setSummary] = useState('');
   const [notes, setNotes] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
@@ -65,6 +67,8 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       setCurrentProgress(item.progress.current);
       setTotalProgress(item.progress.total || 0);
       setUnit(item.progress.unit);
+      setCurrentSeason(typeof item.progress.currentSeason === 'number' ? item.progress.currentSeason : 1);
+      setTotalSeasons(typeof item.progress.totalSeasons === 'number' ? item.progress.totalSeasons : (item.type === 'show' ? 1 : ''));
       setSummary(item.summary || '');
       setNotes(item.notes || '');
       setCoverUrl(item.coverUrl || '');
@@ -234,6 +238,8 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
         current: currentNum,
         total: totalNum,
         unit: isMovie ? 'minutes' : unit,
+        currentSeason: item.type === 'show' ? (typeof currentSeason === 'number' ? currentSeason : 1) : item.progress.currentSeason,
+        totalSeasons: item.type === 'show' ? (typeof totalSeasons === 'number' ? totalSeasons : 1) : item.progress.totalSeasons,
       },
       gameTracker: isGame
         ? {
@@ -563,6 +569,94 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                     placeholder="z. B. 155"
                     className="w-full bg-[#181B22] border border-[#282D37] focus:border-rose-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none"
                   />
+                </div>
+              </div>
+            </div>
+          ) : item.type === 'show' ? (
+            /* Series Progress: Seasons & Episodes */
+            <div className="space-y-3">
+              <div className="p-3.5 rounded-2xl bg-[#0F1117] border border-amber-500/20 space-y-2">
+                <label className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5" />
+                  <span>Serien-Staffeln</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block mb-0.5">Aktuelle Staffel</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={typeof totalSeasons === 'number' && totalSeasons > 0 ? totalSeasons : undefined}
+                      value={currentSeason}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        setCurrentSeason(Math.max(1, val));
+                      }}
+                      placeholder="z. B. 1"
+                      className="w-full bg-[#181B22] border border-[#282D37] focus:border-amber-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block mb-0.5">Staffeln gesamt</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={totalSeasons}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        setTotalSeasons(Math.max(1, val));
+                      }}
+                      placeholder="z. B. 5"
+                      className="w-full bg-[#181B22] border border-[#282D37] focus:border-amber-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 mb-1">Episoden-Fortschritt</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block mb-0.5">Gesehene Episoden</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={totalProgress > 0 ? totalProgress : undefined}
+                      value={currentProgress}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        if (totalProgress > 0 && val > totalProgress) {
+                          setCurrentProgress(totalProgress);
+                        } else {
+                          setCurrentProgress(Math.max(0, val));
+                        }
+                      }}
+                      className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block mb-0.5">Episoden gesamt</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={totalProgress}
+                      onChange={(e) => setTotalProgress(parseInt(e.target.value) || 0)}
+                      className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block mb-0.5">Einheit</span>
+                    <select
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value as ProgressUnit)}
+                      className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl px-2 py-2 text-xs text-[#F1F3F7] focus:outline-none cursor-pointer"
+                    >
+                      <option value="episodes">Episoden</option>
+                      <option value="seasons">Staffeln</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>

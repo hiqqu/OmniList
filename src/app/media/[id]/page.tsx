@@ -1044,6 +1044,14 @@ export default function MediaDetailPage() {
                   </>
                 ) : (
                   <>
+                    {/* Shows: Season Badge */}
+                    {item.type === 'show' && item.progress.totalSeasons && (
+                      <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-bold shadow-sm">
+                        <Film className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Staffel {item.progress.currentSeason || 1} von {item.progress.totalSeasons}</span>
+                      </div>
+                    )}
+
                     {/* Shows / Anime / Books: Progress -10, -1, +1, +10 */}
                     <div className="inline-flex items-center bg-[#181B22] border border-[#282D37] rounded-full p-1 shadow-lg">
                       <div className="px-3 py-1 text-xs font-bold text-zinc-300">
@@ -1291,6 +1299,48 @@ export default function MediaDetailPage() {
                   </div>
                 )}
               </div>
+
+              {/* Type-Specific Series Seasons & Episodes Overview */}
+              {item.type === 'show' && (item.progress.totalSeasons || item.progress.seasons) && (
+                <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-[#F1F3F7] flex items-center gap-2">
+                      <Film className="w-4 h-4 text-amber-400" />
+                      <span>Staffeln &amp; Episoden</span>
+                    </h3>
+                    <span className="text-xs text-amber-300 font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-full">
+                      {item.progress.totalSeasons || 1} Staffel{(item.progress.totalSeasons || 1) > 1 ? 'n' : ''} · {item.progress.total || 0} Episoden
+                    </span>
+                  </div>
+
+                  {item.progress.seasons && item.progress.seasons.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5 pt-1">
+                      {item.progress.seasons.map((s) => (
+                        <div
+                          key={s.season}
+                          className={cn(
+                            'p-3 rounded-xl border text-center transition-all',
+                            item.progress.currentSeason === s.season
+                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-200 shadow-md shadow-amber-950/20'
+                              : 'bg-[#0F1117] border-[#282D37] text-zinc-300'
+                          )}
+                        >
+                          <span className="text-[10px] text-zinc-400 uppercase font-bold block mb-0.5">
+                            {s.name || `Staffel ${s.season}`}
+                          </span>
+                          <span className="text-sm font-extrabold text-[#F1F3F7]">
+                            {s.episodes} <span className="text-xs font-normal text-zinc-400">Folgen</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-400">
+                      Insgesamt {item.progress.totalSeasons || 1} Staffeln mit {item.progress.total || 0} Episoden.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Type-Specific Game Playtime Stats */}
               {item.type === 'game' && details.playtime && (

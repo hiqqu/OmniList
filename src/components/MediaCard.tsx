@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award, Gamepad2, Infinity } from 'lucide-react';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award, Gamepad2, Infinity, Film } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
@@ -552,6 +552,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <span>Im Besitz</span>
               </span>
             )}
+            {item.type === 'show' && item.progress.totalSeasons && (
+              <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+                <Film className="w-2.5 h-2.5 text-amber-400" />
+                <span>
+                  Staffel {item.progress.currentSeason || 1} / {item.progress.totalSeasons}
+                </span>
+              </span>
+            )}
             {platformBadge && (
               <span
                 className={cn(
@@ -817,7 +825,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           /* ============= SHOW / ANIME / BOOK UI ============= */
           <div className="space-y-1 sm:space-y-1.5 pt-1.5 sm:pt-2 border-t border-[#282D37]">
             <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-medium text-zinc-400">
-              <span>Fortschritt</span>
+              <span className="flex items-center gap-1.5">
+                {item.type === 'show' && item.progress.totalSeasons ? (
+                  <span className="text-amber-300 font-semibold">
+                    Staffel {item.progress.currentSeason || 1} / {item.progress.totalSeasons}
+                  </span>
+                ) : (
+                  <span>Fortschritt</span>
+                )}
+              </span>
               <span className="text-[#F1F3F7] font-bold">
                 {currentProgress}
                 {totalProgress > 0 ? ` / ${totalProgress}` : ''}{' '}

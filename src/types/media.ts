@@ -68,12 +68,19 @@ export interface GameTracker {
   playtimeHours?: number; // Offene Spielzeit ohne Maximalgrenze
 }
 
+export interface SeasonInfo {
+  season: number;
+  episodes: number;
+  name?: string;
+}
+
 export interface MediaProgress {
   current: number;
   total?: number;
   unit: ProgressUnit;
   currentSeason?: number;
   totalSeasons?: number;
+  seasons?: SeasonInfo[];
 }
 
 export interface MediaItem {
@@ -152,6 +159,7 @@ export interface SearchResultItem {
   collection_name?: string;
   totalUnits?: number;
   totalSeasons?: number;
+  seasons?: SeasonInfo[];
   unit: ProgressUnit;
   rating?: number;
   metacritic?: number;

@@ -299,6 +299,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
         unit: isMovie ? 'minutes' : result.unit,
         currentSeason: result.totalSeasons ? 1 : undefined,
         totalSeasons: result.totalSeasons,
+        seasons: result.seasons,
       },
       gameTracker: isGame
         ? {
@@ -696,6 +697,18 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-500/10 text-orange-300 border border-orange-500/25 flex items-center gap-1">
                               <Building2 className="w-2.5 h-2.5 text-orange-400" />
                               {result.publisher}
+                            </span>
+                          )}
+                          {result.type === 'show' && (result.totalSeasons || result.totalUnits) && (
+                            <span className="text-[11px] text-amber-300 font-semibold flex items-center gap-1">
+                              {result.totalSeasons ? `${result.totalSeasons} Staffel${result.totalSeasons > 1 ? 'n' : ''}` : ''}
+                              {result.totalSeasons && result.totalUnits ? ' · ' : ''}
+                              {result.totalUnits ? `${result.totalUnits} Episoden` : ''}
+                            </span>
+                          )}
+                          {result.type === 'movie' && result.totalUnits && (
+                            <span className="text-[11px] text-zinc-400 font-medium">
+                              {result.totalUnits} Min.
                             </span>
                           )}
                           {result.type === 'book' && result.totalUnits && (

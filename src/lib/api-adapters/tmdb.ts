@@ -1,10 +1,218 @@
-import { SearchResultItem, MediaItem, SequelNotification } from '@/types/media';
+import { SearchResultItem, MediaItem, SequelNotification, SeasonInfo } from '@/types/media';
 import { MediaAdapter } from './types';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const OMDB_KEY = 'trilogy';
+
+export interface KnownSeriesInfo {
+  totalSeasons: number;
+  totalEpisodes: number;
+  seasons?: SeasonInfo[];
+}
+
+export const POPULAR_SERIES_EPISODES: Record<string, KnownSeriesInfo> = {
+  'breaking bad': {
+    totalSeasons: 5,
+    totalEpisodes: 62,
+    seasons: [
+      { season: 1, episodes: 7, name: 'Staffel 1' },
+      { season: 2, episodes: 13, name: 'Staffel 2' },
+      { season: 3, episodes: 13, name: 'Staffel 3' },
+      { season: 4, episodes: 13, name: 'Staffel 4' },
+      { season: 5, episodes: 16, name: 'Staffel 5' },
+    ],
+  },
+  'game of thrones': {
+    totalSeasons: 8,
+    totalEpisodes: 73,
+    seasons: [
+      { season: 1, episodes: 10, name: 'Staffel 1' },
+      { season: 2, episodes: 10, name: 'Staffel 2' },
+      { season: 3, episodes: 10, name: 'Staffel 3' },
+      { season: 4, episodes: 10, name: 'Staffel 4' },
+      { season: 5, episodes: 10, name: 'Staffel 5' },
+      { season: 6, episodes: 10, name: 'Staffel 6' },
+      { season: 7, episodes: 7, name: 'Staffel 7' },
+      { season: 8, episodes: 6, name: 'Staffel 8' },
+    ],
+  },
+  'better call saul': {
+    totalSeasons: 6,
+    totalEpisodes: 63,
+  },
+  'the wire': {
+    totalSeasons: 5,
+    totalEpisodes: 60,
+  },
+  'the sopranos': {
+    totalSeasons: 6,
+    totalEpisodes: 86,
+  },
+  'sopranos': {
+    totalSeasons: 6,
+    totalEpisodes: 86,
+  },
+  'stranger things': {
+    totalSeasons: 4,
+    totalEpisodes: 34,
+  },
+  'severance': {
+    totalSeasons: 2,
+    totalEpisodes: 19,
+  },
+  'the last of us': {
+    totalSeasons: 1,
+    totalEpisodes: 9,
+  },
+  'house of the dragon': {
+    totalSeasons: 2,
+    totalEpisodes: 18,
+  },
+  'arcane': {
+    totalSeasons: 2,
+    totalEpisodes: 18,
+  },
+  'chernobyl': {
+    totalSeasons: 1,
+    totalEpisodes: 5,
+  },
+  'dark': {
+    totalSeasons: 3,
+    totalEpisodes: 26,
+  },
+  'squid game': {
+    totalSeasons: 2,
+    totalEpisodes: 16,
+  },
+  'friends': {
+    totalSeasons: 10,
+    totalEpisodes: 236,
+  },
+  'the office': {
+    totalSeasons: 9,
+    totalEpisodes: 201,
+  },
+  'the office us': {
+    totalSeasons: 9,
+    totalEpisodes: 201,
+  },
+  'succession': {
+    totalSeasons: 4,
+    totalEpisodes: 39,
+  },
+  'the boys': {
+    totalSeasons: 4,
+    totalEpisodes: 32,
+  },
+  'peaky blinders': {
+    totalSeasons: 6,
+    totalEpisodes: 36,
+  },
+  'sherlock': {
+    totalSeasons: 4,
+    totalEpisodes: 13,
+  },
+  'band of brothers': {
+    totalSeasons: 1,
+    totalEpisodes: 10,
+  },
+  'fargo': {
+    totalSeasons: 5,
+    totalEpisodes: 51,
+  },
+  'true detective': {
+    totalSeasons: 4,
+    totalEpisodes: 30,
+  },
+  'black mirror': {
+    totalSeasons: 6,
+    totalEpisodes: 27,
+  },
+  'vikings': {
+    totalSeasons: 6,
+    totalEpisodes: 89,
+  },
+  'dexter': {
+    totalSeasons: 8,
+    totalEpisodes: 96,
+  },
+  'lost': {
+    totalSeasons: 6,
+    totalEpisodes: 121,
+  },
+  'prison break': {
+    totalSeasons: 5,
+    totalEpisodes: 90,
+  },
+  'the walking dead': {
+    totalSeasons: 11,
+    totalEpisodes: 177,
+  },
+  'walking dead': {
+    totalSeasons: 11,
+    totalEpisodes: 177,
+  },
+  'shogun': {
+    totalSeasons: 1,
+    totalEpisodes: 10,
+  },
+  'fallout': {
+    totalSeasons: 1,
+    totalEpisodes: 8,
+  },
+  'ted lasso': {
+    totalSeasons: 3,
+    totalEpisodes: 34,
+  },
+  'the bear': {
+    totalSeasons: 3,
+    totalEpisodes: 28,
+  },
+};
+
+export function getKnownSeriesInfo(title: string): KnownSeriesInfo | null {
+  if (!title) return null;
+  const clean = title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (POPULAR_SERIES_EPISODES[clean]) return POPULAR_SERIES_EPISODES[clean];
+  for (const [key, val] of Object.entries(POPULAR_SERIES_EPISODES)) {
+    if (clean === key || clean.startsWith(key + ' ') || clean.includes(key)) {
+      return val;
+    }
+  }
+  return null;
+}
+
+export async function fetchSeriesSeasonInfo(
+  title: string,
+  tvmazeId?: number | string
+): Promise<KnownSeriesInfo | null> {
+  const known = getKnownSeriesInfo(title);
+  if (known) return known;
+  try {
+    const url = tvmazeId
+      ? `https://api.tvmaze.com/shows/${tvmazeId}?embed[]=seasons&embed[]=episodes`
+      : `https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(title)}&embed[]=seasons&embed[]=episodes`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return null;
+    const d = await res.json();
+    const seasonsList = d._embedded?.seasons || [];
+    const episodesList = d._embedded?.episodes || [];
+    const seasons = seasonsList.map((s: any) => ({
+      season: s.number,
+      episodes: s.episodeOrder || episodesList.filter((e: any) => e.season === s.number).length || 10,
+      name: s.name || `Staffel ${s.number}`,
+    }));
+    return {
+      totalSeasons: seasonsList.length || 1,
+      totalEpisodes: episodesList.length || ((seasonsList.length || 1) * 10),
+      seasons,
+    };
+  } catch {
+    return null;
+  }
+}
 
 function createSvgPlaceholder(title: string, type: string): string {
   const safeTitle = title.replace(/[<>&"]/g, '');
@@ -248,6 +456,24 @@ export const POPULAR_TMDB_CATALOG: SearchResultItem[] = [
     rating: 5.0,
   },
   {
+    id: 'imdb:tt0944947',
+    external_id: 'imdb:tt0944947',
+    title: 'Game of Thrones',
+    originalTitle: 'Game of Thrones',
+    type: 'show',
+    coverUrl: 'https://static.tvmaze.com/uploads/images/original_untouched/498/1245274.jpg',
+    releaseDate: '2011-04-17',
+    summary: 'Neun adlige Familien kämpfen um die Vorherrschaft über das Land Westeros, während ein uralter Feind nach Jahrtausenden zurückkehrt.',
+    genres: ['Fantasy', 'Drama', 'Action'],
+    creator: 'David Benioff, D.B. Weiss',
+    franchise_id: 'franchise:got',
+    collection_name: 'A Song of Ice and Fire Universe',
+    totalUnits: 73,
+    totalSeasons: 8,
+    unit: 'episodes',
+    rating: 4.9,
+  },
+  {
     id: 'tmdb:tv:66732',
     external_id: 'tmdb:tv:66732',
     title: 'Stranger Things',
@@ -328,6 +554,19 @@ export class TMDBAdapter implements MediaAdapter {
           const isMovie = exact.Type !== 'series';
           const external_id = `omdb:${exact.imdbID}`;
           seenIds.add(external_id);
+
+          let totalSeasons: number | undefined = undefined;
+          let totalUnits: number = isMovie ? 120 : 10;
+          let seasons: SeasonInfo[] | undefined = undefined;
+
+          if (!isMovie) {
+            const seriesInfo = await fetchSeriesSeasonInfo(exact.Title);
+            const parsedOmdb = parseInt(exact.totalSeasons, 10);
+            totalSeasons = seriesInfo?.totalSeasons || (!isNaN(parsedOmdb) && parsedOmdb > 0 ? parsedOmdb : 1);
+            totalUnits = seriesInfo?.totalEpisodes || (totalSeasons ? totalSeasons * 10 : 10);
+            seasons = seriesInfo?.seasons;
+          }
+
           items.push({
             id: external_id,
             external_id,
@@ -340,8 +579,9 @@ export class TMDBAdapter implements MediaAdapter {
             genres: exact.Genre ? exact.Genre.split(', ') : [isMovie ? 'Film' : 'Serie'],
             creator: exact.Director && exact.Director !== 'N/A' ? exact.Director : 'Filmindustrie',
             franchise_id: `imdb:franchise:${exact.imdbID}`,
-            totalUnits: isMovie ? 120 : 10,
-            totalSeasons: isMovie ? undefined : (parseInt(exact.totalSeasons) || 1),
+            totalUnits,
+            totalSeasons,
+            seasons,
             unit: isMovie ? 'minutes' : 'episodes',
             rating: exact.imdbRating && exact.imdbRating !== 'N/A' ? Math.round((parseFloat(exact.imdbRating) / 2) * 10) / 10 : 4.6,
           });
@@ -367,6 +607,17 @@ export class TMDBAdapter implements MediaAdapter {
               seenIds.add(external_id);
 
               const isMovie = entry.Type !== 'series';
+              let totalSeasons: number | undefined = undefined;
+              let totalUnits: number = isMovie ? 120 : 10;
+              let seasons: SeasonInfo[] | undefined = undefined;
+
+              if (!isMovie) {
+                const seriesInfo = getKnownSeriesInfo(entry.Title);
+                totalSeasons = seriesInfo?.totalSeasons || 1;
+                totalUnits = seriesInfo?.totalEpisodes || (totalSeasons ? totalSeasons * 10 : 10);
+                seasons = seriesInfo?.seasons;
+              }
+
               items.push({
                 id: external_id,
                 external_id,
@@ -379,8 +630,9 @@ export class TMDBAdapter implements MediaAdapter {
                 genres: [isMovie ? 'Film' : 'Serie'],
                 creator: 'Filmindustrie',
                 franchise_id: `imdb:franchise:${entry.imdbID}`,
-                totalUnits: isMovie ? 120 : 10,
-                totalSeasons: isMovie ? undefined : 1,
+                totalUnits,
+                totalSeasons,
+                seasons,
                 unit: isMovie ? 'minutes' : 'episodes',
                 rating: 4.6,
               });
@@ -421,6 +673,11 @@ export class TMDBAdapter implements MediaAdapter {
                   .trim()
               : 'Offizielle Serie.';
 
+            const seriesInfo = await fetchSeriesSeasonInfo(show.name, show.id);
+            const totalSeasons = seriesInfo?.totalSeasons || 1;
+            const totalUnits = seriesInfo?.totalEpisodes || (totalSeasons * 10);
+            const seasons = seriesInfo?.seasons;
+
             items.push({
               id: external_id,
               external_id,
@@ -432,8 +689,9 @@ export class TMDBAdapter implements MediaAdapter {
               genres: show.genres || ['Drama', 'Serie'],
               creator: show.network?.name || show.webChannel?.name || 'TV Studio',
               franchise_id: `tvmaze:franchise:${show.id}`,
-              totalUnits: 10,
-              totalSeasons: 1,
+              totalUnits,
+              totalSeasons,
+              seasons,
               unit: 'episodes',
               rating: show.rating?.average ? Math.round((show.rating.average / 2) * 10) / 10 : 4.5,
             });
@@ -455,15 +713,30 @@ export class TMDBAdapter implements MediaAdapter {
         (m.creator && m.creator.toLowerCase().includes(rawQ))
     );
 
-    // Merge results without duplicate titles
+    // Merge results without duplicate titles, prioritizing richer season & episode counts
     const combined: SearchResultItem[] = [];
     const seenTitles = new Set<string>();
 
     for (const item of [...items, ...catalogMatches]) {
-      const norm = item.title.toLowerCase();
-      if (!seenTitles.has(norm)) {
+      const norm = item.title.toLowerCase().trim();
+      const existingIdx = combined.findIndex((c) => c.title.toLowerCase().trim() === norm);
+      if (existingIdx === -1) {
         seenTitles.add(norm);
         combined.push(item);
+      } else {
+        const existing = combined[existingIdx];
+        if (item.type === 'show') {
+          const betterSeasons = Math.max(existing.totalSeasons || 1, item.totalSeasons || 1);
+          const betterEpisodes = Math.max(existing.totalUnits || 0, item.totalUnits || 0);
+          combined[existingIdx] = {
+            ...existing,
+            totalSeasons: betterSeasons,
+            totalUnits: betterEpisodes > 0 ? betterEpisodes : existing.totalUnits,
+            seasons: existing.seasons || item.seasons,
+            coverUrl: existing.coverUrl || item.coverUrl,
+            summary: existing.summary && existing.summary.length > 30 ? existing.summary : (item.summary || existing.summary),
+          };
+        }
       }
     }
 

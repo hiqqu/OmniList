@@ -45,6 +45,7 @@ import {
   resetLibraryToDefault,
 } from '@/lib/storage';
 import { isSequelInLibrary, isSequelDismissed, normalizeSequelMatchKey } from '@/lib/sequels';
+import { getKnownSeriesInfo } from '@/lib/api-adapters/tmdb';
 import { getUnitIncrement, getMediaStatusBadge, cn } from '@/lib/utils';
 import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search } from 'lucide-react';
 
@@ -260,6 +261,31 @@ export default function Home() {
           if (score !== null) {
             hasBackfill = true;
             updatedItem = { ...updatedItem, metacritic: score };
+          }
+        }
+      } else if (item.type === 'show') {
+        const known = getKnownSeriesInfo(item.title);
+        if (known) {
+          const needsFix =
+            !item.progress.totalSeasons ||
+            item.progress.totalSeasons !== known.totalSeasons ||
+            item.progress.total === 10 ||
+            !item.progress.total ||
+            item.progress.total !== known.totalEpisodes;
+          if (needsFix) {
+            hasBackfill = true;
+            const isCompleted = item.status === 'completed';
+            updatedItem = {
+              ...updatedItem,
+              progress: {
+                ...updatedItem.progress,
+                totalSeasons: known.totalSeasons,
+                total: known.totalEpisodes,
+                current: isCompleted ? known.totalEpisodes : updatedItem.progress.current,
+                currentSeason: updatedItem.progress.currentSeason || 1,
+                seasons: known.seasons || updatedItem.progress.seasons,
+              },
+            };
           }
         }
       }
