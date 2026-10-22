@@ -579,7 +579,20 @@ export default function Home() {
   // Add Medium from Search Modal
   const handleAddMedia = (newItemData: Omit<MediaItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     const created = addMediaItem(newItemData);
-    setMedia((prev) => [created, ...prev]);
+    const updatedMedia = [created, ...media];
+    setMedia(updatedMedia);
+
+    // Auto-prune and dismiss any sequel matching this newly added medium
+    if (created.external_id || created.title) {
+      dismissSequel(created.id, created.external_id, created.title);
+    }
+    setSequels((prev) => {
+      const filtered = prev.filter((s) => !isSequelInLibrary(s, updatedMedia) && !isSequelDismissed(s));
+      if (filtered.length !== prev.length) {
+        saveStoredSequels(filtered);
+      }
+      return filtered;
+    });
 
     const isGame = created.type === 'game';
     const is100 = created.gameTracker?.completionist100;
@@ -611,8 +624,20 @@ export default function Home() {
   // Sequel Radar Actions
   const handleAcceptSequel = (sequel: SequelNotification, targetStatus: MediaStatus = 'planned') => {
     const created = acceptSequel(sequel, targetStatus);
-    setMedia((prev) => [created, ...prev]);
-    setSequels((prev) => prev.filter((s) => s.id !== sequel.id));
+    const updatedMedia = [created, ...media];
+    setMedia(updatedMedia);
+    setSequels((prev) => {
+      const filtered = prev.filter(
+        (s) =>
+          s.id !== sequel.id &&
+          (!sequel.external_id || !s.external_id || s.external_id !== sequel.external_id) &&
+          normalizeSequelMatchKey(s.sequelTitle) !== normalizeSequelMatchKey(sequel.sequelTitle) &&
+          !isSequelInLibrary(s, updatedMedia) &&
+          !isSequelDismissed(s)
+      );
+      saveStoredSequels(filtered);
+      return filtered;
+    });
     addToast(
       'success',
       `Fortsetzung übernommen!`,
@@ -625,13 +650,15 @@ export default function Home() {
     dismissSequel(sequelObj || sequelOrId);
     const targetId = typeof sequelOrId === 'string' ? sequelOrId : sequelOrId?.id;
     const targetTitle = sequelObj ? normalizeSequelMatchKey(sequelObj.sequelTitle) : '';
-    setSequels((prev) =>
-      prev.filter((s) => {
+    setSequels((prev) => {
+      const filtered = prev.filter((s) => {
         if (targetId && s.id === targetId) return false;
         if (targetTitle && normalizeSequelMatchKey(s.sequelTitle) === targetTitle) return false;
         return !isSequelDismissed(s);
-      })
-    );
+      });
+      saveStoredSequels(filtered);
+      return filtered;
+    });
     addToast('info', 'Fortsetzungsmeldung ignoriert');
   };
 
@@ -641,25 +668,55 @@ export default function Home() {
     addToast('info', 'Sequel Radar aktiv', 'Prüfe Kataloge auf neue Staffeln & Fortsetzungen...');
 
     try {
+      const mediaToScan = getStoredMedia().length > 0 ? getStoredMedia() : media;
       const res = await fetch('/api/check-sequels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: media }),
+        body: JSON.stringify({ items: mediaToScan }),
       });
 
       if (res.ok) {
         const data = await res.json();
         const detectedSequels: SequelNotification[] = data.sequels || [];
 
-        // Exclude sequels that are already owned in the media library or dismissed
-        const trulyNewSequels = detectedSequels.filter((s) => !isSequelInLibrary(s, media) && !isSequelDismissed(s));
+        // Exclude sequels that are already in the media library or dismissed
+        const trulyNewSequels = detectedSequels.filter(
+          (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s)
+        );
 
-        // Merge with existing sequels without duplicate external_id
-        const existingExternalIds = new Set(sequels.map((s) => s.external_id));
-        const newDetections = trulyNewSequels.filter((s) => !existingExternalIds.has(s.external_id));
+        // Deduplicate newly detected sequels within this scan batch itself
+        const seenBatchKeys = new Set<string>();
+        const uniqueDetected: SequelNotification[] = [];
+        for (const s of trulyNewSequels) {
+          const titleKey = normalizeSequelMatchKey(s.sequelTitle);
+          const extKey = s.external_id ? s.external_id.trim().toLowerCase() : '';
+          const dedupeKey = extKey ? `ext:${extKey}` : `title:${titleKey}`;
+          if (!seenBatchKeys.has(dedupeKey)) {
+            seenBatchKeys.add(dedupeKey);
+            if (titleKey) seenBatchKeys.add(`title:${titleKey}`);
+            if (extKey) seenBatchKeys.add(`ext:${extKey}`);
+            uniqueDetected.push(s);
+          }
+        }
+
+        const freshSequels = getStoredSequels();
+        const existingExternalIds = new Set(
+          freshSequels.map((s) => s.external_id?.trim().toLowerCase()).filter(Boolean)
+        );
+        const existingTitleKeys = new Set(
+          freshSequels.map((s) => normalizeSequelMatchKey(s.sequelTitle)).filter(Boolean)
+        );
+
+        const newDetections = uniqueDetected.filter((s) => {
+          if (s.external_id && existingExternalIds.has(s.external_id.trim().toLowerCase())) return false;
+          if (s.sequelTitle && existingTitleKeys.has(normalizeSequelMatchKey(s.sequelTitle))) return false;
+          return true;
+        });
 
         if (newDetections.length > 0) {
-          const merged = [...newDetections, ...sequels].filter((s) => !isSequelInLibrary(s, media) && !isSequelDismissed(s));
+          const merged = [...newDetections, ...freshSequels].filter(
+            (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s)
+          );
           setSequels(merged);
           saveStoredSequels(merged);
           addToast(
@@ -669,11 +726,11 @@ export default function Home() {
           );
         } else {
           // Clean existing sequels if any became owned or dismissed in the meantime
-          const cleaned = sequels.filter((s) => !isSequelInLibrary(s, media) && !isSequelDismissed(s));
-          if (cleaned.length !== sequels.length) {
-            setSequels(cleaned);
-            saveStoredSequels(cleaned);
-          }
+          const cleaned = freshSequels.filter(
+            (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s)
+          );
+          setSequels(cleaned);
+          saveStoredSequels(cleaned);
           addToast('info', 'Bibliothek aktuell', 'Keine neuen Fortsetzungen gefunden.');
         }
       }

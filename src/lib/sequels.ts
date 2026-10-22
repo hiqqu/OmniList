@@ -258,12 +258,29 @@ export function isSequelInLibrary(
       if (itemClean.includes('attack on titan') && (itemClean.includes('season 2') || itemClean.includes('2'))) return true;
     }
 
+    // Hollow Knight Silksong
+    if (seqClean.includes('silksong') && itemClean.includes('silksong')) return true;
+
+    // Books: Herr der Ringe & Trisolaris
+    if (
+      (seqClean.includes('zwei turme') || seqClean.includes('two towers')) &&
+      (itemClean.includes('zwei turme') || itemClean.includes('two towers'))
+    ) {
+      return true;
+    }
+    if (
+      (seqClean.includes('dunkle wald') || seqClean.includes('dark forest')) &&
+      (itemClean.includes('dunkle wald') || itemClean.includes('dark forest'))
+    ) {
+      return true;
+    }
+
     // General high word overlap with matching numbers
     const seqWords = seqClean.split(' ').filter((w) => w.length > 2);
     const itemWords = itemClean.split(' ').filter((w) => w.length > 2);
     if (seqWords.length >= 2 && itemWords.length >= 2) {
       const matchCount = seqWords.filter((w) => itemWords.includes(w)).length;
-      const ratio = matchCount / Math.min(seqWords.length, itemWords.length);
+      const ratio = matchCount / Math.max(seqWords.length, itemWords.length);
       if (ratio >= 0.75) {
         const seqNums = seqClean.match(/\b(?:\d+|i+|iv|v|vi|vii|viii)\b/g) || [];
         const itemNums = itemClean.match(/\b(?:\d+|i+|iv|v|vi|vii|viii)\b/g) || [];
@@ -274,7 +291,24 @@ export function isSequelInLibrary(
           });
           if (hasCommonNum) return true;
         } else if (seqNums.length === 0 && itemNums.length === 0) {
-          return true;
+          const diffWords = seqWords
+            .filter((w) => !itemWords.includes(w))
+            .concat(itemWords.filter((w) => !seqWords.includes(w)));
+          const ignorable = new Set([
+            'edition',
+            'version',
+            'remastered',
+            'definitive',
+            'part',
+            'teil',
+            'staffel',
+            'season',
+            'arc',
+            'the',
+            'erweiterung',
+          ]);
+          const nonIgnorableDiff = diffWords.filter((w) => !ignorable.has(w));
+          if (nonIgnorableDiff.length === 0) return true;
         }
       }
     }

@@ -433,7 +433,10 @@ export function saveStoredSequels(sequels: SequelNotification[]): void {
   if (typeof window === 'undefined') return;
   try {
     const dismissedSet = new Set(getDismissedSequelKeys());
-    const valid = sequels.filter((s) => !isSequelDismissed(s, dismissedSet));
+    const currentMedia = getStoredMedia();
+    const valid = sequels.filter(
+      (s) => !isSequelDismissed(s, dismissedSet) && !isSequelInLibrary(s, currentMedia)
+    );
     localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(valid));
     localStorage.removeItem(LEGACY_SEQUELS_STORAGE_KEY);
   } catch (e) {
