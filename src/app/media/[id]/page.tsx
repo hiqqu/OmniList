@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getStoredMedia, updateMediaItem, deleteMediaItem } from '@/lib/storage';
-import { getMediaTypeBadge, getMediaStatusBadge, getEffectiveMediaStatusBadge, getUnitIncrement, getProgressUnitLabel, cn } from '@/lib/utils';
+import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, getProgressUnitLabel, cn } from '@/lib/utils';
 import { getEnrichedMediaDetails, EnrichedMediaDetails } from '@/lib/media-details';
 import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
 import { isLiveServiceGame } from '@/lib/live-service';
@@ -304,7 +304,6 @@ export default function MediaDetailPage() {
 
   const typeBadge = getMediaTypeBadge(item.type);
   const statusBadge = getMediaStatusBadge(item.status);
-  const effectiveStatusBadge = getEffectiveMediaStatusBadge(item);
   const incrementInfo = getUnitIncrement(item.type, item.progress.unit);
 
   const isGame = item.type === 'game';
@@ -612,26 +611,16 @@ export default function MediaDetailPage() {
 
               {/* Category & Status Badges */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                <span
-                  className={cn(
-                    'text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 flex items-center gap-1.5',
-                    effectiveStatusBadge.bgClass,
-                    effectiveStatusBadge.colorClass
-                  )}
-                >
-                  {isLiveService && item.status !== 'planned' && (
-                    <Infinity className="w-3.5 h-3.5 text-cyan-400" />
-                  )}
-                  <span>{effectiveStatusBadge.label}</span>
-                </span>
-
-                {isLiveService && item.status === 'planned' && (
+                {/* Status Badge: Bei Live-Service-Spielen nicht als Tag anzeigen, da unten "Endlos" steht (nur bei Geplant anzeigen) */}
+                {(!isLiveService || item.status === 'planned') && (
                   <span
-                    className="text-xs font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0"
-                    title="Live-Service / Endlos-Spiel ohne klassisches Kampagnen-Ende"
+                    className={cn(
+                      'text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 flex items-center gap-1.5',
+                      statusBadge.bgClass,
+                      statusBadge.colorClass
+                    )}
                   >
-                    <Infinity className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Live-Service</span>
+                    <span>{statusBadge.label}</span>
                   </span>
                 )}
 
