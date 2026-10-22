@@ -114,6 +114,7 @@ export interface SearchResultItem {
   totalSeasons?: number;
   unit: ProgressUnit;
   rating?: number;
+  metacritic?: number;
   communityRating?: number;
   communityRatingsCount?: number;
 }

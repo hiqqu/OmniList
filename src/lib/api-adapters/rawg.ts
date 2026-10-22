@@ -1208,6 +1208,7 @@ export class RAWGAdapter implements MediaAdapter {
                 totalUnits: 40,
                 unit: 'hours',
                 rating: 4.6,
+                metacritic: game.metascore ? parseInt(game.metascore, 10) : undefined,
               });
             }
           }
@@ -1244,6 +1245,7 @@ export class RAWGAdapter implements MediaAdapter {
                 totalUnits: game.playtime || 40,
                 unit: 'hours',
                 rating: game.rating ? Math.round(game.rating * 10) / 10 : 4.5,
+                metacritic: game.metacritic ? Math.round(game.metacritic) : undefined,
               });
             }
           }

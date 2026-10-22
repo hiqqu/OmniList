@@ -118,12 +118,32 @@ export default function Home() {
   useEffect(() => {
     const loadedMedia = getStoredMedia();
     const loadedSequels = getStoredSequels();
-    setMedia(loadedMedia);
+
+    // Auto-backfill Metacritic scores from curated catalog for existing games
+    let hasBackfill = false;
+    const backfilledMedia = loadedMedia.map((item) => {
+      if (item.type === 'game' && (!item.metacritic || item.metacritic <= 0)) {
+        const score = getMediaMetacriticScore(item);
+        if (score !== null) {
+          hasBackfill = true;
+          return { ...item, metacritic: score };
+        }
+      }
+      return item;
+    });
+
+    if (hasBackfill) {
+      saveStoredMedia(backfilledMedia);
+      setMedia(backfilledMedia);
+    } else {
+      setMedia(loadedMedia);
+    }
+
     setSequels(loadedSequels);
     setIsLoaded(true);
 
     // Silent background auto-sync for connected game accounts (e.g. Steam)
-    runBackgroundAutoSync(loadedMedia, (syncedMedia, summary) => {
+    runBackgroundAutoSync(hasBackfill ? backfilledMedia : loadedMedia, (syncedMedia, summary) => {
       setMedia(syncedMedia);
       addToast('info', 'Hintergrund-Sync', summary);
     });

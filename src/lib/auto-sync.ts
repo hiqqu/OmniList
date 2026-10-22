@@ -1,5 +1,6 @@
 import { MediaItem } from '@/types/media';
 import { isGameDeleted, saveStoredMedia } from './storage';
+import { getMediaMetacriticScore } from './metacritic';
 
 export const AUTO_SYNC_ENABLED_KEY = 'omnilist_auto_sync_enabled_v1';
 export const LAST_AUTO_SYNC_KEY = 'omnilist_last_auto_sync_timestamp_v1';
@@ -66,10 +67,11 @@ export async function runBackgroundAutoSync(
       );
       if (!match) return item;
 
-      // Check if playtime increased
-      if (match.playtimeHours !== item.progress.current) {
+      // Check if playtime increased or metacritic is missing
+      if (match.playtimeHours !== item.progress.current || (!item.metacritic && getMediaMetacriticScore(item))) {
         hasChanges = true;
-        updatedCount++;
+        if (match.playtimeHours !== item.progress.current) updatedCount++;
+        const resolvedMetacritic = item.metacritic || getMediaMetacriticScore(item) || undefined;
         return {
           ...item,
           external_id: item.external_id?.startsWith('steam:') ? item.external_id : `steam:${match.appid}`,
@@ -79,6 +81,7 @@ export async function runBackgroundAutoSync(
             ...(item.gameTracker || {}),
             playtimeHours: match.playtimeHours,
           },
+          metacritic: resolvedMetacritic,
           updatedAt: new Date().toISOString(),
         };
       }
@@ -98,6 +101,13 @@ export async function runBackgroundAutoSync(
 
       if (isGameDeleted(`steam:${sg.appid}`, sg.name)) continue;
 
+      const metaScore = getMediaMetacriticScore({
+        title: sg.name,
+        type: 'game',
+        external_id: `steam:${sg.appid}`,
+        gameConnection: { service: 'steam', serviceId: String(sg.appid) },
+      } as any) || undefined;
+
       hasChanges = true;
       newItems.push({
         id: `media-steam-${sg.appid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -112,6 +122,7 @@ export async function runBackgroundAutoSync(
         publisher: 'Steam',
         progress: { current: sg.playtimeHours, unit: 'hours' },
         gameTracker: { playtimeHours: sg.playtimeHours, storyCompleted: false, completionist100: false },
+        metacritic: metaScore,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });

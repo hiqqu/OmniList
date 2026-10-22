@@ -244,6 +244,36 @@ export default function MediaDetailPage() {
           })
           .catch((err) => console.warn('Could not fetch book ratings:', err));
       }
+
+      // Dynamically resolve and persist Metacritic score if missing
+      if (active.type === 'game' && (!active.metacritic || active.metacritic <= 0)) {
+        const localScore = getMediaMetacriticScore(active);
+        if (localScore !== null) {
+          const updatedItem = updateMediaItem(active.id, { metacritic: localScore });
+          if (updatedItem) {
+            setItem(updatedItem);
+            setDetails(getEnrichedMediaDetails(updatedItem));
+          }
+        } else {
+          const queryParams = new URLSearchParams({
+            title: active.title,
+            ...(active.gameConnection?.serviceId ? { appId: active.gameConnection.serviceId } : {}),
+            ...(active.external_id ? { externalId: active.external_id } : {}),
+          });
+          fetch(`/api/metacritic?${queryParams.toString()}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data?.score && typeof data.score === 'number' && data.score > 0) {
+                const updatedItem = updateMediaItem(active.id, { metacritic: data.score });
+                if (updatedItem) {
+                  setItem(updatedItem);
+                  setDetails(getEnrichedMediaDetails(updatedItem));
+                }
+              }
+            })
+            .catch((err) => console.warn('Could not fetch metacritic score:', err));
+        }
+      }
     }
     setIsLoaded(true);
   }, [id]);

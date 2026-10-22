@@ -27,6 +27,7 @@ import { MediaItem, SequelNotification } from '@/types/media';
 import { cn } from '@/lib/utils';
 import { isGameDeleted, getDeletedGameKeys, clearDeletedGameKeys } from '@/lib/storage';
 import { isAutoSyncEnabled, setAutoSyncEnabled } from '@/lib/auto-sync';
+import { getMediaMetacriticScore } from '@/lib/metacritic';
 
 interface SyncModalProps {
   isOpen: boolean;
@@ -523,6 +524,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             completionist100: ach ? ach.completionist100 : item.gameTracker?.completionist100,
             allAchievementsCompleted: ach ? (ach.completionist100 || (ach.total > 0 && ach.current >= ach.total)) : item.gameTracker?.allAchievementsCompleted,
           },
+          metacritic: item.metacritic || getMediaMetacriticScore(item) || undefined,
           updatedAt: new Date().toISOString(),
         };
       });
@@ -545,29 +547,42 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         return true;
       });
 
-      const newItems: MediaItem[] = newGamesToAdd.map((sg) => ({
-        id: `media-steam-${sg.appid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        title: sg.name,
-        type: 'game',
-        status: sg.playtimeHours > 0 ? 'in_progress' : 'planned',
-        isOwned: true,
-        coverUrl: sg.coverUrl,
-        bannerUrl: sg.headerUrl,
-        external_id: `steam:${sg.appid}`,
-        connectedService: 'steam',
-        gameConnection: {
-          service: 'steam',
-          serviceId: String(sg.appid),
-          serviceName: 'Steam',
-          accountUsername: steamProfile?.personaname || input,
-          lastPlayed: sg.lastPlayed,
-        },
-        publisher: 'Steam',
-        progress: { current: sg.playtimeHours, unit: 'hours' },
-        gameTracker: { playtimeHours: sg.playtimeHours, storyCompleted: false, completionist100: false },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
+      const newItems: MediaItem[] = newGamesToAdd.map((sg) => {
+        const itemMeta: any = {
+          title: sg.name,
+          type: 'game',
+          external_id: `steam:${sg.appid}`,
+          gameConnection: {
+            service: 'steam',
+            serviceId: String(sg.appid),
+          },
+        };
+        const score = getMediaMetacriticScore(itemMeta) || undefined;
+        return {
+          id: `media-steam-${sg.appid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          title: sg.name,
+          type: 'game',
+          status: sg.playtimeHours > 0 ? 'in_progress' : 'planned',
+          isOwned: true,
+          coverUrl: sg.coverUrl,
+          bannerUrl: sg.headerUrl,
+          external_id: `steam:${sg.appid}`,
+          connectedService: 'steam',
+          gameConnection: {
+            service: 'steam',
+            serviceId: String(sg.appid),
+            serviceName: 'Steam',
+            accountUsername: steamProfile?.personaname || input,
+            lastPlayed: sg.lastPlayed,
+          },
+          publisher: 'Steam',
+          progress: { current: sg.playtimeHours, unit: 'hours' },
+          gameTracker: { playtimeHours: sg.playtimeHours, storyCompleted: false, completionist100: false },
+          metacritic: score,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      });
 
       const finalMedia = [...newItems, ...updatedMedia];
       onApplySync(finalMedia, sequels);
@@ -670,6 +685,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             completionist100: t.completionist100,
             allAchievementsCompleted: t.completionist100 || (t.total > 0 && t.current >= t.total),
           },
+          metacritic: item.metacritic || getMediaMetacriticScore(item) || undefined,
           updatedAt: new Date().toISOString(),
         };
       });
@@ -690,32 +706,45 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         return true;
       });
 
-      const newItems: MediaItem[] = newGamesToAdd.map((pg) => ({
-        id: `media-psn-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        title: pg.name,
-        type: 'game',
-        status: pg.trophies.completionist100 ? 'completed' : pg.playtimeHours > 0 ? 'in_progress' : 'planned',
-        isOwned: true,
-        coverUrl: pg.coverUrl || '',
-        external_id: pg.id,
-        connectedService: 'psn',
-        gameConnection: {
-          service: 'psn',
-          serviceId: pg.id,
-          serviceName: 'PlayStation Network',
-        },
-        publisher: `PlayStation (${pg.platform || 'PS5'})`,
-        progress: { current: pg.playtimeHours, unit: 'hours' },
-        gameTracker: {
-          playtimeHours: pg.playtimeHours,
-          storyCompleted: pg.trophies.completionist100,
-          completionist100: pg.trophies.completionist100,
-          allAchievementsCompleted: pg.trophies.completionist100 || (pg.trophies.total > 0 && pg.trophies.current >= pg.trophies.total),
-          achievements: pg.trophies.total > 0 ? { current: pg.trophies.current, total: pg.trophies.total } : undefined,
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
+      const newItems: MediaItem[] = newGamesToAdd.map((pg) => {
+        const itemMeta: any = {
+          title: pg.name,
+          type: 'game',
+          external_id: pg.id,
+          gameConnection: {
+            service: 'psn',
+            serviceId: pg.id,
+          },
+        };
+        const score = getMediaMetacriticScore(itemMeta) || undefined;
+        return {
+          id: `media-psn-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          title: pg.name,
+          type: 'game',
+          status: pg.trophies.completionist100 ? 'completed' : pg.playtimeHours > 0 ? 'in_progress' : 'planned',
+          isOwned: true,
+          coverUrl: pg.coverUrl || '',
+          external_id: pg.id,
+          connectedService: 'psn',
+          gameConnection: {
+            service: 'psn',
+            serviceId: pg.id,
+            serviceName: 'PlayStation Network',
+          },
+          publisher: `PlayStation (${pg.platform || 'PS5'})`,
+          progress: { current: pg.playtimeHours, unit: 'hours' },
+          gameTracker: {
+            playtimeHours: pg.playtimeHours,
+            storyCompleted: pg.trophies.completionist100,
+            completionist100: pg.trophies.completionist100,
+            allAchievementsCompleted: pg.trophies.completionist100 || (pg.trophies.total > 0 && pg.trophies.current >= pg.trophies.total),
+            achievements: pg.trophies.total > 0 ? { current: pg.trophies.current, total: pg.trophies.total } : undefined,
+          },
+          metacritic: score,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      });
 
       const finalMedia = [...newItems, ...updatedMedia];
       onApplySync(finalMedia, sequels);
@@ -811,6 +840,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             completionist100: ach ? ach.completionist100 : item.gameTracker?.completionist100,
             allAchievementsCompleted: ach ? (ach.completionist100 || (ach.total > 0 && ach.current >= ach.total)) : item.gameTracker?.allAchievementsCompleted,
           },
+          metacritic: item.metacritic || getMediaMetacriticScore(item) || undefined,
           updatedAt: new Date().toISOString(),
         };
       });
@@ -831,34 +861,47 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         return true;
       });
 
-      const newItems: MediaItem[] = newGamesToAdd.map((gg) => ({
-        id: `media-gog-${gg.gameId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        title: gg.title,
-        type: 'game',
-        status: gg.playtimeHours > 0 ? 'in_progress' : 'planned',
-        isOwned: true,
-        coverUrl: gg.coverUrl || '',
-        bannerUrl: gg.bannerUrl,
-        external_id: gg.id,
-        connectedService: 'gog',
-        gameConnection: {
-          service: 'gog',
-          serviceId: String(gg.gameId),
-          serviceName: 'GOG Galaxy',
-          accountUsername: username,
-        },
-        publisher: 'GOG.com',
-        progress: { current: gg.playtimeHours, unit: 'hours' },
-        gameTracker: {
-          playtimeHours: gg.playtimeHours,
-          storyCompleted: false,
-          completionist100: gg.achievements?.completionist100 || false,
-          allAchievementsCompleted: gg.achievements ? (gg.achievements.completionist100 || (gg.achievements.total > 0 && gg.achievements.current >= gg.achievements.total)) : false,
-          achievements: gg.achievements ? { current: gg.achievements.current, total: gg.achievements.total } : undefined,
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
+      const newItems: MediaItem[] = newGamesToAdd.map((gg) => {
+        const itemMeta: any = {
+          title: gg.title,
+          type: 'game',
+          external_id: gg.id,
+          gameConnection: {
+            service: 'gog',
+            serviceId: String(gg.gameId),
+          },
+        };
+        const score = getMediaMetacriticScore(itemMeta) || undefined;
+        return {
+          id: `media-gog-${gg.gameId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          title: gg.title,
+          type: 'game',
+          status: gg.playtimeHours > 0 ? 'in_progress' : 'planned',
+          isOwned: true,
+          coverUrl: gg.coverUrl || '',
+          bannerUrl: gg.bannerUrl,
+          external_id: gg.id,
+          connectedService: 'gog',
+          gameConnection: {
+            service: 'gog',
+            serviceId: String(gg.gameId),
+            serviceName: 'GOG Galaxy',
+            accountUsername: username,
+          },
+          publisher: 'GOG.com',
+          progress: { current: gg.playtimeHours, unit: 'hours' },
+          gameTracker: {
+            playtimeHours: gg.playtimeHours,
+            storyCompleted: false,
+            completionist100: gg.achievements?.completionist100 || false,
+            allAchievementsCompleted: gg.achievements ? (gg.achievements.completionist100 || (gg.achievements.total > 0 && gg.achievements.current >= gg.achievements.total)) : false,
+            achievements: gg.achievements ? { current: gg.achievements.current, total: gg.achievements.total } : undefined,
+          },
+          metacritic: score,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      });
 
       const finalMedia = [...newItems, ...updatedMedia];
       onApplySync(finalMedia, sequels);

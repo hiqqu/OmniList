@@ -27,6 +27,7 @@ import { MediaType, SearchResultItem, MediaStatus, MediaItem } from '@/types/med
 import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { BookEditionItem } from '@/app/api/book-editions/route';
 import { getMediaCoverFallback, createBookSvgCover, createNoCoverSvg } from '@/lib/book-cover';
+import { getMediaMetacriticScore } from '@/lib/metacritic';
 
 interface AddMediaDialogProps {
   isOpen: boolean;
@@ -230,6 +231,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       coverUrl: edition.coverUrl || result.coverUrl,
       bannerUrl: result.bannerUrl,
       rating: undefined,
+      metacritic: result.metacritic || getMediaMetacriticScore({ title: result.title, originalTitle: result.originalTitle, type: result.type, external_id: result.external_id } as any) || undefined,
       communityRating: result.communityRating,
       communityRatingsCount: result.communityRatingsCount,
       releaseDate: edition.year ? `${edition.year}-01-01` : result.releaseDate,
@@ -278,6 +280,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       coverUrl: result.coverUrl,
       bannerUrl: result.bannerUrl,
       rating: undefined,
+      metacritic: result.metacritic || getMediaMetacriticScore({ title: result.title, originalTitle: result.originalTitle, type: result.type, external_id: result.external_id } as any) || undefined,
       communityRating: result.communityRating,
       communityRatingsCount: result.communityRatingsCount,
       releaseDate: result.releaseDate,
