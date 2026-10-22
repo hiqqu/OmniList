@@ -37,10 +37,8 @@ const LEGACY_STORAGE_SYNC_CODE_KEY = 'omnitrack_last_sync_code_v1';
 
 // Integration LocalStorage Keys
 const STORAGE_STEAM_INPUT_KEY = 'omnilist_steam_input_v1';
-const STORAGE_STEAM_KEY_KEY = 'omnilist_steam_api_key_v1';
 const STORAGE_PSN_NPSSO_KEY = 'omnilist_psn_npsso_v1';
 const STORAGE_GOG_USER_KEY = 'omnilist_gog_username_v1';
-const STORAGE_GOG_TOKEN_KEY = 'omnilist_gog_token_v1';
 
 interface SteamGameItem {
   appid: number;
@@ -100,14 +98,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   const [syncCode, setSyncCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<{ isCloudConfigured: boolean; provider: string } | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Steam State
   const [steamInput, setSteamInput] = useState('');
-  const [steamApiKey, setSteamApiKey] = useState('');
-  const [hasServerSteamKey, setHasServerSteamKey] = useState(false);
   const [steamProfile, setSteamProfile] = useState<{ steamId: string; personaname: string; avatar?: string } | null>(null);
   const [steamGames, setSteamGames] = useState<SteamGameItem[]>([]);
   const [isSteamLoading, setIsSteamLoading] = useState(false);
@@ -121,7 +116,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
   // GOG State
   const [gogUsername, setGogUsername] = useState('');
-  const [gogToken, setGogToken] = useState('');
   const [gogGames, setGogGames] = useState<GogGameItem[]>([]);
   const [isGogLoading, setIsGogLoading] = useState(false);
   const [isGogSyncing, setIsGogSyncing] = useState(false);
@@ -137,31 +131,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       }
 
       setSteamInput(localStorage.getItem(STORAGE_STEAM_INPUT_KEY) || '');
-      setSteamApiKey(localStorage.getItem(STORAGE_STEAM_KEY_KEY) || '');
       setPsnNpsso(localStorage.getItem(STORAGE_PSN_NPSSO_KEY) || '');
       setGogUsername(localStorage.getItem(STORAGE_GOG_USER_KEY) || '');
-      setGogToken(localStorage.getItem(STORAGE_GOG_TOKEN_KEY) || '');
 
       setFeedback(null);
-
-      // Check server sync configuration
-      fetch('/api/sync')
-        .then((res) => res.json())
-        .then((data) => {
-          setSyncStatus({
-            isCloudConfigured: Boolean(data.isCloudConfigured),
-            provider: data.provider || (data.isCloudConfigured ? 'Cloud' : 'Lokaler Server'),
-          });
-        })
-        .catch(() => {});
-
-      // Check server steam API key
-      fetch('/api/sync/steam')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data?.hasServerKey) setHasServerSteamKey(true);
-        })
-        .catch(() => {});
     }
   }, [isOpen]);
 
@@ -211,14 +184,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             integrations: {
               steam: {
                 steamInput: steamInput.trim(),
-                steamApiKey: steamApiKey.trim(),
               },
               psn: {
                 npsso: psnNpsso.trim(),
               },
               gog: {
                 username: gogUsername.trim(),
-                token: gogToken.trim(),
               },
             },
           },
@@ -298,15 +269,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           return;
         }
 
-        if (pulledIntegrations?.steam) {
-          if (pulledIntegrations.steam.steamInput) {
-            setSteamInput(pulledIntegrations.steam.steamInput);
-            localStorage.setItem(STORAGE_STEAM_INPUT_KEY, pulledIntegrations.steam.steamInput);
-          }
-          if (pulledIntegrations.steam.steamApiKey) {
-            setSteamApiKey(pulledIntegrations.steam.steamApiKey);
-            localStorage.setItem(STORAGE_STEAM_KEY_KEY, pulledIntegrations.steam.steamApiKey);
-          }
+        if (pulledIntegrations?.steam?.steamInput) {
+          setSteamInput(pulledIntegrations.steam.steamInput);
+          localStorage.setItem(STORAGE_STEAM_INPUT_KEY, pulledIntegrations.steam.steamInput);
         }
 
         if (pulledIntegrations?.psn?.npsso) {
@@ -314,15 +279,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           localStorage.setItem(STORAGE_PSN_NPSSO_KEY, pulledIntegrations.psn.npsso);
         }
 
-        if (pulledIntegrations?.gog) {
-          if (pulledIntegrations.gog.username) {
-            setGogUsername(pulledIntegrations.gog.username);
-            localStorage.setItem(STORAGE_GOG_USER_KEY, pulledIntegrations.gog.username);
-          }
-          if (pulledIntegrations.gog.token) {
-            setGogToken(pulledIntegrations.gog.token);
-            localStorage.setItem(STORAGE_GOG_TOKEN_KEY, pulledIntegrations.gog.token);
-          }
+        if (pulledIntegrations?.gog?.username) {
+          setGogUsername(pulledIntegrations.gog.username);
+          localStorage.setItem(STORAGE_GOG_USER_KEY, pulledIntegrations.gog.username);
         }
 
         onApplySync(pulledMedia, pulledSequels);
@@ -359,9 +318,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       media,
       sequels,
       integrations: {
-        steam: { steamInput: steamInput.trim(), steamApiKey: steamApiKey.trim() },
+        steam: { steamInput: steamInput.trim() },
         psn: { npsso: psnNpsso.trim() },
-        gog: { username: gogUsername.trim(), token: gogToken.trim() },
+        gog: { username: gogUsername.trim() },
       },
     };
 
@@ -392,15 +351,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         const restoredSequels = parsed.sequels || [];
         const restoredIntegrations = parsed.integrations;
 
-        if (restoredIntegrations?.steam) {
-          if (restoredIntegrations.steam.steamInput) {
-            setSteamInput(restoredIntegrations.steam.steamInput);
-            localStorage.setItem(STORAGE_STEAM_INPUT_KEY, restoredIntegrations.steam.steamInput);
-          }
-          if (restoredIntegrations.steam.steamApiKey) {
-            setSteamApiKey(restoredIntegrations.steam.steamApiKey);
-            localStorage.setItem(STORAGE_STEAM_KEY_KEY, restoredIntegrations.steam.steamApiKey);
-          }
+        if (restoredIntegrations?.steam?.steamInput) {
+          setSteamInput(restoredIntegrations.steam.steamInput);
+          localStorage.setItem(STORAGE_STEAM_INPUT_KEY, restoredIntegrations.steam.steamInput);
         }
 
         if (restoredIntegrations?.psn?.npsso) {
@@ -408,15 +361,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           localStorage.setItem(STORAGE_PSN_NPSSO_KEY, restoredIntegrations.psn.npsso);
         }
 
-        if (restoredIntegrations?.gog) {
-          if (restoredIntegrations.gog.username) {
-            setGogUsername(restoredIntegrations.gog.username);
-            localStorage.setItem(STORAGE_GOG_USER_KEY, restoredIntegrations.gog.username);
-          }
-          if (restoredIntegrations.gog.token) {
-            setGogToken(restoredIntegrations.gog.token);
-            localStorage.setItem(STORAGE_GOG_TOKEN_KEY, restoredIntegrations.gog.token);
-          }
+        if (restoredIntegrations?.gog?.username) {
+          setGogUsername(restoredIntegrations.gog.username);
+          localStorage.setItem(STORAGE_GOG_USER_KEY, restoredIntegrations.gog.username);
         }
 
         if (Array.isArray(restoredMedia) && restoredMedia.length >= 0) {
@@ -445,20 +392,19 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     setIsSteamLoading(true);
     setFeedback(null);
     localStorage.setItem(STORAGE_STEAM_INPUT_KEY, steamInput.trim());
-    if (steamApiKey.trim()) localStorage.setItem(STORAGE_STEAM_KEY_KEY, steamApiKey.trim());
 
     try {
       const profRes = await fetch('/api/sync/steam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get-profile', steamInput: steamInput.trim(), apiKey: steamApiKey.trim() }),
+        body: JSON.stringify({ action: 'get-profile', steamInput: steamInput.trim() }),
       });
       if (profRes.ok) setSteamProfile(await profRes.json());
 
       const gamesRes = await fetch('/api/sync/steam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get-games', steamInput: steamInput.trim(), apiKey: steamApiKey.trim() }),
+        body: JSON.stringify({ action: 'get-games', steamInput: steamInput.trim() }),
       });
       const gamesData = await gamesRes.json();
       if (!gamesRes.ok) {
@@ -499,7 +445,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         body: JSON.stringify({
           action: 'get-achievements',
           steamInput: steamInput.trim(),
-          apiKey: steamApiKey.trim(),
           appIds: matches.map((m) => m.match.appid),
         }),
       });
@@ -691,21 +636,20 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
   // ================= GOG HANDLERS =================
   const handleFetchGog = async () => {
-    if (!gogUsername.trim() && !gogToken.trim()) {
-      setFeedback({ type: 'error', message: 'Bitte gib deinen GOG-Nutzernamen oder Token ein.' });
+    if (!gogUsername.trim()) {
+      setFeedback({ type: 'error', message: 'Bitte gib deinen GOG-Benutzernamen ein.' });
       return;
     }
 
     setIsGogLoading(true);
     setFeedback(null);
-    if (gogUsername.trim()) localStorage.setItem(STORAGE_GOG_USER_KEY, gogUsername.trim());
-    if (gogToken.trim()) localStorage.setItem(STORAGE_GOG_TOKEN_KEY, gogToken.trim());
+    localStorage.setItem(STORAGE_GOG_USER_KEY, gogUsername.trim());
 
     try {
       const res = await fetch('/api/sync/gog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: gogUsername.trim(), token: gogToken.trim() }),
+        body: JSON.stringify({ username: gogUsername.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Fehler beim Abrufen der GOG-Spiele');
@@ -890,27 +834,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           {activeTab === 'cloud' && (
             /* ================= TAB 1: CLOUD SYNC CODE ================= */
             <div className="space-y-4">
-              {/* Connection Mode Indicator */}
-              <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#0F1117] border border-[#282D37] text-xs">
-                <span className="text-zinc-400">Verbindungs-Status:</span>
-                <span
-                  className={cn(
-                    'font-medium flex items-center gap-2',
-                    syncStatus?.isCloudConfigured ? 'text-emerald-400' : 'text-sky-400'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'w-2 h-2 rounded-full',
-                      syncStatus?.isCloudConfigured ? 'bg-emerald-400' : 'bg-sky-400'
-                    )}
-                  />
-                  {syncStatus?.isCloudConfigured
-                    ? `${syncStatus.provider} (Cloud aktiv)`
-                    : 'Lokaler Server-Modus aktiv'}
-                </span>
-              </div>
-
               <div className="p-4 rounded-2xl bg-[#0F1117] border border-[#282D37] space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
@@ -955,9 +878,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                   className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950/30 transition-all active:scale-95 disabled:opacity-50 gap-1.5 text-center"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>
-                    {syncStatus?.isCloudConfigured ? 'In Cloud sichern (Push)' : 'Auf Server sichern (Push)'}
-                  </span>
+                  <span>In Cloud sichern (Push)</span>
                   <span className="text-[10px] font-normal text-emerald-200">
                     Sammlung &amp; Accounts sichern
                   </span>
@@ -969,9 +890,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                   className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-[#181B22] hover:bg-zinc-800 text-zinc-200 hover:text-white font-bold text-xs border border-[#282D37] transition-all active:scale-95 disabled:opacity-50 gap-1.5 text-center"
                 >
                   <Download className="w-4 h-4 text-emerald-400" />
-                  <span>
-                    {syncStatus?.isCloudConfigured ? 'Aus Cloud laden (Pull)' : 'Vom Server laden (Pull)'}
-                  </span>
+                  <span>Aus Cloud laden (Pull)</span>
                   <span className="text-[10px] font-normal text-zinc-400">Auf diesem Gerät empfangen</span>
                 </button>
               </div>
@@ -1021,15 +940,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                         <Gamepad2 className="w-4 h-4 text-blue-400" />
                         <span>Steam-Konto anbinden</span>
                       </h4>
-                      <a
-                        href="https://steamcommunity.com/dev/apikey"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] text-blue-400 hover:underline flex items-center gap-1"
-                      >
-                        <span>API-Key holen</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
                     </div>
 
                     <div className="space-y-1.5">
@@ -1040,26 +950,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                         onChange={(e) => setSteamInput(e.target.value)}
                         placeholder="z. B. 76561198... oder https://steamcommunity.com/id/name"
                         className="w-full bg-[#181B22] border border-[#282D37] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[11px] font-semibold text-zinc-300">Steam Web API-Key (Optional)</label>
-                        {hasServerSteamKey ? (
-                          <span className="text-[10px] text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                            Vercel Key aktiv
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-zinc-500">Falls in Vercel, leer lassen</span>
-                        )}
-                      </div>
-                      <input
-                        type="password"
-                        value={steamApiKey}
-                        onChange={(e) => setSteamApiKey(e.target.value)}
-                        placeholder={hasServerSteamKey ? "Auf Server/Vercel hinterlegt" : "32-stelliger Hex-Key"}
-                        className="w-full bg-[#181B22] border border-[#282D37] focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] font-mono focus:outline-none"
                       />
                     </div>
 
@@ -1202,7 +1092,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                     </div>
 
                     <p className="text-xs text-zinc-400 leading-relaxed">
-                      Synchronisiere deine GOG-Spiele, Spielzeiten und Galaxy-Achievements über deinen GOG-Nutzernamen oder Token.
+                      Synchronisiere deine GOG-Spiele, Spielzeiten und Galaxy-Achievements über deinen GOG-Benutzername.
                     </p>
 
                     <div className="space-y-1.5">
@@ -1213,20 +1103,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                         onChange={(e) => setGogUsername(e.target.value)}
                         placeholder="z. B. dein GOG-Profilname"
                         className="w-full bg-[#181B22] border border-[#282D37] focus:border-purple-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[11px] font-semibold text-zinc-300">GOG Galaxy Auth-Token (Optional)</label>
-                        <span className="text-[10px] text-zinc-500">Für private Bibliotheken</span>
-                      </div>
-                      <input
-                        type="password"
-                        value={gogToken}
-                        onChange={(e) => setGogToken(e.target.value)}
-                        placeholder="GOG Galaxy Auth Token"
-                        className="w-full bg-[#181B22] border border-[#282D37] focus:border-purple-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] font-mono focus:outline-none"
                       />
                     </div>
 
