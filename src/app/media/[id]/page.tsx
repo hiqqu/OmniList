@@ -197,6 +197,17 @@ export default function MediaDetailPage() {
   const [personalNotes, setPersonalNotes] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+
+  const handleSetRating = (ratingValue: number) => {
+    if (!item) return;
+    const newRating = item.rating === ratingValue ? undefined : ratingValue;
+    const updated = updateMediaItem(item.id, { rating: newRating });
+    if (updated) {
+      setItem(updated);
+      setDetails(getEnrichedMediaDetails(updated));
+    }
+  };
 
   useEffect(() => {
     if (!id && !rawId) return;
@@ -251,7 +262,12 @@ export default function MediaDetailPage() {
         Boolean(active.summary && active.summary.length <= 310 && (active.summary.endsWith('...') || active.summary.endsWith('…') || active.summary.length === 300));
 
       const needsGameEnrichment =
-        active.type === 'game' && (isPlaceholderSummary(active.summary) || !active.metacritic || active.metacritic <= 0);
+        active.type === 'game' &&
+        (isPlaceholderSummary(active.summary) ||
+          !active.metacritic ||
+          active.metacritic <= 0 ||
+          !active.communityRating ||
+          active.communityRating <= 0);
 
       const needsAnimeEnrichment =
         active.type === 'anime' &&
@@ -811,28 +827,59 @@ export default function MediaDetailPage() {
 
               {/* Ratings Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 max-w-lg mx-auto md:mx-0">
-                <div className="p-3 rounded-xl bg-[#181B22] border border-[#282D37] text-center md:text-left">
-                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">Eigene Wertung</span>
-                  <div className="flex items-center justify-center md:justify-start gap-1.5 mt-0.5">
-                    <Star
-                      className={cn(
-                        'w-4 h-4',
-                        item.rating !== undefined && item.rating !== null
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-zinc-600'
-                      )}
-                    />
+                <div className="p-3 rounded-xl bg-[#181B22] border border-[#282D37] text-center md:text-left group/rating">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 block">Eigene Wertung</span>
+                    {item.rating !== undefined && item.rating !== null && (
+                      <button
+                        onClick={() => handleSetRating(item.rating || 0)}
+                        className="text-[10px] text-zinc-500 hover:text-rose-400 transition-colors opacity-0 group-hover/rating:opacity-100"
+                        title="Wertung zurücksetzen"
+                      >
+                        Löschen
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-center md:justify-start gap-0.5 mt-1">
+                    {[1, 2, 3, 4, 5].map((starVal) => {
+                      const isStarFilled =
+                        hoverRating !== null
+                          ? hoverRating >= starVal
+                          : (item.rating || 0) >= starVal;
+                      return (
+                        <button
+                          key={starVal}
+                          type="button"
+                          onClick={() => handleSetRating(starVal)}
+                          onMouseEnter={() => setHoverRating(starVal)}
+                          onMouseLeave={() => setHoverRating(null)}
+                          className="p-0.5 rounded hover:scale-115 active:scale-90 transition-transform focus:outline-none"
+                          title={`${starVal} Sterne`}
+                        >
+                          <Star
+                            className={cn(
+                              'w-4 h-4 transition-colors',
+                              isStarFilled
+                                ? 'fill-amber-400 text-amber-400'
+                                : 'text-zinc-600 hover:text-zinc-400'
+                            )}
+                          />
+                        </button>
+                      );
+                    })}
                     <span
                       className={cn(
-                        'text-base font-bold',
+                        'text-xs font-bold ml-1 min-w-[2rem]',
                         item.rating !== undefined && item.rating !== null
                           ? 'text-[#F1F3F7]'
-                          : 'text-zinc-500 text-sm font-medium'
+                          : 'text-zinc-500 text-[11px] font-medium'
                       )}
                     >
-                      {item.rating !== undefined && item.rating !== null
-                        ? `${item.rating.toFixed(1)} / 5.0`
-                        : 'Nicht bewertet'}
+                      {hoverRating !== null
+                        ? `${hoverRating}.0`
+                        : item.rating !== undefined && item.rating !== null
+                        ? `${item.rating.toFixed(1)}`
+                        : 'Offen'}
                     </span>
                   </div>
                 </div>
@@ -1499,11 +1546,21 @@ export default function MediaDetailPage() {
               <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center justify-between">
                 <div>
                   <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    {item.type === 'anime' ? 'AniList Community' : 'Community & Publikum'}
+                    {item.type === 'anime'
+                      ? 'AniList Community'
+                      : item.type === 'game'
+                      ? 'Spieler-Community'
+                      : 'Community & Publikum'}
                   </span>
                   <span className="text-xs text-zinc-500 mt-0.5 block">
                     {item.communityRatingsCount
-                      ? `${item.communityRatingsCount.toLocaleString('de-DE')} ${item.type === 'anime' ? 'User' : 'Bewertungen'}`
+                      ? `${item.communityRatingsCount.toLocaleString('de-DE')} ${
+                          item.type === 'anime'
+                            ? 'User'
+                            : item.type === 'game'
+                            ? 'Spieler-Reviews'
+                            : 'Bewertungen'
+                        }`
                       : 'Externe Plattformen'}
                   </span>
                 </div>
@@ -1526,32 +1583,60 @@ export default function MediaDetailPage() {
                 )}
               </div>
 
-              {/* Personal Rating Card */}
-              <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center justify-between">
+              {/* Personal Rating Card with 1-click 5-star Rating */}
+              <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
                     Persönliche Wertung
                   </span>
                   <span className="text-xs text-zinc-500 mt-0.5 block">
-                    Dein Eindruck in OmniTrack
+                    Dein Eindruck in OmniTrack (1 bis 5 Sterne)
                   </span>
                 </div>
-                {item.rating ? (
-                  <div className="flex items-center gap-1.5">
-                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <span className="text-base font-black text-amber-400">
-                      {item.rating.toFixed(1)}
-                    </span>
-                    <span className="text-xs text-zinc-500">/ 5.0</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setActiveTab('notes')}
-                    className="text-xs font-bold text-purple-400 hover:text-purple-300 underline underline-offset-2 transition-colors"
-                  >
-                    Jetzt bewerten
-                  </button>
-                )}
+                <div className="flex items-center gap-1 self-start sm:self-auto">
+                  {[1, 2, 3, 4, 5].map((starVal) => {
+                    const isStarFilled =
+                      hoverRating !== null
+                        ? hoverRating >= starVal
+                        : (item.rating || 0) >= starVal;
+                    return (
+                      <button
+                        key={starVal}
+                        type="button"
+                        onClick={() => handleSetRating(starVal)}
+                        onMouseEnter={() => setHoverRating(starVal)}
+                        onMouseLeave={() => setHoverRating(null)}
+                        className="p-1 rounded hover:scale-115 active:scale-90 transition-transform focus:outline-none"
+                        title={`${starVal} Sterne`}
+                      >
+                        <Star
+                          className={cn(
+                            'w-5 h-5 transition-colors',
+                            isStarFilled
+                              ? 'fill-amber-400 text-amber-400'
+                              : 'text-zinc-600 hover:text-zinc-400'
+                          )}
+                        />
+                      </button>
+                    );
+                  })}
+                  <span className="text-sm font-bold text-amber-400 ml-1.5 min-w-[3.5rem]">
+                    {hoverRating !== null
+                      ? `${hoverRating}.0 / 5`
+                      : item.rating
+                      ? `${item.rating.toFixed(1)} / 5`
+                      : 'Offen'}
+                  </span>
+                  {item.rating && (
+                    <button
+                      onClick={() => handleSetRating(item.rating || 0)}
+                      className="ml-2 text-[11px] text-zinc-500 hover:text-rose-400 underline transition-colors"
+                      title="Wertung löschen"
+                    >
+                      Löschen
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1974,6 +2059,63 @@ export default function MediaDetailPage() {
                 </div>
               </div>
             )}
+
+            {/* Personal Rating in Notes Tab */}
+            <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-[#F1F3F7] flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  <span>Deine persönliche Wertung</span>
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Vergib 1 bis 5 Sterne für diesen Titel in deiner Sammlung.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                {[1, 2, 3, 4, 5].map((starVal) => {
+                  const isStarFilled =
+                    hoverRating !== null
+                      ? hoverRating >= starVal
+                      : (item.rating || 0) >= starVal;
+                  return (
+                    <button
+                      key={starVal}
+                      type="button"
+                      onClick={() => handleSetRating(starVal)}
+                      onMouseEnter={() => setHoverRating(starVal)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      className="p-1 rounded-lg hover:bg-zinc-800 transition-all active:scale-90"
+                      title={`${starVal} Sterne`}
+                    >
+                      <Star
+                        className={cn(
+                          'w-6 h-6 transition-colors',
+                          isStarFilled
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-zinc-600 hover:text-zinc-400'
+                        )}
+                      />
+                    </button>
+                  );
+                })}
+                <span className="text-sm font-black text-amber-400 ml-2 min-w-[3.5rem]">
+                  {hoverRating !== null
+                    ? `${hoverRating}.0 / 5`
+                    : item.rating
+                    ? `${item.rating.toFixed(1)} / 5`
+                    : 'Offen'}
+                </span>
+                {item.rating && (
+                  <button
+                    onClick={() => handleSetRating(item.rating || 0)}
+                    className="ml-2 text-xs text-zinc-500 hover:text-rose-400 underline transition-colors"
+                  >
+                    Löschen
+                  </button>
+                )}
+              </div>
+            </div>
 
             {/* Notes Section */}
             <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-3">

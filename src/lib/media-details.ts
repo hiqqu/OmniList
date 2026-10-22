@@ -549,8 +549,14 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: realMetascore ? `${realMetascore} / 100` : undefined,
         criticsLabel: realMetascore ? 'Metacritic' : undefined,
-        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
-        audienceLabel: item.communityRating ? 'Spielerbewertungen' : undefined,
+        audience: item.communityRating
+          ? `${item.communityRating.toFixed(1)} / 5.0${
+              item.communityRatingsCount
+                ? ` (${item.communityRatingsCount >= 1000 ? Math.round(item.communityRatingsCount / 1000) + 'k' : item.communityRatingsCount} Spieler)`
+                : ''
+            }`
+          : undefined,
+        audienceLabel: item.communityRating ? 'Spieler-Wertung' : undefined,
       },
       cast: item.creator ? [{ name: item.creator, role: 'Entwicklerstudio / Lead' }] : [],
       reviews: [],

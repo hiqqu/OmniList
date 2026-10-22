@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { normalizeGameTitle } from '@/lib/game-import';
-import { normalizeMetacriticKey } from '@/lib/metacritic';
+import { normalizeMetacriticKey, getMediaMetacriticScore } from '@/lib/metacritic';
+import { fetchMetacriticFromWeb } from '@/lib/metacritic-server';
+import { POPULAR_GAMES_CATALOG } from '@/lib/api-adapters/rawg';
 
 export const dynamic = 'force-dynamic';
 
@@ -108,51 +110,86 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // If Steam AppId is known, fetch full appdetails (German)
+      let summary: string = '';
+      let genres: string[] = [];
+      let creator: string | undefined = undefined;
+      let publisher: string | undefined = undefined;
+      let metacritic: number | undefined = undefined;
+      let communityRating: number | undefined = undefined;
+      let communityRatingsCount: number | undefined = undefined;
+      let releaseDate: string | undefined = undefined;
+      let source = 'unknown';
+
+      // 1. If Steam AppId is known, fetch full appdetails (German) and Steam User Reviews
       if (steamAppId) {
         try {
-          const appRes = await fetch(
-            `https://store.steampowered.com/api/appdetails?appids=${steamAppId}&l=german`,
-            {
+          const [appRes, reviewsRes] = await Promise.all([
+            fetch(`https://store.steampowered.com/api/appdetails?appids=${steamAppId}&l=german`, {
               headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
               signal: AbortSignal.timeout(4000),
-            }
-          );
-          if (appRes.ok) {
+            }).catch(() => null),
+            fetch(`https://store.steampowered.com/appreviews/${steamAppId}?json=1&language=all&purchase_type=all`, {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+              signal: AbortSignal.timeout(4000),
+            }).catch(() => null),
+          ]);
+
+          if (appRes && appRes.ok) {
             const appData = await appRes.json();
             const gameData = appData?.[steamAppId]?.data;
             if (gameData) {
-              const summary = cleanHtmlText(gameData.short_description || gameData.detailed_description);
-              const genres: string[] = Array.isArray(gameData.genres)
+              summary = cleanHtmlText(gameData.short_description || gameData.detailed_description);
+              genres = Array.isArray(gameData.genres)
                 ? gameData.genres.map((g: { description: string }) => g.description)
                 : [];
-              const creator = gameData.developers?.[0] || undefined;
-              const publisher = gameData.publishers?.[0] || undefined;
-              const metacritic = gameData.metacritic?.score ? Number(gameData.metacritic.score) : undefined;
-              const releaseDate = gameData.release_date?.date || undefined;
-
-              if (summary && summary.length > 20) {
-                return NextResponse.json({
-                  success: true,
-                  source: 'steam_store',
-                  summary,
-                  genres,
-                  creator,
-                  publisher,
-                  metacritic,
-                  releaseDate,
-                  appId: steamAppId,
-                });
+              creator = gameData.developers?.[0] || undefined;
+              publisher = gameData.publishers?.[0] || undefined;
+              if (gameData.metacritic?.score) {
+                const s = Number(gameData.metacritic.score);
+                if (!isNaN(s) && s > 0 && s <= 100) metacritic = s;
               }
+              releaseDate = gameData.release_date?.date || undefined;
+              source = 'steam_store';
+            }
+          }
+
+          if (reviewsRes && reviewsRes.ok) {
+            const revData = await reviewsRes.json();
+            const qs = revData?.query_summary;
+            if (qs && qs.total_reviews > 0) {
+              communityRatingsCount = qs.total_reviews;
+              // Map 0-100% positive reviews to 0-5.0 scale
+              const ratio = qs.total_positive / qs.total_reviews;
+              communityRating = Math.round(ratio * 50) / 10;
             }
           }
         } catch (e) {
-          // Steam appdetails failed
+          // Steam requests failed
         }
       }
 
-      // Fallback: Wikipedia Summary (German)
-      if (title) {
+      // 2. Check local curated popular games catalog (especially for console exclusives)
+      const normKey = normalizeMetacriticKey(title);
+      const catalogMatch = POPULAR_GAMES_CATALOG.find((g) => {
+        if (externalId && (g.id === externalId || g.external_id === externalId)) return true;
+        if (g.title.toLowerCase() === title.toLowerCase()) return true;
+        if (normalizeMetacriticKey(g.title) === normKey) return true;
+        if (g.aliases?.some((a) => a.toLowerCase() === title.toLowerCase() || normalizeMetacriticKey(a) === normKey)) return true;
+        return false;
+      });
+
+      if (catalogMatch) {
+        if (!summary || summary.length < 20) summary = catalogMatch.summary || '';
+        if (genres.length === 0 && catalogMatch.genres) genres = catalogMatch.genres;
+        if (!creator) creator = catalogMatch.creator;
+        if (!publisher) publisher = catalogMatch.publisher;
+        if (!communityRating && catalogMatch.rating) communityRating = catalogMatch.rating;
+        if (!releaseDate) releaseDate = catalogMatch.releaseDate;
+        if (source === 'unknown') source = 'catalog';
+      }
+
+      // 3. Fallback: Wikipedia Summary (German, then English) if description is still missing
+      if ((!summary || summary.length < 20) && title) {
         try {
           const cleanWikiTitle = title
             .replace(/\s*\([^)]*\)/g, '')
@@ -169,37 +206,68 @@ export async function GET(request: NextRequest) {
           if (wikiRes.ok) {
             const wikiData = await wikiRes.json();
             if (wikiData.extract && wikiData.type === 'standard' && wikiData.extract.length > 40) {
-              return NextResponse.json({
-                success: true,
-                source: 'wikipedia_de',
-                summary: wikiData.extract.trim(),
-                genres: ['Videospiel', 'Action-Adventure'],
-              });
+              summary = wikiData.extract.trim();
+              if (genres.length === 0) genres = ['Videospiel', 'Action-Adventure'];
+              if (source === 'unknown') source = 'wikipedia_de';
             }
           }
 
-          // English Wikipedia fallback if German not found
-          const wikiEnRes = await fetch(
-            `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanWikiTitle)}`,
-            {
-              headers: { 'User-Agent': 'OmniTrack/1.0 (info@omnitrack.local)' },
-              signal: AbortSignal.timeout(3000),
-            }
-          );
-          if (wikiEnRes.ok) {
-            const wikiEnData = await wikiEnRes.json();
-            if (wikiEnData.extract && wikiEnData.type === 'standard' && wikiEnData.extract.length > 40) {
-              return NextResponse.json({
-                success: true,
-                source: 'wikipedia_en',
-                summary: wikiEnData.extract.trim(),
-                genres: ['Videospiel'],
-              });
+          if ((!summary || summary.length < 20)) {
+            const wikiEnRes = await fetch(
+              `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanWikiTitle)}`,
+              {
+                headers: { 'User-Agent': 'OmniTrack/1.0 (info@omnitrack.local)' },
+                signal: AbortSignal.timeout(3000),
+              }
+            );
+            if (wikiEnRes.ok) {
+              const wikiEnData = await wikiEnRes.json();
+              if (wikiEnData.extract && wikiEnData.type === 'standard' && wikiEnData.extract.length > 40) {
+                summary = wikiEnData.extract.trim();
+                if (genres.length === 0) genres = ['Videospiel'];
+                if (source === 'unknown') source = 'wikipedia_en';
+              }
             }
           }
         } catch (e) {
           // Wiki timeout
         }
+      }
+
+      // 4. Resolve Metacritic Score
+      if (!metacritic || metacritic <= 0) {
+        // First try local curated dictionary and ID mappings
+        const localScore = getMediaMetacriticScore({
+          title,
+          type: 'game',
+          external_id: externalId || (steamAppId ? `steam:${steamAppId}` : undefined),
+        } as any);
+
+        if (localScore !== null) {
+          metacritic = localScore;
+        } else {
+          // Scrape live from Metacritic.com website
+          const webResult = await fetchMetacriticFromWeb(title);
+          if (webResult && webResult.metascore > 0) {
+            metacritic = webResult.metascore;
+          }
+        }
+      }
+
+      if (summary || metacritic || communityRating) {
+        return NextResponse.json({
+          success: true,
+          source,
+          summary: summary || undefined,
+          genres,
+          creator,
+          publisher,
+          metacritic,
+          communityRating,
+          communityRatingsCount,
+          releaseDate,
+          appId: steamAppId || undefined,
+        });
       }
 
       return NextResponse.json({ success: false, error: 'Keine Spieledetails gefunden' }, { status: 404 });

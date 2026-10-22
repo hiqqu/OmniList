@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMediaMetacriticScore, normalizeMetacriticKey } from '@/lib/metacritic';
+import { fetchMetacriticFromWeb } from '@/lib/metacritic-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ score: curatedScore, source: 'curated' });
     }
 
-    // 2. Query Steam storesearch if it's a game title
+    // 2. Query official Metacritic website directly
+    if (title && title.length >= 2) {
+      const webResult = await fetchMetacriticFromWeb(title);
+      if (webResult && webResult.metascore > 0) {
+        metacriticCache.set(cacheKey, webResult.metascore);
+        return NextResponse.json({
+          score: webResult.metascore,
+          reviewsCount: webResult.reviewsCount,
+          source: 'metacritic_web',
+        });
+      }
+    }
+
+    // 3. Fallback: Query Steam storesearch if it's a game title
     const searchTarget = normalizeMetacriticKey(title) || title;
     if (searchTarget && searchTarget.length >= 2) {
       try {

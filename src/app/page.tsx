@@ -276,10 +276,46 @@ export default function Home() {
     setIsLoaded(true);
 
     // Silent background auto-sync for connected game accounts (e.g. Steam)
-    runBackgroundAutoSync(hasBackfill ? backfilledMedia : loadedMedia, (syncedMedia, summary) => {
+    const baseMedia = hasBackfill ? backfilledMedia : loadedMedia;
+    runBackgroundAutoSync(baseMedia, (syncedMedia, summary) => {
       setMedia(syncedMedia);
       addToast('info', 'Hintergrund-Sync', summary);
     });
+
+    // Background enrichment for games missing Metacritic score
+    const unratedGames = baseMedia.filter(
+      (m) => m.type === 'game' && (!m.metacritic || m.metacritic <= 0)
+    );
+    if (unratedGames.length > 0) {
+      // Process a small batch to asynchronously resolve Metacritic
+      Promise.all(
+        unratedGames.slice(0, 8).map(async (g) => {
+          try {
+            const query = new URLSearchParams({
+              type: 'game',
+              title: g.title,
+              ...(g.external_id ? { externalId: g.external_id } : {}),
+            });
+            const res = await fetch(`/api/enrich?${query.toString()}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data?.metacritic || data?.communityRating) {
+                const updates: Partial<MediaItem> = {};
+                if (data.metacritic) updates.metacritic = data.metacritic;
+                if (data.communityRating && !g.communityRating) {
+                  updates.communityRating = data.communityRating;
+                  if (data.communityRatingsCount) updates.communityRatingsCount = data.communityRatingsCount;
+                }
+                const updated = updateMediaItem(g.id, updates);
+                if (updated) {
+                  setMedia((prev) => prev.map((item) => (item.id === g.id ? updated : item)));
+                }
+              }
+            }
+          } catch {}
+        })
+      );
+    }
   }, []);
 
   // Quick-Increment Handler (Optimistic UI Update)
@@ -777,7 +813,7 @@ export default function Home() {
       // Rating filter (from Galaxy multi-select filter)
       if (filters.ratings.length > 0) {
         const score = getMediaMetacriticScore(item) ?? 0;
-        const userRating = item.rating ?? 0;
+        const userRating = item.rating ?? item.communityRating ?? 0;
         const matchesRating = filters.ratings.some((r) => {
           if (r === '90') return score >= 90;
           if (r === '80') return score >= 80;

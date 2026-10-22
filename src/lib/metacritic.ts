@@ -700,7 +700,9 @@ export const KNOWN_ID_METACRITIC: Record<string, number> = {
   'steam:1328670': 90, // Mass Effect Legendary Edition
   'steam:8870': 94, // BioShock Infinite
   'steam:7670': 96, // BioShock
-  'steam:208650': 96, // Batman: Arkham Knight / City
+  'steam:208650': 87, // Batman: Arkham Knight
+  'steam:200260': 96, // Batman: Arkham City
+  'steam:35140': 91, // Batman: Arkham Asylum
   'steam:782330': 88, // DOOM Eternal
   'steam:379720': 85, // DOOM (2016)
   'steam:205100': 91, // Dishonored
