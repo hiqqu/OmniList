@@ -1,6 +1,7 @@
 import { MediaItem, SequelNotification, MediaStatus, ProgressUnit } from '@/types/media';
 import { INITIAL_MEDIA_ITEMS, INITIAL_SEQUEL_NOTIFICATIONS, LEGACY_DEMO_MEDIA_IDS, LEGACY_DEMO_SEQUEL_IDS } from './seed-data';
 import { createBookSvgCover, getMediaCoverFallback } from './book-cover';
+import { isSequelInLibrary } from './sequels';
 
 const MEDIA_STORAGE_KEY = 'omnilist_media_library_v1';
 const LEGACY_MEDIA_STORAGE_KEY = 'omnitrack_media_library_v1';
@@ -345,6 +346,16 @@ export function saveStoredMedia(items: MediaItem[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(items));
+
+    // Auto-remove any stored sequels that the user now possesses in their collection
+    const rawSequels = localStorage.getItem(SEQUELS_STORAGE_KEY);
+    if (rawSequels) {
+      const existingSequels: SequelNotification[] = JSON.parse(rawSequels);
+      const cleaned = existingSequels.filter((s) => !isSequelInLibrary(s, items));
+      if (cleaned.length !== existingSequels.length) {
+        localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(cleaned));
+      }
+    }
   } catch (e) {
     console.error('Failed to save media to localStorage', e);
   }
@@ -375,7 +386,8 @@ export function getStoredSequels(): SequelNotification[] {
       localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(upgraded));
     }
 
-    // Auto-remove orphan sequels whose parent media was deleted or is not in library
+    // Auto-remove orphan sequels whose parent media was deleted or is not in library,
+    // AND auto-remove any sequel that is already owned/present in the user's collection!
     const currentMedia = getStoredMedia();
     const mediaIds = new Set(currentMedia.map((m) => m.id));
     const mediaTitles = new Set(currentMedia.map((m) => m.title.toLowerCase()));
@@ -383,7 +395,9 @@ export function getStoredSequels(): SequelNotification[] {
     const activeSequels = upgraded.filter((s) => {
       const idMatch = s.parentMediaId ? mediaIds.has(s.parentMediaId) : false;
       const titleMatch = s.parentMediaTitle ? mediaTitles.has(s.parentMediaTitle.toLowerCase()) : false;
-      return idMatch || titleMatch;
+      const parentExists = idMatch || titleMatch;
+      const alreadyOwned = isSequelInLibrary(s, currentMedia);
+      return parentExists && !alreadyOwned;
     });
 
     if (activeSequels.length !== parsed.length) {

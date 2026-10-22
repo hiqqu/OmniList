@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { isGameDeleted, getDeletedGameKeys, clearDeletedGameKeys } from '@/lib/storage';
 import { isAutoSyncEnabled, setAutoSyncEnabled } from '@/lib/auto-sync';
 import { getMediaMetacriticScore } from '@/lib/metacritic';
+import { isSequelInLibrary } from '@/lib/sequels';
 
 interface SyncModalProps {
   isOpen: boolean;
@@ -711,7 +712,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       });
 
       const finalMedia = [...newItems, ...updatedMedia];
-      onApplySync(finalMedia, sequels);
+      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia));
+      onApplySync(finalMedia, validSequels);
 
       const parts = [];
       if (updatedCount > 0) parts.push(`${updatedCount} bestehende aktualisiert`);
@@ -896,7 +898,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       });
 
       const finalMedia = [...newItems, ...updatedMedia];
-      onApplySync(finalMedia, sequels);
+      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia));
+      onApplySync(finalMedia, validSequels);
 
       const parts = [];
       if (updatedCount > 0) parts.push(`${updatedCount} bestehende aktualisiert`);
@@ -1097,7 +1100,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       });
 
       const finalMedia = [...newItems, ...updatedMedia];
-      onApplySync(finalMedia, sequels);
+      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia));
+      onApplySync(finalMedia, validSequels);
 
       const parts = [];
       if (updatedCount > 0) parts.push(`${updatedCount} bestehende aktualisiert`);

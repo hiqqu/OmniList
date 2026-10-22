@@ -5,6 +5,7 @@ import { AniListAdapter } from './anilist';
 import { GoogleBooksAdapter, POPULAR_BOOKS_CATALOG } from './googlebooks';
 import { RAWGAdapter, POPULAR_GAMES_CATALOG } from './rawg';
 import { searchCache } from '../cache';
+import { isSequelInLibrary } from '../sequels';
 
 const tmdbAdapter = new TMDBAdapter();
 const anilistAdapter = new AniListAdapter();
@@ -72,7 +73,8 @@ export async function checkSequelsForLibrary(items: MediaItem[]): Promise<Sequel
     try {
       const adapter = getAdapter(item.type);
       const sequel = await adapter.checkSequels(item);
-      if (sequel) {
+      // Only suggest if sequel is NOT already in the user's collection
+      if (sequel && !isSequelInLibrary(sequel, items)) {
         notifications.push(sequel);
       }
     } catch (e) {

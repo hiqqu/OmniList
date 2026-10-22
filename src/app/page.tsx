@@ -44,6 +44,7 @@ import {
   acceptSequel,
   resetLibraryToDefault,
 } from '@/lib/storage';
+import { isSequelInLibrary } from '@/lib/sequels';
 import { getUnitIncrement, getMediaStatusBadge, cn } from '@/lib/utils';
 import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search } from 'lucide-react';
 
@@ -272,7 +273,12 @@ export default function Home() {
       setMedia(loadedMedia);
     }
 
-    setSequels(loadedSequels);
+    const currentMediaItems = hasBackfill ? backfilledMedia : loadedMedia;
+    const unownedLoadedSequels = loadedSequels.filter((s) => !isSequelInLibrary(s, currentMediaItems));
+    if (unownedLoadedSequels.length !== loadedSequels.length) {
+      saveStoredSequels(unownedLoadedSequels);
+    }
+    setSequels(unownedLoadedSequels);
     setIsLoaded(true);
 
     // Silent background auto-sync for connected game accounts (e.g. Steam)
@@ -634,12 +640,15 @@ export default function Home() {
         const data = await res.json();
         const detectedSequels: SequelNotification[] = data.sequels || [];
 
+        // Exclude sequels that are already owned in the media library
+        const trulyNewSequels = detectedSequels.filter((s) => !isSequelInLibrary(s, media));
+
         // Merge with existing sequels without duplicate external_id
         const existingExternalIds = new Set(sequels.map((s) => s.external_id));
-        const newDetections = detectedSequels.filter((s) => !existingExternalIds.has(s.external_id));
+        const newDetections = trulyNewSequels.filter((s) => !existingExternalIds.has(s.external_id));
 
         if (newDetections.length > 0) {
-          const merged = [...newDetections, ...sequels];
+          const merged = [...newDetections, ...sequels].filter((s) => !isSequelInLibrary(s, media));
           setSequels(merged);
           saveStoredSequels(merged);
           addToast(
@@ -648,6 +657,12 @@ export default function Home() {
             'Der Radar hat neue Releases für deine Bibliothek erkannt.'
           );
         } else {
+          // Clean existing sequels if any became owned in the meantime
+          const cleaned = sequels.filter((s) => !isSequelInLibrary(s, media));
+          if (cleaned.length !== sequels.length) {
+            setSequels(cleaned);
+            saveStoredSequels(cleaned);
+          }
           addToast('info', 'Bibliothek aktuell', 'Keine neuen Fortsetzungen gefunden.');
         }
       }
@@ -1017,30 +1032,36 @@ export default function Home() {
     };
   }, [media]);
 
+  // Sequel Radar: exclude sequels already present in user's library
+  const unownedSequels = useMemo(() => {
+    return sequels.filter((s) => !isSequelInLibrary(s, media));
+  }, [sequels, media]);
+
   // Sequel Radar subcategories counts and filtered list
   const sequelCounts = useMemo(() => {
     return {
-      all: sequels.length,
-      game: sequels.filter((s) => s.sequelType === 'game' || s.parentMediaType === 'game').length,
-      movie: sequels.filter((s) => s.sequelType === 'movie' || s.parentMediaType === 'movie').length,
-      show: sequels.filter((s) => s.sequelType === 'show' || s.parentMediaType === 'show').length,
-      anime: sequels.filter((s) => s.sequelType === 'anime' || s.parentMediaType === 'anime').length,
-      book: sequels.filter((s) => s.sequelType === 'book' || s.parentMediaType === 'book').length,
+      all: unownedSequels.length,
+      game: unownedSequels.filter((s) => s.sequelType === 'game' || s.parentMediaType === 'game').length,
+      movie: unownedSequels.filter((s) => s.sequelType === 'movie' || s.parentMediaType === 'movie').length,
+      show: unownedSequels.filter((s) => s.sequelType === 'show' || s.parentMediaType === 'show').length,
+      anime: unownedSequels.filter((s) => s.sequelType === 'anime' || s.parentMediaType === 'anime').length,
+      book: unownedSequels.filter((s) => s.sequelType === 'book' || s.parentMediaType === 'book').length,
     };
-  }, [sequels]);
+  }, [unownedSequels]);
 
   const filteredSequels = useMemo(() => {
-    if (sequelFilterType === 'all') return sequels;
-    return sequels.filter((s) => s.sequelType === sequelFilterType || s.parentMediaType === sequelFilterType);
-  }, [sequels, sequelFilterType]);
+    if (sequelFilterType === 'all') return unownedSequels;
+    return unownedSequels.filter((s) => s.sequelType === sequelFilterType || s.parentMediaType === sequelFilterType);
+  }, [unownedSequels, sequelFilterType]);
 
   // Apply Synced Data from Cloud or File
   const handleApplySync = (syncedMedia: MediaItem[], syncedSequels?: SequelNotification[]) => {
     saveStoredMedia(syncedMedia);
     setMedia(syncedMedia);
     if (syncedSequels && syncedSequels.length > 0) {
-      saveStoredSequels(syncedSequels);
-      setSequels(syncedSequels);
+      const validSequels = syncedSequels.filter((s) => !isSequelInLibrary(s, syncedMedia));
+      saveStoredSequels(validSequels);
+      setSequels(validSequels);
     }
   };
 
@@ -1088,7 +1109,7 @@ export default function Home() {
         platformCounts={platformCounts}
         onlyOwned={onlyOwned}
         onToggleOnlyOwned={() => setOnlyOwned((prev) => !prev)}
-        sequelCount={sequels.length}
+        sequelCount={unownedSequels.length}
         totalMediaCount={media.length}
         isCheckingSequels={isCheckingSequels}
         onCheckSequels={handleCheckSequels}
@@ -1138,7 +1159,7 @@ export default function Home() {
               {/* Stats Bar */}
               <StatsBar
                 media={media}
-                sequels={sequels}
+                sequels={unownedSequels}
                 selectedType={selectedType}
                 selectedStatus={selectedStatus}
                 onSelectStatus={setSelectedStatus}
@@ -1804,7 +1825,7 @@ export default function Home() {
                     />
                   ))}
                 </div>
-              ) : sequels.length > 0 ? (
+              ) : unownedSequels.length > 0 ? (
                 /* Empty state for selected subcategory */
                 <div className="py-16 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-[#181B22]/40 border border-dashed border-[#282D37]">
                   <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-[#282D37] flex items-center justify-center text-zinc-500 mb-3">
@@ -1824,7 +1845,7 @@ export default function Home() {
                     onClick={() => setSequelFilterType('all')}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold border border-zinc-700 transition-colors"
                   >
-                    <span>Alle {sequels.length} Fortsetzungen anzeigen</span>
+                    <span>Alle {unownedSequels.length} Fortsetzungen anzeigen</span>
                   </button>
                 </div>
               ) : (
@@ -1869,7 +1890,7 @@ export default function Home() {
         isOpen={isSyncModalOpen}
         onClose={() => setIsSyncModalOpen(false)}
         media={media}
-        sequels={sequels}
+        sequels={unownedSequels}
         onApplySync={handleApplySync}
         addToast={addToast}
         initialTab={syncModalTab}
@@ -1888,7 +1909,7 @@ export default function Home() {
         onOpenMobileDrawer={() => setIsMobileMenuOpen((prev) => !prev)}
         onOpenAddModal={() => handleOpenAddModal()}
         onOpenSyncModal={() => handleOpenSyncModal('cloud')}
-        sequelCount={sequels.length}
+        sequelCount={unownedSequels.length}
         isFilterActive={isFilterActive}
       />
     </div>
