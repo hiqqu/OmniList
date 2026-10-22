@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award, Gamepad2, Infinity } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
-import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
+import { getMediaTypeBadge, getMediaStatusBadge, getEffectiveMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
 import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
 import { isLiveServiceGame } from '@/lib/live-service';
@@ -14,6 +14,7 @@ interface MediaCardProps {
   onQuickIncrement: (id: string) => void;
   onUpdateStatus: (id: string, newStatus: MediaStatus) => void;
   onToggleOwned?: (id: string) => void;
+  onToggleLiveService?: (id: string) => void;
   onToggleGameStory?: (id: string) => void;
   onToggleGame100?: (id: string) => void;
   onToggleGameAchievements?: (id: string) => void;
@@ -26,6 +27,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   onQuickIncrement,
   onUpdateStatus,
   onToggleOwned,
+  onToggleLiveService,
   onToggleGameStory,
   onToggleGame100,
   onToggleGameAchievements,
@@ -35,6 +37,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const [showMenu, setShowMenu] = React.useState(false);
   const typeBadge = getMediaTypeBadge(item.type);
   const statusBadge = getMediaStatusBadge(item.status);
+  const effectiveStatusBadge = getEffectiveMediaStatusBadge(item);
   const incrementInfo = getUnitIncrement(item.type, item.progress.unit);
 
   const isGame = item.type === 'game';
@@ -65,8 +68,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const totalProgress = item.progress.total || 0;
   const percentage = totalProgress > 0 ? Math.min(100, Math.round((currentProgress / totalProgress) * 100)) : 0;
   const isCompleted =
-    item.status === 'completed' ||
-    (isGame ? isGame100Done || isGameStoryDone : totalProgress > 0 && currentProgress >= totalProgress);
+    !isLiveService && (
+      item.status === 'completed' ||
+      (isGame ? isGame100Done || isGameStoryDone : totalProgress > 0 && currentProgress >= totalProgress)
+    );
 
   const displayPublisher =
     item.publisher ||
@@ -205,86 +210,140 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             <div className="px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
               Status ändern
             </div>
-            <button
-              onClick={() => {
-                onUpdateStatus(item.id, 'in_progress');
-                setShowMenu(false);
-              }}
-              className={cn(
-                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                item.status === 'in_progress' ? "text-emerald-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-              )}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <PlayCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="truncate">Gerade dabei</span>
-              </div>
-              {item.status === 'in_progress' && <span className="text-[10px] text-emerald-400 ml-1">✓</span>}
-            </button>
-            <button
-              onClick={() => {
-                onUpdateStatus(item.id, 'planned');
-                setShowMenu(false);
-              }}
-              className={cn(
-                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                item.status === 'planned' ? "text-sky-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-              )}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <BookmarkCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                <span className="truncate">Geplant</span>
-              </div>
-              {item.status === 'planned' && <span className="text-[10px] text-sky-400 ml-1">✓</span>}
-            </button>
-            <button
-              onClick={() => {
-                onUpdateStatus(item.id, 'completed');
-                setShowMenu(false);
-              }}
-              className={cn(
-                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                item.status === 'completed' ? "text-indigo-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-              )}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="truncate">Beendet</span>
-              </div>
-              {item.status === 'completed' && <span className="text-[10px] text-indigo-400 ml-1">✓</span>}
-            </button>
-            <button
-              onClick={() => {
-                onUpdateStatus(item.id, 'paused');
-                setShowMenu(false);
-              }}
-              className={cn(
-                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                item.status === 'paused' ? "text-amber-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-              )}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <PauseCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="truncate">Pausiert</span>
-              </div>
-              {item.status === 'paused' && <span className="text-[10px] text-amber-400 ml-1">✓</span>}
-            </button>
-            <button
-              onClick={() => {
-                onUpdateStatus(item.id, 'dropped');
-                setShowMenu(false);
-              }}
-              className={cn(
-                "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
-                item.status === 'dropped' ? "text-rose-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
-              )}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                <span className="truncate">Abgebrochen</span>
-              </div>
-              {item.status === 'dropped' && <span className="text-[10px] text-rose-400 ml-1">✓</span>}
-            </button>
+
+            {isGame && isLiveService ? (
+              <>
+                <button
+                  onClick={() => {
+                    onUpdateStatus(item.id, 'in_progress');
+                    setShowMenu(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                    item.status !== 'planned' ? "text-cyan-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Infinity className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="truncate">Live-Service</span>
+                  </div>
+                  {item.status !== 'planned' && <span className="text-[10px] text-cyan-400 ml-1">✓</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdateStatus(item.id, 'planned');
+                    setShowMenu(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                    item.status === 'planned' ? "text-sky-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <BookmarkCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                    <span className="truncate">Geplant</span>
+                  </div>
+                  {item.status === 'planned' && <span className="text-[10px] text-sky-400 ml-1">✓</span>}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    onUpdateStatus(item.id, 'in_progress');
+                    setShowMenu(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                    item.status === 'in_progress' ? "text-emerald-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <PlayCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="truncate">Gerade dabei</span>
+                  </div>
+                  {item.status === 'in_progress' && <span className="text-[10px] text-emerald-400 ml-1">✓</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdateStatus(item.id, 'planned');
+                    setShowMenu(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                    item.status === 'planned' ? "text-sky-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <BookmarkCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                    <span className="truncate">Geplant</span>
+                  </div>
+                  {item.status === 'planned' && <span className="text-[10px] text-sky-400 ml-1">✓</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdateStatus(item.id, 'completed');
+                    setShowMenu(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                    item.status === 'completed' ? "text-indigo-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span className="truncate">Beendet</span>
+                  </div>
+                  {item.status === 'completed' && <span className="text-[10px] text-indigo-400 ml-1">✓</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdateStatus(item.id, 'paused');
+                    setShowMenu(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                    item.status === 'paused' ? "text-amber-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <PauseCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="truncate">Pausiert</span>
+                  </div>
+                  {item.status === 'paused' && <span className="text-[10px] text-amber-400 ml-1">✓</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    onUpdateStatus(item.id, 'dropped');
+                    setShowMenu(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                    item.status === 'dropped' ? "text-rose-300 font-semibold bg-[#212631]/50" : "text-[#F1F3F7]"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span className="truncate">Abgebrochen</span>
+                  </div>
+                  {item.status === 'dropped' && <span className="text-[10px] text-rose-400 ml-1">✓</span>}
+                </button>
+                {isGame && onToggleLiveService && (
+                  <button
+                    onClick={() => {
+                      onToggleLiveService(item.id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors text-cyan-300"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Infinity className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span className="truncate">Live-Service</span>
+                    </div>
+                  </button>
+                )}
+              </>
+            )}
 
             <div className="border-t border-[#282D37] my-1" />
 
@@ -312,7 +371,31 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               </button>
             )}
 
-            {isGame && onToggleGameStory && (
+            {isGame && onToggleLiveService && (
+              <button
+                onClick={() => {
+                  onToggleLiveService(item.id);
+                  setShowMenu(false);
+                }}
+                className={cn(
+                  "w-full px-3 py-1.5 flex items-center justify-between hover:bg-[#212631] text-left transition-colors",
+                  isLiveService ? "text-cyan-300 font-semibold" : "text-zinc-300"
+                )}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Infinity className={cn("w-3.5 h-3.5 shrink-0", isLiveService ? "text-cyan-400" : "text-zinc-500")} />
+                  <span className="truncate">Live-Service</span>
+                </div>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ml-1",
+                  isLiveService ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" : "bg-zinc-800 text-zinc-500"
+                )}>
+                  {isLiveService ? 'Aktiv ✓' : 'Aus'}
+                </span>
+              </button>
+            )}
+
+            {isGame && !isLiveService && onToggleGameStory && (
               <button
                 onClick={() => {
                   onToggleGameStory(item.id);
@@ -440,9 +523,29 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
           {/* Status & Ownership Badges line - side by side */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={cn('text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
-              {statusBadge.label}
+            <span
+              className={cn(
+                'text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 flex items-center gap-1',
+                effectiveStatusBadge.bgClass,
+                effectiveStatusBadge.colorClass
+              )}
+            >
+              {isLiveService && item.status !== 'planned' && (
+                <Infinity className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
+              )}
+              <span>{effectiveStatusBadge.label}</span>
             </span>
+
+            {/* When planned AND Live-Service, show the Live-Service tag alongside Geplant */}
+            {isLiveService && item.status === 'planned' && (
+              <span
+                className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
+                title="Live-Service / Endlos-Spiel ohne klassisches Kampagnen-Ende"
+              >
+                <Infinity className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
+                <span>Live-Service</span>
+              </span>
+            )}
             {item.isOwned && item.status !== 'owned' && (
               <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
                 <PackageCheck className="w-3 h-3 text-emerald-400" />
@@ -489,16 +592,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   M
                 </span>
                 <span>Metacritic {metacriticScore}</span>
-              </span>
-            )}
-
-            {isLiveService && (
-              <span
-                className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
-                title="Live-Service / Endlos-Spiel ohne klassisches Kampagnen-Ende"
-              >
-                <Infinity className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
-                <span>Live-Service</span>
               </span>
             )}
           </div>

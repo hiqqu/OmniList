@@ -14,6 +14,7 @@ import { SyncModal } from '@/components/SyncModal';
 import { StatsBar } from '@/components/StatsBar';
 import { ImportResult, getItemPlatform } from '@/lib/game-import';
 import { getMediaMetacriticScore } from '@/lib/metacritic';
+import { isLiveServiceGame } from '@/lib/live-service';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
 import { MediaItem, MediaType, MediaStatus, SequelNotification } from '@/types/media';
 import { runBackgroundAutoSync } from '@/lib/auto-sync';
@@ -119,17 +120,25 @@ export default function Home() {
     const loadedMedia = getStoredMedia();
     const loadedSequels = getStoredSequels();
 
-    // Auto-backfill Metacritic scores from curated catalog for existing games
+    // Auto-backfill Metacritic scores & normalize Live-Service game status
     let hasBackfill = false;
     const backfilledMedia = loadedMedia.map((item) => {
-      if (item.type === 'game' && (!item.metacritic || item.metacritic <= 0)) {
-        const score = getMediaMetacriticScore(item);
-        if (score !== null) {
+      let updatedItem = item;
+      if (item.type === 'game') {
+        const isLive = isLiveServiceGame(item);
+        if (isLive && item.status !== 'planned' && item.status !== 'in_progress') {
           hasBackfill = true;
-          return { ...item, metacritic: score };
+          updatedItem = { ...updatedItem, status: 'in_progress' };
+        }
+        if (!item.metacritic || item.metacritic <= 0) {
+          const score = getMediaMetacriticScore(updatedItem);
+          if (score !== null) {
+            hasBackfill = true;
+            updatedItem = { ...updatedItem, metacritic: score };
+          }
         }
       }
-      return item;
+      return updatedItem;
     });
 
     if (hasBackfill) {
@@ -214,6 +223,7 @@ export default function Home() {
   const handleToggleGameStory = (id: string) => {
     const item = media.find((m) => m.id === id);
     if (!item) return;
+    if (isLiveServiceGame(item)) return; // Live-Service games have no story
     const newStory = !item.gameTracker?.storyCompleted;
     const updated = updateMediaItem(id, {
       gameTracker: {
@@ -232,18 +242,50 @@ export default function Home() {
     }
   };
 
+  // Toggle Live-Service
+  const handleToggleLiveService = (id: string) => {
+    const item = media.find((m) => m.id === id);
+    if (!item) return;
+    const currentIsLive = isLiveServiceGame(item);
+    const nextIsLive = !currentIsLive;
+
+    // When enabling Live-Service:
+    // It replaces status beendet/gerade dabei/abgebrochen/pausiert.
+    // Only 'planned' is preserved.
+    const newStatus: MediaStatus = item.status === 'planned' ? 'planned' : 'in_progress';
+    const updated = updateMediaItem(id, {
+      isLiveService: nextIsLive,
+      status: nextIsLive ? newStatus : item.status,
+      gameTracker: {
+        ...(item.gameTracker || {}),
+        isLiveService: nextIsLive,
+        storyCompleted: nextIsLive ? false : item.gameTracker?.storyCompleted,
+      },
+    });
+
+    if (updated) {
+      setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      addToast(
+        'info',
+        item.title,
+        nextIsLive ? 'Als Live-Service-Spiel markiert (ersetzt Kampagnen-Status)' : 'Live-Service-Modus deaktiviert'
+      );
+    }
+  };
+
   // Toggle Game 100% Handler
   const handleToggleGame100 = (id: string) => {
     const item = media.find((m) => m.id === id);
     if (!item) return;
+    const isLive = isLiveServiceGame(item);
     const new100 = !item.gameTracker?.completionist100;
     const updated = updateMediaItem(id, {
       gameTracker: {
         ...(item.gameTracker || {}),
         completionist100: new100,
-        storyCompleted: new100 ? true : item.gameTracker?.storyCompleted,
+        storyCompleted: isLive ? false : (new100 ? true : item.gameTracker?.storyCompleted),
       },
-      status: new100 && item.status !== 'owned' ? 'completed' : item.status,
+      status: !isLive && new100 && item.status !== 'owned' ? 'completed' : item.status,
     });
     if (updated) {
       setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
@@ -259,6 +301,7 @@ export default function Home() {
   const handleToggleGameAchievements = (id: string) => {
     const item = media.find((m) => m.id === id);
     if (!item) return;
+    const isLive = isLiveServiceGame(item);
     const isCurrentlyDone = Boolean(
       item.gameTracker?.allAchievementsCompleted ||
       (item.gameTracker?.achievements &&
@@ -277,9 +320,9 @@ export default function Home() {
             }
           : undefined,
         completionist100: newDone ? true : item.gameTracker?.completionist100,
-        storyCompleted: newDone ? true : item.gameTracker?.storyCompleted,
+        storyCompleted: isLive ? false : (newDone ? true : item.gameTracker?.storyCompleted),
       },
-      status: newDone && item.status !== 'owned' ? 'completed' : item.status,
+      status: !isLive && newDone && item.status !== 'owned' ? 'completed' : item.status,
     });
     if (updated) {
       setMedia((prev) => prev.map((m) => (m.id === id ? updated : m)));
@@ -478,8 +521,25 @@ export default function Home() {
 
       // Status filter
       if (selectedStatus !== 'all') {
+        const isLive = isLiveServiceGame(item);
         if (selectedStatus === 'owned') {
           if (!item.isOwned && item.status !== 'owned') {
+            return false;
+          }
+        } else if (selectedStatus === 'live_service') {
+          if (!isLive) {
+            return false;
+          }
+        } else if (selectedStatus === 'completed') {
+          // Live-Service games cannot be completed
+          if (isLive || item.status !== 'completed') {
+            return false;
+          }
+        } else if (selectedStatus === 'in_progress') {
+          // Live-Service games count as active when not planned
+          if (isLive) {
+            if (item.status === 'planned') return false;
+          } else if (item.status !== 'in_progress') {
             return false;
           }
         } else if (item.status !== selectedStatus) {
@@ -815,6 +875,7 @@ export default function Home() {
                       onQuickIncrement={handleQuickIncrement}
                       onUpdateStatus={handleUpdateStatus}
                       onToggleOwned={handleToggleOwned}
+                      onToggleLiveService={handleToggleLiveService}
                       onToggleGameStory={handleToggleGameStory}
                       onToggleGame100={handleToggleGame100}
                       onToggleGameAchievements={handleToggleGameAchievements}

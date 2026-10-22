@@ -21,6 +21,7 @@ import {
   XCircle,
   X,
   Download,
+  Infinity,
 } from 'lucide-react';
 import { MediaType, MediaStatus } from '@/types/media';
 import { cn } from '@/lib/utils';
@@ -183,6 +184,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <XCircle className="w-3.5 h-3.5 text-rose-400" />,
       activeStyle: 'bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-sm font-semibold',
       hoverStyle: 'text-zinc-400 hover:bg-rose-500/10 hover:text-rose-300',
+    },
+    {
+      id: 'live_service',
+      label: 'Live-Service',
+      icon: <Infinity className="w-3.5 h-3.5 text-cyan-400" />,
+      activeStyle: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 shadow-sm font-semibold',
+      hoverStyle: 'text-zinc-400 hover:bg-cyan-500/10 hover:text-cyan-300',
     },
   ];
 

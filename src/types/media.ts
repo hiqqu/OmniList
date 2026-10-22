@@ -1,6 +1,6 @@
 export type MediaType = 'movie' | 'show' | 'anime' | 'book' | 'game';
 
-export type MediaStatus = 'in_progress' | 'planned' | 'completed' | 'paused' | 'dropped' | 'owned';
+export type MediaStatus = 'in_progress' | 'planned' | 'completed' | 'paused' | 'dropped' | 'owned' | 'live_service';
 
 export type ProgressUnit = 'episodes' | 'pages' | 'hours' | 'minutes' | 'seasons' | 'chapters';
 
@@ -115,6 +115,7 @@ export interface SearchResultItem {
   unit: ProgressUnit;
   rating?: number;
   metacritic?: number;
+  isLiveService?: boolean;
   communityRating?: number;
   communityRatingsCount?: number;
 }

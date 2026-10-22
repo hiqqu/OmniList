@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { MediaType, MediaStatus } from '@/types/media';
+import { MediaType, MediaStatus, MediaItem } from '@/types/media';
+import { isLiveServiceGame } from './live-service';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -60,7 +61,27 @@ export function getMediaStatusBadge(status: MediaStatus): { label: string; color
       return { label: 'Abgebrochen', colorClass: 'text-red-400', bgClass: 'bg-red-500/15' };
     case 'owned':
       return { label: 'Im Besitz', colorClass: 'text-emerald-300', bgClass: 'bg-emerald-500/15' };
+    case 'live_service':
+      return { label: 'Live-Service', colorClass: 'text-cyan-300', bgClass: 'bg-cyan-500/15' };
   }
+}
+
+export function getEffectiveMediaStatusBadge(item: MediaItem): {
+  label: string;
+  colorClass: string;
+  bgClass: string;
+  isLiveService?: boolean;
+} {
+  const isLive = item.type === 'game' && isLiveServiceGame(item);
+  if (isLive && item.status !== 'planned') {
+    return {
+      label: 'Live-Service',
+      colorClass: 'text-cyan-300',
+      bgClass: 'bg-cyan-500/15',
+      isLiveService: true,
+    };
+  }
+  return getMediaStatusBadge(item.status);
 }
 
 export function getUnitIncrement(type: MediaType, unit?: string): { amount: number; label: string } {

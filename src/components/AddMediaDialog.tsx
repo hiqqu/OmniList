@@ -28,6 +28,7 @@ import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { BookEditionItem } from '@/app/api/book-editions/route';
 import { getMediaCoverFallback, createBookSvgCover, createNoCoverSvg } from '@/lib/book-cover';
 import { getMediaMetacriticScore } from '@/lib/metacritic';
+import { isLiveServiceGame } from '@/lib/live-service';
 
 interface AddMediaDialogProps {
   isOpen: boolean;
@@ -261,14 +262,17 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   };
 
   const handleAdd = (result: SearchResultItem) => {
-    const isGame = result.type === 'game';
+        const isGame = result.type === 'game';
+    const isLive = isGame && (result.isLiveService || isLiveServiceGame(result as any));
     const is100Option = isGame && selectedStatus === '100_percent';
     const isAchievementsOption = isGame && selectedStatus === 'all_achievements';
     const effectiveStatus: MediaStatus =
-      is100Option || isAchievementsOption
-        ? 'completed'
-        : (selectedStatus as MediaStatus);
-    const isCompleted = effectiveStatus === 'completed' || is100Option || isAchievementsOption;
+      isLive
+        ? (selectedStatus === 'planned' ? 'planned' : 'in_progress')
+        : (is100Option || isAchievementsOption
+          ? 'completed'
+          : (selectedStatus as MediaStatus));
+    const isCompleted = !isLive && (effectiveStatus === 'completed' || is100Option || isAchievementsOption);
     const isMovie = result.type === 'movie';
     const totalUnits = isGame ? undefined : (result.totalUnits || (isMovie ? 120 : 10));
 
@@ -308,6 +312,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
       franchise_id: result.franchise_id,
       collection_name: result.collection_name,
       isOwned: isOwned || effectiveStatus === 'owned',
+      isLiveService: isLive ? true : undefined,
       last_sequel_check: new Date().toISOString(),
     });
 
@@ -317,15 +322,18 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   const handleAddCustom = () => {
     if (!searchQuery.trim()) return;
     const title = searchQuery.trim().replace(/\b\w/g, (c) => c.toUpperCase());
-    const isGame = activeTab === 'game';
+        const isGame = activeTab === 'game';
+    const isLive = isGame && isLiveServiceGame({ title, type: 'game' } as any);
     const isMovie = activeTab === 'movie';
     const is100Option = isGame && selectedStatus === '100_percent';
     const isAchievementsOption = isGame && selectedStatus === 'all_achievements';
     const effectiveStatus: MediaStatus =
-      is100Option || isAchievementsOption
-        ? 'completed'
-        : (selectedStatus as MediaStatus);
-    const isCompleted = effectiveStatus === 'completed' || is100Option || isAchievementsOption;
+      isLive
+        ? (selectedStatus === 'planned' ? 'planned' : 'in_progress')
+        : (is100Option || isAchievementsOption
+          ? 'completed'
+          : (selectedStatus as MediaStatus));
+    const isCompleted = !isLive && (effectiveStatus === 'completed' || is100Option || isAchievementsOption);
     const unit = activeTab === 'book' ? 'pages' : isGame ? 'hours' : isMovie ? 'minutes' : 'episodes';
     const total = isGame ? undefined : (activeTab === 'book' ? 350 : isMovie ? 120 : 12);
 

@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getStoredMedia, updateMediaItem, deleteMediaItem } from '@/lib/storage';
-import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, getProgressUnitLabel, cn } from '@/lib/utils';
+import { getMediaTypeBadge, getMediaStatusBadge, getEffectiveMediaStatusBadge, getUnitIncrement, getProgressUnitLabel, cn } from '@/lib/utils';
 import { getEnrichedMediaDetails, EnrichedMediaDetails } from '@/lib/media-details';
 import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
 import { isLiveServiceGame } from '@/lib/live-service';
@@ -303,6 +303,7 @@ export default function MediaDetailPage() {
 
   const typeBadge = getMediaTypeBadge(item.type);
   const statusBadge = getMediaStatusBadge(item.status);
+  const effectiveStatusBadge = getEffectiveMediaStatusBadge(item);
   const incrementInfo = getUnitIncrement(item.type, item.progress.unit);
 
   const isGame = item.type === 'game';
@@ -325,8 +326,10 @@ export default function MediaDetailPage() {
   const totalProgress = item.progress.total || 0;
   const percentage = totalProgress > 0 ? Math.min(100, Math.round((currentProgress / totalProgress) * 100)) : 0;
   const isCompleted =
-    item.status === 'completed' ||
-    (isGame ? isGame100Done || isGameStoryDone : totalProgress > 0 && currentProgress >= totalProgress);
+    !isLiveService && (
+      item.status === 'completed' ||
+      (isGame ? isGame100Done || isGameStoryDone : totalProgress > 0 && currentProgress >= totalProgress)
+    );
 
   // Quick Progress Increment
   const handleIncrement = (customAmount?: number) => {
@@ -389,6 +392,7 @@ export default function MediaDetailPage() {
   // Toggle Game Story
   const handleToggleGameStory = () => {
     if (!item) return;
+    if (isLiveServiceGame(item)) return; // Live-Service games have no story
     const newStory = !item.gameTracker?.storyCompleted;
     const updated = updateMediaItem(item.id, {
       gameTracker: {
@@ -400,17 +404,39 @@ export default function MediaDetailPage() {
     if (updated) setItem(updated);
   };
 
+  // Toggle Live-Service
+  const handleToggleLiveService = () => {
+    if (!item) return;
+    const currentIsLive = isLiveServiceGame(item);
+    const nextIsLive = !currentIsLive;
+    const newStatus: MediaStatus = item.status === 'planned' ? 'planned' : 'in_progress';
+    const updated = updateMediaItem(item.id, {
+      isLiveService: nextIsLive,
+      status: nextIsLive ? newStatus : item.status,
+      gameTracker: {
+        ...(item.gameTracker || {}),
+        isLiveService: nextIsLive,
+        storyCompleted: nextIsLive ? false : item.gameTracker?.storyCompleted,
+      },
+    });
+    if (updated) {
+      setItem(updated);
+      setDetails(getEnrichedMediaDetails(updated));
+    }
+  };
+
   // Toggle Game 100%
   const handleToggleGame100 = () => {
     if (!item) return;
+    const isLive = isLiveServiceGame(item);
     const new100 = !item.gameTracker?.completionist100;
     const updated = updateMediaItem(item.id, {
       gameTracker: {
         ...(item.gameTracker || {}),
         completionist100: new100,
-        storyCompleted: new100 ? true : item.gameTracker?.storyCompleted,
+        storyCompleted: isLive ? false : (new100 ? true : item.gameTracker?.storyCompleted),
       },
-      status: new100 && item.status !== 'owned' ? 'completed' : item.status,
+      status: !isLive && new100 && item.status !== 'owned' ? 'completed' : item.status,
     });
     if (updated) setItem(updated);
   };
@@ -418,6 +444,7 @@ export default function MediaDetailPage() {
   // Toggle Game Achievements Checkbox
   const handleToggleAchievements = () => {
     if (!item) return;
+    const isLive = isLiveServiceGame(item);
     const isCurrentlyDone = Boolean(
       item.gameTracker?.allAchievementsCompleted ||
       (item.gameTracker?.achievements &&
@@ -436,9 +463,9 @@ export default function MediaDetailPage() {
             }
           : undefined,
         completionist100: newDone ? true : item.gameTracker?.completionist100,
-        storyCompleted: newDone ? true : item.gameTracker?.storyCompleted,
+        storyCompleted: isLive ? false : (newDone ? true : item.gameTracker?.storyCompleted),
       },
-      status: newDone && item.status !== 'owned' ? 'completed' : item.status,
+      status: !isLive && newDone && item.status !== 'owned' ? 'completed' : item.status,
     });
     if (updated) setItem(updated);
   };
@@ -583,9 +610,28 @@ export default function MediaDetailPage() {
 
               {/* Category & Status Badges */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                <span className={cn('text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
-                  {statusBadge.label}
+                <span
+                  className={cn(
+                    'text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 flex items-center gap-1.5',
+                    effectiveStatusBadge.bgClass,
+                    effectiveStatusBadge.colorClass
+                  )}
+                >
+                  {isLiveService && item.status !== 'planned' && (
+                    <Infinity className="w-3.5 h-3.5 text-cyan-400" />
+                  )}
+                  <span>{effectiveStatusBadge.label}</span>
                 </span>
+
+                {isLiveService && item.status === 'planned' && (
+                  <span
+                    className="text-xs font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0"
+                    title="Live-Service / Endlos-Spiel ohne klassisches Kampagnen-Ende"
+                  >
+                    <Infinity className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Live-Service</span>
+                  </span>
+                )}
 
                 {item.isOwned && (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0">
@@ -636,15 +682,6 @@ export default function MediaDetailPage() {
                   </span>
                 )}
 
-                {isLiveService && (
-                  <span
-                    className="text-xs font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0"
-                    title="Live-Service / Endlos-Spiel ohne klassisches Kampagnen-Ende"
-                  >
-                    <Infinity className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Live-Service</span>
-                  </span>
-                )}
 
                 {isGame && (item.gameTracker?.achievements || isGameAchievementsDone) && (
                   <span
@@ -951,17 +988,45 @@ export default function MediaDetailPage() {
                 )}
 
                 {/* Status Switcher Dropdown */}
-                <select
-                  value={item.status === 'owned' ? 'planned' : item.status}
-                  onChange={(e) => handleStatusChange(e.target.value as MediaStatus)}
-                  className="bg-[#181B22] text-[#F1F3F7] border border-[#282D37] rounded-full px-4 py-2 text-xs font-bold focus:outline-none focus:border-zinc-500 cursor-pointer"
-                >
-                  <option value="in_progress">Gerade dabei</option>
-                  <option value="planned">Geplant</option>
-                  <option value="completed">Beendet</option>
-                  <option value="paused">Pausiert</option>
-                  <option value="dropped">Abgebrochen</option>
-                </select>
+                {isLiveService ? (
+                  <select
+                    value={item.status === 'planned' ? 'planned' : 'in_progress'}
+                    onChange={(e) => handleStatusChange(e.target.value as MediaStatus)}
+                    className="bg-[#181B22] text-[#F1F3F7] border border-cyan-500/40 rounded-full px-4 py-2 text-xs font-bold focus:outline-none focus:border-cyan-400 cursor-pointer"
+                  >
+                    <option value="in_progress">Live-Service (Aktiv)</option>
+                    <option value="planned">Geplant</option>
+                  </select>
+                ) : (
+                  <select
+                    value={item.status === 'owned' ? 'planned' : item.status}
+                    onChange={(e) => handleStatusChange(e.target.value as MediaStatus)}
+                    className="bg-[#181B22] text-[#F1F3F7] border border-[#282D37] rounded-full px-4 py-2 text-xs font-bold focus:outline-none focus:border-zinc-500 cursor-pointer"
+                  >
+                    <option value="in_progress">Gerade dabei</option>
+                    <option value="planned">Geplant</option>
+                    <option value="completed">Beendet</option>
+                    <option value="paused">Pausiert</option>
+                    <option value="dropped">Abgebrochen</option>
+                  </select>
+                )}
+
+                {/* Toggle Live-Service Button (Games only) */}
+                {isGame && (
+                  <button
+                    onClick={handleToggleLiveService}
+                    className={cn(
+                      'flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all active:scale-95',
+                      isLiveService
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-sm'
+                        : 'bg-[#181B22] text-zinc-400 hover:text-white border-[#282D37]'
+                    )}
+                    title="Live-Service / Endlos-Spiel (Multiplayer / keine Kampagne)"
+                  >
+                    <Infinity className={cn("w-4 h-4", isLiveService ? "text-cyan-400" : "text-zinc-500")} />
+                    <span>{isLiveService ? 'Live-Service (Aktiv)' : '+ Live-Service'}</span>
+                  </button>
+                )}
 
                 {/* Toggle Owned Button */}
                 <button

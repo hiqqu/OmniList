@@ -52,6 +52,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   const [gameCompletionist100, setGameCompletionist100] = useState<boolean>(false);
   const [gameAllAchievementsCompleted, setGameAllAchievementsCompleted] = useState<boolean>(false);
   const [gameIsLiveService, setGameIsLiveService] = useState<boolean>(false);
+  const isGame = item?.type === 'game';
 
   useEffect(() => {
     if (item) {
@@ -195,16 +196,19 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const isGame = item.type === 'game';
+    const isGame = item?.type === 'game';
     const isMovie = item.type === 'movie';
     const cleanIsbn = isbnInput.replace(/[-\s]/g, '').trim().toUpperCase();
     const updatedExternalId = item.type === 'book' && cleanIsbn ? `isbn:${cleanIsbn}` : item.external_id;
 
     const totalNum = isGame ? undefined : (Number(totalProgress) || undefined);
     let currentNum = totalNum && totalNum > 0 ? Math.min(Number(currentProgress), totalNum) : Number(currentProgress);
-    const resolvedStatus = totalNum && currentNum >= totalNum && status !== 'owned' ? 'completed' : status;
+    let resolvedStatus = totalNum && currentNum >= totalNum && status !== 'owned' ? 'completed' : status;
 
-    if (resolvedStatus === 'completed' && totalNum && totalNum > 0) {
+    if (isGame && gameIsLiveService) {
+      // Live-Service replaces completed/in_progress/dropped/paused. Only planned may coexist with live service.
+      resolvedStatus = status === 'planned' ? 'planned' : 'in_progress';
+    } else if (resolvedStatus === 'completed' && totalNum && totalNum > 0) {
       currentNum = totalNum;
     }
 
@@ -329,7 +333,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
             <div>
               <label className="block text-xs font-bold text-zinc-400 mb-1">Status</label>
               <select
-                value={status}
+                value={isGame && gameIsLiveService ? (status === 'planned' ? 'planned' : 'in_progress') : status}
                 onChange={(e) => {
                   const newStatus = e.target.value as MediaStatus;
                   setStatus(newStatus);
@@ -339,11 +343,20 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                 }}
                 className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl px-3 py-2 text-sm text-[#F1F3F7] focus:outline-none cursor-pointer"
               >
-                <option value="in_progress">Gerade dabei</option>
-                <option value="planned">Geplant</option>
-                <option value="completed">Beendet</option>
-                <option value="paused">Pausiert</option>
-                <option value="dropped">Abgebrochen</option>
+                {isGame && gameIsLiveService ? (
+                  <>
+                    <option value="in_progress">Live-Service (Aktiv)</option>
+                    <option value="planned">Geplant</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="in_progress">Gerade dabei</option>
+                    <option value="planned">Geplant</option>
+                    <option value="completed">Beendet</option>
+                    <option value="paused">Pausiert</option>
+                    <option value="dropped">Abgebrochen</option>
+                  </>
+                )}
               </select>
             </div>
 
