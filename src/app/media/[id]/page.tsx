@@ -399,7 +399,12 @@ export default function MediaDetailPage() {
       gameTracker: {
         ...(item.gameTracker || {}),
         allAchievementsCompleted: newDone,
-        achievements: undefined,
+        achievements: item.gameTracker?.achievements
+          ? {
+              ...item.gameTracker.achievements,
+              current: newDone ? item.gameTracker.achievements.total : item.gameTracker.achievements.current,
+            }
+          : undefined,
         completionist100: newDone ? true : item.gameTracker?.completionist100,
         storyCompleted: newDone ? true : item.gameTracker?.storyCompleted,
       },
@@ -608,6 +613,29 @@ export default function MediaDetailPage() {
                   >
                     <Infinity className="w-3.5 h-3.5 text-cyan-400" />
                     <span>Live-Service</span>
+                  </span>
+                )}
+
+                {isGame && (item.gameTracker?.achievements || isGameAchievementsDone) && (
+                  <span
+                    className={cn(
+                      'text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0',
+                      isGameAchievementsDone
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
+                    )}
+                    title={
+                      item.gameTracker?.achievements
+                        ? `${item.gameTracker.achievements.current} von ${item.gameTracker.achievements.total} ${item.connectedService === 'psn' ? 'Trophäen' : 'Erfolgen'}`
+                        : 'Alle Erfolge freigeschaltet'
+                    }
+                  >
+                    <Trophy className={cn("w-3.5 h-3.5", isGameAchievementsDone ? "text-amber-400" : "text-zinc-400")} />
+                    <span>
+                      {item.gameTracker?.achievements && item.gameTracker.achievements.total > 0
+                        ? `${item.connectedService === 'psn' ? 'Trophäen' : 'Erfolge'}: ${item.gameTracker.achievements.current}/${item.gameTracker.achievements.total}`
+                        : item.connectedService === 'psn' ? 'Platin (100%)' : '100% Erfolge'}
+                    </span>
                   </span>
                 )}
               </div>
@@ -1535,16 +1563,18 @@ export default function MediaDetailPage() {
                   </div>
                 </div>
 
-                {/* 3. Achievements / Trophies Tracker (Checkbox) */}
-                <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-3">
+                {/* 3. Achievements / Trophies Tracker Card */}
+                <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <h3 className="text-base font-bold text-[#F1F3F7] flex items-center gap-2">
-                        <Award className="w-5 h-5 text-amber-400" />
-                        <span>Alle Erfolge &amp; Trophäen (100% Achievements)</span>
+                        <Trophy className="w-5 h-5 text-amber-400" />
+                        <span>{item.connectedService === 'psn' ? 'PlayStation Trophäen' : 'Alle Erfolge & Trophäen'}</span>
                       </h3>
                       <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
-                        {isGameAchievementsDone
+                        {item.gameTracker?.achievements && item.gameTracker.achievements.total > 0
+                          ? `${item.gameTracker.achievements.current} von ${item.gameTracker.achievements.total} ${item.connectedService === 'psn' ? 'Trophäen' : 'Erfolgen'} freigeschaltet (${Math.round((item.gameTracker.achievements.current / item.gameTracker.achievements.total) * 100)}%).`
+                          : isGameAchievementsDone
                           ? 'Alle Trophäen bzw. Steam-/Konsolen-Erfolge wurden für dieses Spiel vollständig freigeschaltet (Platin / 100%).'
                           : 'Markiere, ob du alle Erfolge dieses Spiels vollständig erreicht hast (entweder alle oder offen).'}
                       </p>
@@ -1565,10 +1595,38 @@ export default function MediaDetailPage() {
                         className="w-5 h-5 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500"
                       />
                       <span className="text-xs font-bold">
-                        {isGameAchievementsDone ? 'Alle Erfolge freigeschaltet ✓' : 'Erfolge offen'}
+                        {isGameAchievementsDone
+                          ? (item.connectedService === 'psn' ? 'Platin freigeschaltet ✓' : 'Alle Erfolge freigeschaltet ✓')
+                          : (item.connectedService === 'psn' ? 'Trophäen offen' : 'Erfolge offen')}
                       </span>
                     </label>
                   </div>
+
+                  {/* Progress bar if exact achievements/trophies exist */}
+                  {item.gameTracker?.achievements && item.gameTracker.achievements.total > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t border-[#282D37]">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">
+                          {item.connectedService === 'psn' ? 'Trophäen-Fortschritt' : 'Erfolgs-Fortschritt'}
+                        </span>
+                        <span className="font-bold text-amber-400">
+                          {item.gameTracker.achievements.current} / {item.gameTracker.achievements.total} (
+                          {Math.round((item.gameTracker.achievements.current / item.gameTracker.achievements.total) * 100)}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-[#0F1117] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-amber-400 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.round((item.gameTracker.achievements.current / item.gameTracker.achievements.total) * 100)
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : isMovie ? (

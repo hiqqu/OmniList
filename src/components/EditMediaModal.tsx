@@ -238,7 +238,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
             completionist100: gameCompletionist100,
             allAchievementsCompleted: gameAllAchievementsCompleted,
             isLiveService: gameIsLiveService,
-            achievements: undefined,
+            achievements: item.gameTracker?.achievements,
           }
         : item.gameTracker,
     });

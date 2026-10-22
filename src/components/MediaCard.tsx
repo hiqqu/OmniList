@@ -48,6 +48,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       item.gameTracker.achievements.total > 0 &&
       item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
   );
+  const achievements = item.gameTracker?.achievements;
+  const achievementPercentage =
+    achievements && achievements.total > 0
+      ? Math.round((achievements.current / achievements.total) * 100)
+      : isGameAchievementsDone
+      ? 100
+      : 0;
+  const isPsn = item.connectedService === 'psn' || item.external_id?.startsWith('psn:');
 
   const metacriticScore = getMediaMetacriticScore(item);
   const metacriticStyle = metacriticScore !== null ? getMetacriticBadgeStyle(metacriticScore) : null;
@@ -514,15 +522,26 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         {isGame ? (
           /* ============= GAME TRACKER UI ============= */
           <div className="space-y-1.5 sm:space-y-2 pt-1.5 sm:pt-2 border-t border-[#282D37]">
-            {/* Playtime Header */}
+            {/* Playtime & Trophies Header */}
             <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-medium text-zinc-400">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-purple-400 shrink-0" />
                 <span>Spielzeit</span>
               </span>
-              <span className="text-[#F1F3F7] font-bold">
-                {gamePlaytime} Std.
-              </span>
+              <div className="flex items-center gap-2">
+                {achievements && achievements.total > 0 && (
+                  <span
+                    className="flex items-center gap-1 text-[10px] text-amber-300 font-bold bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded shadow-sm"
+                    title={`${isPsn ? 'Trophäen' : 'Erfolge'}: ${achievements.current} von ${achievements.total} (${achievementPercentage}%)`}
+                  >
+                    <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
+                    <span>{achievements.current}/{achievements.total}</span>
+                  </span>
+                )}
+                <span className="text-[#F1F3F7] font-bold">
+                  {gamePlaytime} Std.
+                </span>
+              </div>
             </div>
 
             {/* Badges: Story (or Endlos) & 100% & Achievements */}
@@ -589,14 +608,48 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
                     : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
                 )}
-                title="Klicken zum Umschalten: Alle Erfolge (100% Achievements)"
+                title={
+                  achievements && achievements.total > 0
+                    ? `${isPsn ? 'Trophäen' : 'Erfolge'}: ${achievements.current} von ${achievements.total} (${achievementPercentage}%)`
+                    : "Klicken zum Umschalten: Alle Erfolge (100% Achievements)"
+                }
               >
-                <Award className={cn("w-3 h-3 shrink-0", isGameAchievementsDone ? "text-amber-400" : "text-zinc-400")} />
-                <span>Erfolge</span>
-                <span className={isGameAchievementsDone ? "text-amber-400 font-extrabold" : "text-zinc-500"}>
-                  {isGameAchievementsDone ? '✓' : '—'}
-                </span>
+                <Trophy className={cn("w-3 h-3 shrink-0", isGameAchievementsDone ? "text-amber-400" : "text-zinc-400")} />
+                <span>{isPsn ? 'Trophäen' : 'Erfolge'}</span>
+                {achievements && achievements.total > 0 ? (
+                  <span className={cn("font-bold font-mono", isGameAchievementsDone ? "text-amber-400" : "text-zinc-300")}>
+                    {achievements.current}/{achievements.total}
+                  </span>
+                ) : (
+                  <span className={isGameAchievementsDone ? "text-amber-400 font-extrabold" : "text-zinc-500"}>
+                    {isGameAchievementsDone ? '✓' : '—'}
+                  </span>
+                )}
               </button>
+            </div>
+
+            {/* Mini Progress Bar for Achievements or Game Completion */}
+            <div className="w-full h-1 sm:h-1.5 bg-[#0F1117] rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  'h-full transition-all duration-300 rounded-full',
+                  isGame100Done || isGameAchievementsDone
+                    ? 'bg-amber-400'
+                    : isGameStoryDone
+                    ? 'bg-purple-400'
+                    : 'bg-purple-500/40'
+                )}
+                style={{
+                  width:
+                    achievements && achievements.total > 0
+                      ? `${achievementPercentage}%`
+                      : isGame100Done || isGameAchievementsDone
+                      ? '100%'
+                      : isGameStoryDone
+                      ? '100%'
+                      : `${Math.min(100, Math.max(10, gamePlaytime * 2))}%`,
+                }}
+              />
             </div>
           </div>
         ) : isMovie ? (

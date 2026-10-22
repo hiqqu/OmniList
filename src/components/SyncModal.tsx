@@ -521,6 +521,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             playtimeHours: sg.playtimeHours,
             achievements: ach ? { current: ach.current, total: ach.total } : item.gameTracker?.achievements,
             completionist100: ach ? ach.completionist100 : item.gameTracker?.completionist100,
+            allAchievementsCompleted: ach ? (ach.completionist100 || (ach.total > 0 && ach.current >= ach.total)) : item.gameTracker?.allAchievementsCompleted,
           },
           updatedAt: new Date().toISOString(),
         };
@@ -667,6 +668,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             playtimeHours: pg.playtimeHours > 0 ? pg.playtimeHours : item.gameTracker?.playtimeHours,
             achievements: t.total > 0 ? { current: t.current, total: t.total } : item.gameTracker?.achievements,
             completionist100: t.completionist100,
+            allAchievementsCompleted: t.completionist100 || (t.total > 0 && t.current >= t.total),
           },
           updatedAt: new Date().toISOString(),
         };
@@ -708,6 +710,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           playtimeHours: pg.playtimeHours,
           storyCompleted: pg.trophies.completionist100,
           completionist100: pg.trophies.completionist100,
+          allAchievementsCompleted: pg.trophies.completionist100 || (pg.trophies.total > 0 && pg.trophies.current >= pg.trophies.total),
           achievements: pg.trophies.total > 0 ? { current: pg.trophies.current, total: pg.trophies.total } : undefined,
         },
         createdAt: new Date().toISOString(),
@@ -806,6 +809,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             playtimeHours: gg.playtimeHours > 0 ? gg.playtimeHours : item.gameTracker?.playtimeHours,
             achievements: ach ? { current: ach.current, total: ach.total } : item.gameTracker?.achievements,
             completionist100: ach ? ach.completionist100 : item.gameTracker?.completionist100,
+            allAchievementsCompleted: ach ? (ach.completionist100 || (ach.total > 0 && ach.current >= ach.total)) : item.gameTracker?.allAchievementsCompleted,
           },
           updatedAt: new Date().toISOString(),
         };
@@ -849,6 +853,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           playtimeHours: gg.playtimeHours,
           storyCompleted: false,
           completionist100: gg.achievements?.completionist100 || false,
+          allAchievementsCompleted: gg.achievements ? (gg.achievements.completionist100 || (gg.achievements.total > 0 && gg.achievements.current >= gg.achievements.total)) : false,
           achievements: gg.achievements ? { current: gg.achievements.current, total: gg.achievements.total } : undefined,
         },
         createdAt: new Date().toISOString(),

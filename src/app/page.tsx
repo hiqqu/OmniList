@@ -250,7 +250,12 @@ export default function Home() {
       gameTracker: {
         ...(item.gameTracker || {}),
         allAchievementsCompleted: newDone,
-        achievements: undefined,
+        achievements: item.gameTracker?.achievements
+          ? {
+              ...item.gameTracker.achievements,
+              current: newDone ? item.gameTracker.achievements.total : item.gameTracker.achievements.current,
+            }
+          : undefined,
         completionist100: newDone ? true : item.gameTracker?.completionist100,
         storyCompleted: newDone ? true : item.gameTracker?.storyCompleted,
       },

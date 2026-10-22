@@ -132,16 +132,11 @@ export function getStoredMedia(): MediaItem[] {
             allAchievementsCompleted: isComp,
             playtimeHours: item.progress.current,
           };
-        } else if (tracker.achievements) {
+        } else if (tracker.achievements && tracker.achievements.total > 0 && tracker.achievements.current >= tracker.achievements.total && !tracker.allAchievementsCompleted) {
           changed = true;
-          const isAllDone = Boolean(
-            tracker.allAchievementsCompleted ||
-            (tracker.achievements.total > 0 && tracker.achievements.current >= tracker.achievements.total)
-          );
           tracker = {
             ...tracker,
-            allAchievementsCompleted: isAllDone,
-            achievements: undefined,
+            allAchievementsCompleted: true,
           };
         }
         let progressObj = item.progress;
