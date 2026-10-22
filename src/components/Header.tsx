@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <option value="updated" className="bg-[#181B22] text-[#F1F3F7]">Zuletzt aktualisiert</option>
               <option value="title" className="bg-[#181B22] text-[#F1F3F7]">Titel (A-Z)</option>
-              <option value="rating" className="bg-[#181B22] text-[#F1F3F7]">Beste Bewertung</option>
+              <option value="rating" className="bg-[#181B22] text-[#F1F3F7]">Beste Bewertung (Metacritic)</option>
               <option value="progress" className="bg-[#181B22] text-[#F1F3F7]">Höchster Fortschritt</option>
             </select>
           </div>

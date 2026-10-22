@@ -14,6 +14,7 @@ import { SyncModal } from '@/components/SyncModal';
 import { GameImportModal } from '@/components/GameImportModal';
 import { StatsBar } from '@/components/StatsBar';
 import { ImportResult, getItemPlatform } from '@/lib/game-import';
+import { getMediaMetacriticScore } from '@/lib/metacritic';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
 import { MediaItem, MediaType, MediaStatus, SequelNotification } from '@/types/media';
 import {
@@ -480,7 +481,28 @@ export default function Home() {
         return a.title.localeCompare(b.title);
       }
       if (sortBy === 'rating') {
-        return (b.rating || 0) - (a.rating || 0);
+        const scoreA = getMediaMetacriticScore(a);
+        const scoreB = getMediaMetacriticScore(b);
+
+        // Sort descending by Metacritic score
+        if (scoreA !== null && scoreB !== null) {
+          if (scoreB !== scoreA) {
+            return scoreB - scoreA;
+          }
+        } else if (scoreA !== null) {
+          return -1;
+        } else if (scoreB !== null) {
+          return 1;
+        }
+
+        // Secondary fallback: Community rating or user rating
+        const fallbackA = (a.communityRating ? a.communityRating * 20 : 0) || (a.rating ? a.rating * 20 : 0);
+        const fallbackB = (b.communityRating ? b.communityRating * 20 : 0) || (b.rating ? b.rating * 20 : 0);
+        if (fallbackB !== fallbackA) {
+          return fallbackB - fallbackA;
+        }
+
+        return a.title.localeCompare(b.title);
       }
       if (sortBy === 'progress') {
         const pctA = a.progress.total ? a.progress.current / a.progress.total : 0;

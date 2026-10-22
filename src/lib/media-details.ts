@@ -1,5 +1,6 @@
 import { MediaItem, MediaType } from '@/types/media';
 import { formatIsbn } from '@/lib/api-adapters/googlebooks';
+import { getMediaMetacriticScore } from '@/lib/metacritic';
 
 export interface CastMember {
   name: string;
@@ -430,6 +431,8 @@ function parseBookContributors(creator?: string, originalTitle?: string, title?:
 }
 
 export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
+  const realMetascore = getMediaMetacriticScore(item);
+
   // Check if we have exact curated details
   const curated = CURATED_DETAILS[item.id];
   if (curated) {
@@ -438,6 +441,8 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       publisher: item.publisher || curated.publisher,
       scores: {
         ...curated.scores,
+        critics: realMetascore ? `${realMetascore} / 100` : curated.scores?.critics,
+        criticsLabel: realMetascore ? 'Metacritic' : curated.scores?.criticsLabel,
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
       },
       cast: curated.cast || [],
@@ -454,10 +459,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       language: 'Deutsch / Originalversion',
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
-        critics: '78 / 100',
-        criticsLabel: 'Kritiker-Durchschnitt',
-        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : '8.2 / 10',
-        audienceLabel: 'Publikumswertung',
+        critics: realMetascore ? `${realMetascore} / 100` : undefined,
+        criticsLabel: realMetascore ? 'Metacritic' : undefined,
+        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
+        audienceLabel: item.communityRating ? 'Publikumswertung' : undefined,
       },
       cast: [
         { name: 'Hauptdarsteller 1', role: 'Hauptrolle' },
@@ -481,10 +486,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       language: 'Deutsch / Original',
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
-        critics: '84 / 100',
-        criticsLabel: 'Serien-Kritik',
-        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : '8.5 / 10',
-        audienceLabel: 'Zuschauer-Wertung',
+        critics: realMetascore ? `${realMetascore} / 100` : undefined,
+        criticsLabel: realMetascore ? 'Metacritic' : undefined,
+        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
+        audienceLabel: item.communityRating ? 'Zuschauer-Wertung' : undefined,
       },
       cast: [
         { name: 'Hauptcast', role: 'Serien-Hauptfigur' },
@@ -507,10 +512,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       ageRating: 'FSK 12',
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
-        critics: '8.7 / 10',
-        criticsLabel: 'MyAnimeList',
-        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : '85%',
-        audienceLabel: 'AniList Community',
+        critics: realMetascore ? `${realMetascore} / 100` : undefined,
+        criticsLabel: realMetascore ? 'Metacritic' : undefined,
+        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
+        audienceLabel: item.communityRating ? 'AniList Community' : undefined,
       },
       cast: [
         {
@@ -582,10 +587,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       ageRating: 'USK 16',
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
-        critics: '88 / 100',
-        criticsLabel: 'Metacritic',
-        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : 'Sehr positiv',
-        audienceLabel: 'Spielerbewertungen',
+        critics: realMetascore ? `${realMetascore} / 100` : undefined,
+        criticsLabel: realMetascore ? 'Metacritic' : undefined,
+        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
+        audienceLabel: item.communityRating ? 'Spielerbewertungen' : undefined,
       },
       cast: [
         { name: 'Hauptcharakter', role: 'Spielbare Figur' },
