@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
             Authorization: `Bearer ${kvToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(JSON.stringify(payload)),
+          body: JSON.stringify(payload),
         });
 
         if (!putRes.ok) {
@@ -134,7 +134,15 @@ export async function POST(req: NextRequest) {
         }
 
         if (rawResult && rawResult.result !== null && rawResult.result !== undefined) {
-          parsedData = typeof rawResult.result === 'string' ? JSON.parse(rawResult.result) : rawResult.result;
+          let current = rawResult.result;
+          while (typeof current === 'string') {
+            try {
+              current = JSON.parse(current);
+            } catch {
+              break;
+            }
+          }
+          parsedData = current;
         }
       }
 
@@ -142,7 +150,15 @@ export async function POST(req: NextRequest) {
       if (!parsedData) {
         const store = await getLocalStore();
         if (store[syncCode]) {
-          parsedData = store[syncCode];
+          let current = store[syncCode];
+          while (typeof current === 'string') {
+            try {
+              current = JSON.parse(current);
+            } catch {
+              break;
+            }
+          }
+          parsedData = current;
         }
       }
 

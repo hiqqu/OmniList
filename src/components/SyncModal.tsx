@@ -277,9 +277,26 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       const data = await res.json();
 
       if (res.ok && data.success && data.data) {
-        const pulledMedia = data.data.media || [];
-        const pulledSequels = data.data.sequels || [];
-        const pulledIntegrations = data.data.integrations;
+        let payloadData = data.data;
+        while (typeof payloadData === 'string') {
+          try {
+            payloadData = JSON.parse(payloadData);
+          } catch {
+            break;
+          }
+        }
+
+        const pulledMedia = Array.isArray(payloadData?.media) ? payloadData.media : [];
+        const pulledSequels = Array.isArray(payloadData?.sequels) ? payloadData.sequels : [];
+        const pulledIntegrations = payloadData?.integrations;
+
+        if (pulledMedia.length === 0 && (!payloadData || !payloadData.media)) {
+          setFeedback({
+            type: 'error',
+            message: 'Unter diesem Code konnten keine Medien aus der Cloud gelesen werden. Deine bestehende Sammlung wurde geschützt.',
+          });
+          return;
+        }
 
         if (pulledIntegrations?.steam) {
           if (pulledIntegrations.steam.steamInput) {
