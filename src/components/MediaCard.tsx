@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award } from 'lucide-react';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award, Gamepad2 } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
@@ -437,6 +437,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
                 <PackageCheck className="w-3 h-3 text-emerald-400" />
                 <span>Im Besitz</span>
+              </span>
+            )}
+            {item.connectedService && (
+              <span
+                className={cn(
+                  'text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0',
+                  item.connectedService === 'steam'
+                    ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                    : item.connectedService === 'psn'
+                    ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                    : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                )}
+                title={`Verknüpft mit ${item.gameConnection?.serviceName || item.connectedService.toUpperCase()}`}
+              >
+                <Gamepad2 className="w-2.5 h-2.5" />
+                <span>{item.connectedService === 'steam' ? 'Steam' : item.connectedService === 'psn' ? 'PSN' : 'GOG'}</span>
               </span>
             )}
           </div>

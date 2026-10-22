@@ -35,6 +35,7 @@ interface AddMediaDialogProps {
   existingExternalIds: Set<string>;
   initialTab?: MediaType;
   initialQuery?: string;
+  onOpenGameImport?: () => void;
 }
 
 export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
@@ -44,6 +45,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   existingExternalIds,
   initialTab,
   initialQuery,
+  onOpenGameImport,
 }) => {
   const [activeTab, setActiveTab] = useState<MediaType>(initialTab || 'movie');
   const [searchQuery, setSearchQuery] = useState(initialQuery || '');
@@ -446,6 +448,26 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
               <span className="hidden xs:inline sm:inline">Suchen</span>
             </button>
           </div>
+
+          {/* Quick Steam/PSN/GOG Library Import shortcut in Game Tab */}
+          {activeTab === 'game' && onOpenGameImport && (
+            <div className="mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenGameImport();
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold flex items-center justify-between transition-colors shadow-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <Gamepad2 className="w-4 h-4 text-purple-400" />
+                  <span>Komplette Spiele-Bibliothek importieren (Steam, PSN, GOG)</span>
+                </div>
+                <span className="text-[11px] underline">Öffnen &rarr;</span>
+              </button>
+            </div>
+          )}
 
           {/* Add-with-status selector */}
           <div className="flex items-center justify-between text-xs text-zinc-400 py-1.5">

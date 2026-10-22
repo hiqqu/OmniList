@@ -391,6 +391,25 @@ export default function MediaDetailPage() {
                     {item.collection_name}
                   </span>
                 )}
+
+                {item.connectedService && (
+                  <span
+                    className={cn(
+                      'text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0',
+                      item.connectedService === 'steam'
+                        ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                        : item.connectedService === 'psn'
+                        ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                        : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                    )}
+                  >
+                    <Gamepad2 className="w-3.5 h-3.5" />
+                    <span>
+                      {item.gameConnection?.serviceName || item.connectedService.toUpperCase()}
+                      {item.gameConnection?.accountUsername ? ` (${item.gameConnection.accountUsername})` : ' verknüpft'}
+                    </span>
+                  </span>
+                )}
               </div>
 
               {/* Title & Tagline */}
