@@ -40,6 +40,146 @@ import { isLiveServiceGame } from '@/lib/live-service';
 import { EditMediaModal } from '@/components/EditMediaModal';
 import { getMediaCoverFallback } from '@/lib/book-cover';
 
+interface ReviewPortalLink {
+  name: string;
+  description: string;
+  url: string;
+}
+
+function getExternalReviewLinks(item: MediaItem): ReviewPortalLink[] {
+  const q = encodeURIComponent(item.title);
+  switch (item.type) {
+    case 'game':
+      return [
+        {
+          name: 'Metacritic',
+          description: 'Kritiker-Metascore & Tests',
+          url: `https://www.metacritic.com/search/${q}`,
+        },
+        {
+          name: 'OpenCritic',
+          description: 'Gaming-Reviews & Empfehlungen',
+          url: `https://opencritic.com/search?q=${q}`,
+        },
+        {
+          name: 'Steam Community',
+          description: 'Spielerrezensionen & Diskussionen',
+          url: `https://store.steampowered.com/search/?term=${q}`,
+        },
+        {
+          name: 'HowLongToBeat',
+          description: 'Spieldauer & Completionist-Zeiten',
+          url: `https://howlongtobeat.com/?q=${q}`,
+        },
+      ];
+    case 'movie':
+      return [
+        {
+          name: 'IMDb',
+          description: 'Filmbewertungen & User-Reviews',
+          url: `https://www.imdb.com/find/?q=${q}&s=tt`,
+        },
+        {
+          name: 'Rotten Tomatoes',
+          description: 'Tomatometer & Audience Score',
+          url: `https://www.rottentomatoes.com/search?search=${q}`,
+        },
+        {
+          name: 'Metacritic',
+          description: 'Pressekritiken & Metascore',
+          url: `https://www.metacritic.com/search/${q}`,
+        },
+        {
+          name: 'Letterboxd',
+          description: 'Cineasten-Community & Tagebuch',
+          url: `https://letterboxd.com/search/${q}`,
+        },
+      ];
+    case 'show':
+      return [
+        {
+          name: 'IMDb',
+          description: 'Episoden- & Staffelbewertungen',
+          url: `https://www.imdb.com/find/?q=${q}&s=tt`,
+        },
+        {
+          name: 'Rotten Tomatoes',
+          description: 'Staffel-Kritiken & Tomatometer',
+          url: `https://www.rottentomatoes.com/search?search=${q}`,
+        },
+        {
+          name: 'Metacritic',
+          description: 'TV-Pressestimmen & Metascore',
+          url: `https://www.metacritic.com/search/${q}`,
+        },
+        {
+          name: 'Serienjunkies',
+          description: 'Deutsche Episoden-Reviews & Guides',
+          url: `https://www.serienjunkies.de/suche.html?q=${q}`,
+        },
+      ];
+    case 'anime':
+      return [
+        {
+          name: 'MyAnimeList',
+          description: 'MAL Score, Rankings & Reviews',
+          url: `https://myanimelist.net/anime.php?q=${q}`,
+        },
+        {
+          name: 'AniList',
+          description: 'Community-Wertungen & Empfehlungen',
+          url: `https://anilist.co/search/anime?search=${q}`,
+        },
+        {
+          name: 'Crunchyroll',
+          description: 'Streaming & Community-Kritiken',
+          url: `https://www.crunchyroll.com/search?q=${q}`,
+        },
+        {
+          name: 'Anime-Planet',
+          description: 'Nutzerwertungen, Tags & Reviews',
+          url: `https://www.anime-planet.com/anime/all?name=${q}`,
+        },
+      ];
+    case 'book':
+      return [
+        {
+          name: 'Goodreads',
+          description: 'Leserrezensionen & Ratings',
+          url: `https://www.goodreads.com/search?q=${q}`,
+        },
+        {
+          name: 'Open Library',
+          description: 'Freier Buchkatalog & Details',
+          url: `https://openlibrary.org/search?q=${q}`,
+        },
+        {
+          name: 'LovelyBooks',
+          description: 'Deutschsprachige Buch-Community',
+          url: `https://www.lovelybooks.de/suche/${q}/`,
+        },
+        {
+          name: 'Google Books',
+          description: 'Leseproben & Verlagsangaben',
+          url: `https://books.google.de/books?q=${q}`,
+        },
+      ];
+    default:
+      return [
+        {
+          name: 'Metacritic',
+          description: 'Kritiken & Metascore',
+          url: `https://www.metacritic.com/search/${q}`,
+        },
+        {
+          name: 'Google Suche',
+          description: 'Rezensionen und Pressestimmen',
+          url: `https://www.google.com/search?q=${q}+Review+Kritik`,
+        },
+      ];
+  }
+}
+
 export default function MediaDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -818,12 +958,12 @@ export default function MediaDetailPage() {
             )}
             <span>
               {item.type === 'book'
-                ? `Autor & Mitwirkende (${details.cast.length})`
+                ? `Autor & Mitwirkende${details.cast.length > 0 ? ` (${details.cast.length})` : ''}`
                 : item.type === 'anime'
-                ? `Charaktere & Sprecher (${details.cast.length})`
+                ? `Charaktere & Sprecher${details.cast.length > 0 ? ` (${details.cast.length})` : ''}`
                 : item.type === 'game'
-                ? `Besetzung & Team (${details.cast.length})`
-                : `Besetzung & Stab (${details.cast.length})`}
+                ? `Besetzung & Team${details.cast.length > 0 ? ` (${details.cast.length})` : ''}`
+                : `Besetzung & Stab${details.cast.length > 0 ? ` (${details.cast.length})` : ''}`}
             </span>
           </button>
 
@@ -837,7 +977,7 @@ export default function MediaDetailPage() {
             )}
           >
             <Award className="w-3.5 h-3.5" />
-            <span>Kritiken &amp; Community ({details.reviews.length})</span>
+            <span>Kritiken &amp; Wertungen{details.reviews.length > 0 ? ` (${details.reviews.length})` : ''}</span>
           </button>
 
           <button
@@ -1038,43 +1178,55 @@ export default function MediaDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {details.cast.map((c, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-start gap-3.5 hover:border-zinc-600 transition-all"
-                >
-                  {/* Avatar */}
-                  <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 border border-zinc-700">
-                    {c.avatarUrl ? (
-                      <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" />
-                    ) : item.type === 'book' ? (
-                      <BookOpen className="w-5 h-5 text-orange-400" />
-                    ) : (
-                      <Users className="w-5 h-5 text-zinc-400" />
-                    )}
-                  </div>
+            {details.cast.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-[#181B22] border border-[#282D37] text-center space-y-2">
+                <Users className="w-8 h-8 text-zinc-600 mx-auto" />
+                <p className="text-sm font-semibold text-zinc-300">
+                  Keine Besetzungs- oder Mitwirkenden-Daten hinterlegt
+                </p>
+                <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                  Für diesen Titel wurden keine detaillierten Mitwirkenden oder Sprecher im lokalen Datenbestand hinterlegt.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {details.cast.map((c, i) => (
+                  <div
+                    key={i}
+                    className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-start gap-3.5 hover:border-zinc-600 transition-all"
+                  >
+                    {/* Avatar */}
+                    <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 border border-zinc-700">
+                      {c.avatarUrl ? (
+                        <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" />
+                      ) : item.type === 'book' ? (
+                        <BookOpen className="w-5 h-5 text-orange-400" />
+                      ) : (
+                        <Users className="w-5 h-5 text-zinc-400" />
+                      )}
+                    </div>
 
-                  {/* Character & Actor Info */}
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-bold text-sm text-[#F1F3F7] truncate">{c.name}</h4>
-                    <p className="text-xs text-zinc-400 font-medium truncate">{c.role}</p>
+                    {/* Character & Actor Info */}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-sm text-[#F1F3F7] truncate">{c.name}</h4>
+                      <p className="text-xs text-zinc-400 font-medium truncate">{c.role}</p>
 
-                    {/* Anime Specific: Japanese Voice Actor & German Voice Actor */}
-                    {c.voiceActorJp && (
-                      <div className="mt-2 text-[11px] text-sky-300 bg-sky-950/30 border border-sky-900/40 rounded px-2 py-0.5 truncate">
-                        JP: {c.voiceActorJp}
-                      </div>
-                    )}
-                    {c.voiceActorDe && (
-                      <div className="mt-1 text-[11px] text-amber-300 bg-amber-950/30 border border-amber-900/40 rounded px-2 py-0.5 truncate">
-                        DE: {c.voiceActorDe}
-                      </div>
-                    )}
+                      {/* Anime Specific: Japanese Voice Actor & German Voice Actor */}
+                      {c.voiceActorJp && (
+                        <div className="mt-2 text-[11px] text-sky-300 bg-sky-950/30 border border-sky-900/40 rounded px-2 py-0.5 truncate">
+                          JP: {c.voiceActorJp}
+                        </div>
+                      )}
+                      {c.voiceActorDe && (
+                        <div className="mt-1 text-[11px] text-amber-300 bg-amber-950/30 border border-amber-900/40 rounded px-2 py-0.5 truncate">
+                          DE: {c.voiceActorDe}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1082,27 +1234,162 @@ export default function MediaDetailPage() {
         {activeTab === 'reviews' && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-[#F1F3F7]">Kritiken &amp; Rezensionen</h3>
-              <p className="text-xs text-zinc-400 mt-0.5">Offizielle Pressestimmen und Community-Wertungen</p>
+              <h3 className="text-lg font-bold text-[#F1F3F7]">Kritiken &amp; Wertungen</h3>
+              <p className="text-xs text-zinc-400 mt-0.5">Offizielle Pressestimmen, Metascores und Bewertungsportale</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {details.reviews.map((rev, i) => (
-                <div key={i} className="p-5 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-sm text-[#F1F3F7]">{rev.author}</h4>
-                      <span className="text-[11px] text-zinc-500">{rev.source} • {rev.date}</span>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                      {rev.score}
+            {/* Score Overview Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Critics Metascore Card */}
+              <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                    Kritiker (Metascore)
+                  </span>
+                  <span className="text-xs text-zinc-500 mt-0.5 block">
+                    Metacritic Aggregator
+                  </span>
+                </div>
+                {metacriticScore !== null && metacriticStyle ? (
+                  <div className="flex items-center gap-2">
+                    <span className={cn('w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black text-black font-mono shadow-md', metacriticStyle.badgeBg)}>
+                      {metacriticScore}
+                    </span>
+                    <span className={cn('text-xs font-bold', metacriticStyle.colorClass)}>
+                      / 100
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-300 leading-relaxed italic">
-                    &bdquo;{rev.text}&ldquo;
+                ) : (
+                  <span className="text-xs text-zinc-500 italic">Nicht erfasst</span>
+                )}
+              </div>
+
+              {/* Community / Audience Card */}
+              <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                    Community &amp; Publikum
+                  </span>
+                  <span className="text-xs text-zinc-500 mt-0.5 block">
+                    {item.communityRatingsCount
+                      ? `${item.communityRatingsCount.toLocaleString('de-DE')} Bewertungen`
+                      : 'Externe Plattformen'}
+                  </span>
+                </div>
+                {item.communityRating ? (
+                  <div className="flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <span className="text-base font-black text-[#F1F3F7]">
+                      {item.communityRating.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-zinc-500">/ 5.0</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-zinc-500 italic">Nicht erfasst</span>
+                )}
+              </div>
+
+              {/* Personal Rating Card */}
+              <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                    Persönliche Wertung
+                  </span>
+                  <span className="text-xs text-zinc-500 mt-0.5 block">
+                    Dein Eindruck in OmniTrack
+                  </span>
+                </div>
+                {item.rating ? (
+                  <div className="flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <span className="text-base font-black text-amber-400">
+                      {item.rating.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-zinc-500">/ 5.0</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setActiveTab('notes')}
+                    className="text-xs font-bold text-purple-400 hover:text-purple-300 underline underline-offset-2 transition-colors"
+                  >
+                    Jetzt bewerten
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Curated Reviews (if real curated reviews exist) */}
+            {details.reviews.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                  Ausgewählte Pressestimmen
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {details.reviews.map((rev, i) => (
+                    <div key={i} className="p-5 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-sm text-[#F1F3F7]">{rev.author}</h4>
+                          <span className="text-[11px] text-zinc-500">{rev.source} • {rev.date}</span>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          {rev.score}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 leading-relaxed italic">
+                        &bdquo;{rev.text}&ldquo;
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Honest External Reviews & Portals Directory */}
+            <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-[#F1F3F7]">
+                    {details.reviews.length === 0
+                      ? 'Keine redaktionellen Rezensionstexte hinterlegt'
+                      : 'Kritiken & Wertungen im Web nachschlagen'}
+                  </h4>
+                  <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
+                    {details.reviews.length === 0
+                      ? 'Im lokalen Datenbestand sind für diesen Titel keine vorformulierten Pressestimmen hinterlegt. Du kannst Rezensionen und Wertungen direkt auf den führenden Plattformen nachschlagen:'
+                      : 'Weiterführende Tests, Community-Rezensionen und Detailwertungen auf den führenden Plattformen:'}
                   </p>
                 </div>
-              ))}
+                <button
+                  onClick={() => setActiveTab('notes')}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-md flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Eigene Rezension &amp; Notizen erfassen</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-[#282D37]">
+                {getExternalReviewLinks(item).map((portal) => (
+                  <a
+                    key={portal.name}
+                    href={portal.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-3.5 rounded-xl bg-[#0F1117] border border-[#282D37] hover:border-zinc-500 hover:bg-zinc-900/60 transition-all group flex items-center justify-between"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <span className="text-xs font-bold text-zinc-200 group-hover:text-white block truncate">
+                        {portal.name}
+                      </span>
+                      <span className="text-[11px] text-zinc-500 block truncate mt-0.5">
+                        {portal.description}
+                      </span>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 shrink-0" />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         )}

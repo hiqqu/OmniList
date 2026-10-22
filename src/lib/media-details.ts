@@ -453,10 +453,10 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
   // Generate intelligent type-specific dynamic details
   const typeDetails: Record<MediaType, Partial<EnrichedMediaDetails>> = {
     movie: {
-      director: item.creator || 'Namhafter Regisseur',
-      duration: 'ca. 120 Minuten',
-      ageRating: 'FSK 12',
-      language: 'Deutsch / Originalversion',
+      director: item.creator || undefined,
+      duration: undefined,
+      ageRating: undefined,
+      language: undefined,
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: realMetascore ? `${realMetascore} / 100` : undefined,
@@ -464,26 +464,14 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
         audienceLabel: item.communityRating ? 'Publikumswertung' : undefined,
       },
-      cast: [
-        { name: 'Hauptdarsteller 1', role: 'Hauptrolle' },
-        { name: 'Hauptdarsteller 2', role: 'Nebenrolle' },
-        { name: item.creator || 'Regie', role: 'Regisseur' },
-      ],
-      reviews: [
-        {
-          author: 'Filmdienst / Kino-Review',
-          source: 'Filmkritik',
-          score: '4/5',
-          text: `Hervorragend inszeniertes Werk mit starker Besetzung und fesselnder Dramaturgie rund um ${item.title}.`,
-          date: 'Kürzlich erschienen',
-        },
-      ],
+      cast: item.creator ? [{ name: item.creator, role: 'Regie / Schöpfer' }] : [],
+      reviews: [],
     },
     show: {
-      director: item.creator || 'Showrunner & Regieteam',
-      duration: `${item.progress.total || 10} Episoden`,
-      ageRating: 'FSK 16',
-      language: 'Deutsch / Original',
+      director: item.creator || undefined,
+      duration: item.progress.total ? `${item.progress.total} Episoden` : undefined,
+      ageRating: undefined,
+      language: undefined,
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: realMetascore ? `${realMetascore} / 100` : undefined,
@@ -491,25 +479,14 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
         audienceLabel: item.communityRating ? 'Zuschauer-Wertung' : undefined,
       },
-      cast: [
-        { name: 'Hauptcast', role: 'Serien-Hauptfigur' },
-        { name: item.creator || 'Schöpfer', role: 'Showrunner' },
-      ],
-      reviews: [
-        {
-          author: 'Serienjunkies',
-          source: 'Staffel-Kritik',
-          score: '9/10',
-          text: 'Fesselnde Charakterentwicklung und brillante Wendungen von Folge zu Folge.',
-          date: 'Kürzlich',
-        },
-      ],
+      cast: item.creator ? [{ name: item.creator, role: 'Showrunner / Schöpfer' }] : [],
+      reviews: [],
     },
     anime: {
-      studio: item.creator || 'Japanisches Animationsstudio',
-      duration: `${item.progress.total || 12} Folgen (~24 Min.)`,
-      language: 'Japanisch mit Untertiteln & Synchro',
-      ageRating: 'FSK 12',
+      studio: item.creator || undefined,
+      duration: item.progress.total ? `${item.progress.total} Folgen` : undefined,
+      language: undefined,
+      ageRating: undefined,
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: realMetascore ? `${realMetascore} / 100` : undefined,
@@ -517,43 +494,22 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
         audienceLabel: item.communityRating ? 'AniList Community' : undefined,
       },
-      cast: [
-        {
-          name: 'Hauptfigur',
-          role: 'Protagonist',
-          voiceActorJp: 'Renommierter Seiyuu (JP)',
-          voiceActorDe: 'Deutsche Synchronstimme',
-        },
-        {
-          name: 'Nebenfigur',
-          role: 'Wichtiger Gefährte',
-          voiceActorJp: 'Seiyuu (JP)',
-          voiceActorDe: 'Synchronsprecher',
-        },
-      ],
-      reviews: [
-        {
-          author: 'Anime Community',
-          source: 'Review',
-          score: 'Sehr gut',
-          text: `Eindrucksvolle Animationen, packende musikalische Untermalung und eine mitreißende Geschichte in ${item.title}.`,
-          date: 'Aktuell',
-        },
-      ],
+      cast: item.creator ? [{ name: item.creator, role: 'Studio / Schöpfer' }] : [],
+      reviews: [],
     },
     book: {
-      writers: [item.creator || 'Autor/in'],
+      writers: item.creator ? [item.creator] : undefined,
       publisher:
         item.publisher ||
         (item.collection_name ? item.collection_name.replace(' Ausgabe', '') : undefined) ||
         (item.originalTitle && item.originalTitle.includes('Verlag') ? item.originalTitle : undefined),
-      pageCount: item.progress.total || 380,
+      pageCount: item.progress.total || undefined,
       isbn: item.isbn
         ? formatIsbn(item.isbn)
         : item.external_id?.startsWith('isbn:')
         ? formatIsbn(item.external_id.replace('isbn:', ''))
         : undefined,
-      language: 'Deutsch',
+      language: undefined,
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         audience: item.communityRating
@@ -566,25 +522,19 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         audienceLabel: 'Leser-Bewertung',
       },
       cast: parseBookContributors(item.creator, item.originalTitle, item.title),
-      reviews: [
-        {
-          author: 'Literatur-Kritik',
-          source: 'Buchrezension',
-          score: '5/5',
-          text: `Ein fesselnd geschriebenes Buch von ${item.creator || 'hoher Qualität'}, das den Leser von der ersten bis zur letzten Seite fesselt.`,
-          date: 'Rezension',
-        },
-      ],
+      reviews: [],
     },
     game: {
-      developer: item.creator || 'Entwicklerstudio',
-      platforms: ['PC', 'PlayStation 5', 'Xbox Series X/S'],
-      playtime: {
-        mainStory: `${item.progress.total ? Math.round(item.progress.total * 0.6) : 25} Std.`,
-        extras: `${item.progress.total || 45} Std.`,
-        completionist: `${item.progress.total ? Math.round(item.progress.total * 1.5) : 80} Std.`,
-      },
-      ageRating: 'USK 16',
+      developer: item.creator || undefined,
+      platforms: undefined,
+      playtime: item.progress.total
+        ? {
+            mainStory: `${Math.round(item.progress.total * 0.6)} Std.`,
+            extras: `${item.progress.total} Std.`,
+            completionist: `${Math.round(item.progress.total * 1.5)} Std.`,
+          }
+        : undefined,
+      ageRating: undefined,
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
         critics: realMetascore ? `${realMetascore} / 100` : undefined,
@@ -592,19 +542,8 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
         audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
         audienceLabel: item.communityRating ? 'Spielerbewertungen' : undefined,
       },
-      cast: [
-        { name: 'Hauptcharakter', role: 'Spielbare Figur' },
-        { name: item.creator || 'Lead Director', role: 'Game Director' },
-      ],
-      reviews: [
-        {
-          author: 'Gaming Magazin',
-          source: 'Review',
-          score: '9/10',
-          text: 'Herausragendes Gameplay, atmosphärische Spielwelt und erstklassiges Sounddesign.',
-          date: 'Release-Test',
-        },
-      ],
+      cast: item.creator ? [{ name: item.creator, role: 'Entwicklerstudio / Lead' }] : [],
+      reviews: [],
     },
   };
 
