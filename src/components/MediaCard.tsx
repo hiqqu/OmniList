@@ -439,23 +439,26 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <span>Im Besitz</span>
               </span>
             )}
-            {item.external_id?.startsWith('steam:') && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
-                <Gamepad2 className="w-3 h-3 text-blue-400" />
-                <span>Steam</span>
-              </span>
-            )}
-            {item.external_id?.startsWith('psn:') && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
-                <Gamepad2 className="w-3 h-3 text-sky-400" />
-                <span>PlayStation</span>
-              </span>
-            )}
-            {item.external_id?.startsWith('gog:') && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
-                <Gamepad2 className="w-3 h-3 text-purple-400" />
-                <span>GOG</span>
-              </span>
+{(item.connectedService || item.external_id?.startsWith('steam:') || item.external_id?.startsWith('psn:') || item.external_id?.startsWith('gog:')) && (
+              (() => {
+                const s = item.connectedService || (item.external_id?.startsWith('steam:') ? 'steam' : item.external_id?.startsWith('psn:') ? 'psn' : 'gog');
+                return (
+                  <span
+                    className={cn(
+                      'text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0',
+                      s === 'steam'
+                        ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                        : s === 'psn'
+                        ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                        : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                    )}
+                    title={`Verknüpft mit ${item.gameConnection?.serviceName || s.toUpperCase()}`}
+                  >
+                    <Gamepad2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    <span>{s === 'steam' ? 'Steam' : s === 'psn' ? 'PSN' : 'GOG'}</span>
+                  </span>
+                );
+              })()
             )}
           </div>
 

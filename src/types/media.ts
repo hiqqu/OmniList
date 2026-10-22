@@ -4,6 +4,18 @@ export type MediaStatus = 'in_progress' | 'planned' | 'completed' | 'paused' | '
 
 export type ProgressUnit = 'episodes' | 'pages' | 'hours' | 'minutes' | 'seasons' | 'chapters';
 
+export type ConnectedGameService = 'steam' | 'psn' | 'gog';
+
+export interface GameConnectionInfo {
+  service: ConnectedGameService;
+  serviceId?: string; // z. B. Steam AppID oder PSN Title ID
+  serviceName: string; // 'Steam', 'PlayStation Network', 'GOG Galaxy'
+  playtimeMinutes?: number;
+  lastPlayed?: string;
+  connectedAt?: string;
+  accountUsername?: string;
+}
+
 export interface GameTracker {
   storyCompleted?: boolean;
   completionist100?: boolean;
@@ -44,7 +56,9 @@ export interface MediaItem {
   isbn?: string; // Für Bücher: ISBN-10 oder ISBN-13
   progress: MediaProgress;
   gameTracker?: GameTracker; // Spezieller Tracker für Videospiele (Story, 100%, Achievements, offene Spielzeit)
-  external_id: string; // e.g. "tmdb:1234", "anilist:5678", "rawg:456", "googlebooks:abc"
+  connectedService?: ConnectedGameService; // 'steam' | 'psn' | 'gog'
+  gameConnection?: GameConnectionInfo; // Details zur Plattform-Verbindung
+  external_id: string; // e.g. "tmdb:1234", "anilist:5678", "rawg:456", "googlebooks:abc", "steam:1091500"
   franchise_id?: string; // Grouping related works (e.g. "tmdb:collection:87118" or "dune-saga")
   collection_name?: string;
   last_sequel_check?: string; // ISO Date String

@@ -20,6 +20,7 @@ import {
   Check,
   XCircle,
   X,
+  Download,
 } from 'lucide-react';
 import { MediaType, MediaStatus } from '@/types/media';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ interface SidebarProps {
   onCheckSequels: () => void;
   onResetLibrary: () => void;
   onOpenSyncModal?: () => void;
+  onOpenGameImportModal?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   className?: string;
@@ -59,6 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCheckSequels,
   onResetLibrary,
   onOpenSyncModal,
+  onOpenGameImportModal,
   isMobileOpen = false,
   onCloseMobile,
   className,
@@ -278,19 +281,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {typeFilters.map((tf) => {
                 const isActive = selectedType === tf.id;
                 return (
-                  <button
-                    key={tf.id}
-                    onClick={() => handleItemClick(() => onSelectType(tf.id))}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium border transition-all',
-                      isActive
-                        ? tf.activeStyle
-                        : `border-transparent ${tf.hoverStyle}`
+                  <div key={tf.id} className="space-y-1">
+                    <button
+                      onClick={() => handleItemClick(() => onSelectType(tf.id))}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium border transition-all',
+                        isActive
+                          ? tf.activeStyle
+                          : `border-transparent ${tf.hoverStyle}`
+                      )}
+                    >
+                      <span className={tf.color}>{tf.icon}</span>
+                      <span>{tf.label}</span>
+                    </button>
+                    {tf.id === 'game' && onOpenGameImportModal && (
+                      <button
+                        type="button"
+                        onClick={() => handleItemClick(() => onOpenGameImportModal())}
+                        className="w-full flex items-center justify-between px-3 py-1.5 pl-9 rounded-xl text-[11px] font-semibold text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 transition-colors"
+                        title="Spiele aus Steam, PSN oder GOG Galaxy importieren"
+                      >
+                        <span>Steam / PSN / GOG Import</span>
+                        <Download className="w-3 h-3 text-purple-400" />
+                      </button>
                     )}
-                  >
-                    <span className={tf.color}>{tf.icon}</span>
-                    <span>{tf.label}</span>
-                  </button>
+                  </div>
                 );
               })}
             </div>

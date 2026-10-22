@@ -11,7 +11,9 @@ import { SequelCard } from '@/components/SequelCard';
 import { AddMediaDialog } from '@/components/AddMediaDialog';
 import { EditMediaModal } from '@/components/EditMediaModal';
 import { SyncModal } from '@/components/SyncModal';
+import { GameImportModal } from '@/components/GameImportModal';
 import { StatsBar } from '@/components/StatsBar';
+import { ImportResult } from '@/lib/game-import';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
 import { MediaItem, MediaType, MediaStatus, SequelNotification } from '@/types/media';
 import {
@@ -47,6 +49,7 @@ export default function Home() {
   const [addModalInitialTab, setAddModalInitialTab] = useState<MediaType | undefined>(undefined);
   const [addModalInitialQuery, setAddModalInitialQuery] = useState<string>('');
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isGameImportModalOpen, setIsGameImportModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
@@ -489,6 +492,12 @@ export default function Home() {
     }
   };
 
+  // Apply Steam / PSN / GOG Imported Games with Deduplication & Replacement
+  const handleApplyGameImport = (updatedMedia: MediaItem[]) => {
+    saveStoredMedia(updatedMedia);
+    setMedia(updatedMedia);
+  };
+
   const existingExternalIds = useMemo(() => new Set(media.map((m) => m.external_id)), [media]);
 
   if (!isLoaded) {
@@ -520,6 +529,7 @@ export default function Home() {
         onCheckSequels={handleCheckSequels}
         onResetLibrary={handleResetLibrary}
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
+        onOpenGameImportModal={() => setIsGameImportModalOpen(true)}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
@@ -583,32 +593,42 @@ export default function Home() {
                   </span>
                 </div>
 
-                {/* Aktive Filter-Pills */}
-                {(selectedStatus !== 'all' || onlyOwned) && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {selectedStatus !== 'all' && (
-                      <button
-                        onClick={() => setSelectedStatus('all')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors"
-                        title="Status-Filter zurücksetzen"
-                      >
-                        <span>Status: {getMediaStatusBadge(selectedStatus).label}</span>
-                        <X className="w-3.5 h-3.5 text-zinc-400" />
-                      </button>
-                    )}
-                    {onlyOwned && (
-                      <button
-                        onClick={() => setOnlyOwned(false)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-colors shadow-sm"
-                        title="Besitz-Filter deaktivieren"
-                      >
-                        <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Nur im Besitz</span>
-                        <X className="w-3.5 h-3.5 text-emerald-400" />
-                      </button>
-                    )}
-                  </div>
-                )}
+                {/* Aktive Filter-Pills & Shortcuts */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedType === 'game' && (
+                    <button
+                      type="button"
+                      onClick={() => setIsGameImportModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 transition-all active:scale-95 shadow-sm"
+                      title="Spiele aus Steam, PlayStation Network oder GOG importieren"
+                    >
+                      <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Steam / PSN / GOG Import</span>
+                    </button>
+                  )}
+
+                  {selectedStatus !== 'all' && (
+                    <button
+                      onClick={() => setSelectedStatus('all')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors"
+                      title="Status-Filter zurücksetzen"
+                    >
+                      <span>Status: {getMediaStatusBadge(selectedStatus).label}</span>
+                      <X className="w-3.5 h-3.5 text-zinc-400" />
+                    </button>
+                  )}
+                  {onlyOwned && (
+                    <button
+                      onClick={() => setOnlyOwned(false)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-colors shadow-sm"
+                      title="Besitz-Filter deaktivieren"
+                    >
+                      <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Nur im Besitz</span>
+                      <X className="w-3.5 h-3.5 text-emerald-400" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Media Card Grid (2:3 aspect ratio) */}
@@ -738,6 +758,7 @@ export default function Home() {
         existingExternalIds={existingExternalIds}
         initialTab={addModalInitialTab}
         initialQuery={addModalInitialQuery}
+        onOpenGameImport={() => setIsGameImportModalOpen(true)}
       />
 
       {/* Edit Media Modal */}
@@ -756,6 +777,15 @@ export default function Home() {
         media={media}
         sequels={sequels}
         onApplySync={handleApplySync}
+        addToast={addToast}
+      />
+
+      {/* Steam, PSN, GOG Game Library Import Modal */}
+      <GameImportModal
+        isOpen={isGameImportModalOpen}
+        onClose={() => setIsGameImportModalOpen(false)}
+        media={media}
+        onApplyImport={handleApplyGameImport}
         addToast={addToast}
       />
 
