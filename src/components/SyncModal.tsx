@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { isGameDeleted, getDeletedGameKeys, clearDeletedGameKeys } from '@/lib/storage';
 import { isAutoSyncEnabled, setAutoSyncEnabled } from '@/lib/auto-sync';
 import { getMediaMetacriticScore } from '@/lib/metacritic';
-import { isSequelInLibrary } from '@/lib/sequels';
+import { isSequelInLibrary, isSequelDismissed, getDismissedSequelKeys, addDismissedSequelKey } from '@/lib/sequels';
 
 interface SyncModalProps {
   isOpen: boolean;
@@ -305,6 +305,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           data: {
             media,
             sequels,
+            dismissedSequels: getDismissedSequelKeys(),
             integrations: {
               steam: {
                 steamInput: steamInput.trim(),
@@ -384,6 +385,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
         const pulledMedia = Array.isArray(payloadData?.media) ? payloadData.media : [];
         const pulledSequels = Array.isArray(payloadData?.sequels) ? payloadData.sequels : [];
+        if (Array.isArray(payloadData?.dismissedSequels)) {
+          addDismissedSequelKey(payloadData.dismissedSequels);
+        }
         const pulledIntegrations = payloadData?.integrations;
 
         if (pulledMedia.length === 0 && (!payloadData || !payloadData.media)) {
@@ -447,6 +451,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       itemCount: media.length,
       media,
       sequels,
+      dismissedSequels: getDismissedSequelKeys(),
       integrations: {
         steam: { steamInput: steamInput.trim() },
         psn: { npsso: psnNpsso.trim() },
@@ -479,6 +484,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
         const restoredMedia = Array.isArray(parsed) ? parsed : parsed.media;
         const restoredSequels = parsed.sequels || [];
+        if (Array.isArray(parsed.dismissedSequels)) {
+          addDismissedSequelKey(parsed.dismissedSequels);
+        }
         const restoredIntegrations = parsed.integrations;
 
         if (restoredIntegrations?.steam?.steamInput) {
@@ -712,7 +720,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       });
 
       const finalMedia = [...newItems, ...updatedMedia];
-      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia));
+      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia) && !isSequelDismissed(s));
       onApplySync(finalMedia, validSequels);
 
       const parts = [];
@@ -898,7 +906,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       });
 
       const finalMedia = [...newItems, ...updatedMedia];
-      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia));
+      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia) && !isSequelDismissed(s));
       onApplySync(finalMedia, validSequels);
 
       const parts = [];
@@ -1100,7 +1108,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       });
 
       const finalMedia = [...newItems, ...updatedMedia];
-      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia));
+      const validSequels = sequels.filter((s) => !isSequelInLibrary(s, finalMedia) && !isSequelDismissed(s));
       onApplySync(finalMedia, validSequels);
 
       const parts = [];

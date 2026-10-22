@@ -1,6 +1,103 @@
 import { MediaItem, SequelNotification } from '@/types/media';
 import { normalizeMetacriticKey, getNumberVariants } from '@/lib/metacritic';
 
+export const DISMISSED_SEQUELS_STORAGE_KEY = 'omnilist_dismissed_sequels_v1';
+export const LEGACY_DISMISSED_SEQUELS_STORAGE_KEY = 'omnitrack_dismissed_sequels_v1';
+
+/**
+ * Returns all dismissed sequel keys from persistent storage.
+ */
+export function getDismissedSequelKeys(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DISMISSED_SEQUELS_STORAGE_KEY);
+    const legacyRaw = !raw ? localStorage.getItem(LEGACY_DISMISSED_SEQUELS_STORAGE_KEY) : null;
+    const sourceRaw = raw || legacyRaw;
+    if (legacyRaw) {
+      localStorage.removeItem(LEGACY_DISMISSED_SEQUELS_STORAGE_KEY);
+    }
+    if (!sourceRaw) return [];
+    const parsed = JSON.parse(sourceRaw);
+    if (!Array.isArray(parsed)) return [];
+    if (legacyRaw && !raw) {
+      localStorage.setItem(DISMISSED_SEQUELS_STORAGE_KEY, JSON.stringify(parsed));
+    }
+    return parsed;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Adds keys to the persistent dismissed sequel blacklist.
+ */
+export function addDismissedSequelKey(keys: string | string[]): void {
+  if (typeof window === 'undefined' || !keys) return;
+  try {
+    const keyArray = Array.isArray(keys) ? keys : [keys];
+    const existing = new Set(getDismissedSequelKeys());
+    for (const k of keyArray) {
+      if (k && typeof k === 'string') {
+        const clean = k.trim().toLowerCase();
+        if (clean) existing.add(clean);
+      }
+    }
+    localStorage.setItem(DISMISSED_SEQUELS_STORAGE_KEY, JSON.stringify(Array.from(existing)));
+    localStorage.removeItem(LEGACY_DISMISSED_SEQUELS_STORAGE_KEY);
+  } catch (e) {
+    console.error('Failed to add dismissed sequel key', e);
+  }
+}
+
+/**
+ * Clears the dismissed sequel blacklist.
+ */
+export function clearDismissedSequels(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(DISMISSED_SEQUELS_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_DISMISSED_SEQUELS_STORAGE_KEY);
+  } catch {}
+}
+
+/**
+ * Checks whether a sequel notification has been dismissed by the user.
+ */
+export function isSequelDismissed(
+  sequel: SequelNotification,
+  dismissedSet?: Set<string>
+): boolean {
+  if (!sequel) return false;
+  const set = dismissedSet || new Set(getDismissedSequelKeys());
+  if (set.size === 0) return false;
+
+  // 1. Check direct ID
+  if (sequel.id && set.has(sequel.id.trim().toLowerCase())) {
+    return true;
+  }
+
+  // 2. Check external_id
+  if (sequel.external_id && set.has(sequel.external_id.trim().toLowerCase())) {
+    return true;
+  }
+
+  // 3. Check normalized sequel title & variants
+  const cleanTitle = normalizeSequelMatchKey(sequel.sequelTitle);
+  if (cleanTitle) {
+    if (set.has(cleanTitle)) return true;
+    for (const v of getNumberVariants(cleanTitle)) {
+      if (set.has(v)) return true;
+    }
+  }
+
+  // 4. Franchise ID if present
+  if (sequel.franchise_id && set.has(sequel.franchise_id.trim().toLowerCase())) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Normalizes a title for robust sequel matching across editions, Roman numerals, and languages.
  */

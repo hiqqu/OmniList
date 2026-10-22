@@ -4,6 +4,7 @@ import React from 'react';
 import { Film, CheckCircle2, Clock, Radar, Flame, BookmarkCheck } from 'lucide-react';
 import { MediaItem, SequelNotification, MediaType, MediaStatus } from '@/types/media';
 import { cn } from '@/lib/utils';
+import { isSequelInLibrary, isSequelDismissed } from '@/lib/sequels';
 
 interface StatsBarProps {
   media: MediaItem[];
@@ -29,12 +30,14 @@ export const StatsBar: React.FC<StatsBarProps> = ({
   const inProgressCount = relevantMedia.filter((m) => m.status === 'in_progress').length;
   const completedCount = relevantMedia.filter((m) => m.status === 'completed').length;
 
+  const isSequelActive = (s: SequelNotification) =>
+    !s.isDismissed && !s.isAdded && !isSequelDismissed(s) && !isSequelInLibrary(s, media);
+
   const sequelCount = isAllType
-    ? sequels.filter((s) => !s.isDismissed && !s.isAdded).length
+    ? sequels.filter(isSequelActive).length
     : sequels.filter(
         (s) =>
-          !s.isDismissed &&
-          !s.isAdded &&
+          isSequelActive(s) &&
           (s.parentMediaType === selectedType || s.sequelType === selectedType)
       ).length;
 

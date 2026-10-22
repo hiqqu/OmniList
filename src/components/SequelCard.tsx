@@ -8,7 +8,7 @@ import { getMediaTypeBadge, cn } from '@/lib/utils';
 interface SequelCardProps {
   sequel: SequelNotification;
   onAccept: (sequel: SequelNotification, status: MediaStatus) => void;
-  onDismiss: (id: string) => void;
+  onDismiss: (sequel: SequelNotification) => void;
 }
 
 export const SequelCard: React.FC<SequelCardProps> = ({ sequel, onAccept, onDismiss }) => {
@@ -75,7 +75,7 @@ export const SequelCard: React.FC<SequelCardProps> = ({ sequel, onAccept, onDism
 
             {/* Dismiss Button */}
             <button
-              onClick={() => onDismiss(sequel.id)}
+              onClick={() => onDismiss(sequel)}
               className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center transition-colors flex-shrink-0"
               title="Ignorieren"
             >

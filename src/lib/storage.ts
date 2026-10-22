@@ -1,7 +1,15 @@
 import { MediaItem, SequelNotification, MediaStatus, ProgressUnit } from '@/types/media';
 import { INITIAL_MEDIA_ITEMS, INITIAL_SEQUEL_NOTIFICATIONS, LEGACY_DEMO_MEDIA_IDS, LEGACY_DEMO_SEQUEL_IDS } from './seed-data';
 import { createBookSvgCover, getMediaCoverFallback } from './book-cover';
-import { isSequelInLibrary } from './sequels';
+import {
+  isSequelInLibrary,
+  isSequelDismissed,
+  addDismissedSequelKey,
+  getDismissedSequelKeys,
+  clearDismissedSequels,
+  normalizeSequelMatchKey,
+} from './sequels';
+import { getNumberVariants } from './metacritic';
 
 const MEDIA_STORAGE_KEY = 'omnilist_media_library_v1';
 const LEGACY_MEDIA_STORAGE_KEY = 'omnitrack_media_library_v1';
@@ -347,11 +355,12 @@ export function saveStoredMedia(items: MediaItem[]): void {
   try {
     localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(items));
 
-    // Auto-remove any stored sequels that the user now possesses in their collection
+    // Auto-remove any stored sequels that the user now possesses in their collection or dismissed
     const rawSequels = localStorage.getItem(SEQUELS_STORAGE_KEY);
     if (rawSequels) {
       const existingSequels: SequelNotification[] = JSON.parse(rawSequels);
-      const cleaned = existingSequels.filter((s) => !isSequelInLibrary(s, items));
+      const dismissedSet = new Set(getDismissedSequelKeys());
+      const cleaned = existingSequels.filter((s) => !isSequelInLibrary(s, items) && !isSequelDismissed(s, dismissedSet));
       if (cleaned.length !== existingSequels.length) {
         localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(cleaned));
       }
@@ -368,6 +377,12 @@ export function getStoredSequels(): SequelNotification[] {
     const raw = localStorage.getItem(SEQUELS_STORAGE_KEY);
     const legacyRaw = !raw ? localStorage.getItem(LEGACY_SEQUELS_STORAGE_KEY) : null;
     const sourceRaw = raw || legacyRaw;
+
+    // Safely remove legacy storage key so it never resurrects pruned sequels
+    if (legacyRaw) {
+      localStorage.removeItem(LEGACY_SEQUELS_STORAGE_KEY);
+    }
+
     if (!sourceRaw) {
       localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify([]));
       return [];
@@ -387,17 +402,20 @@ export function getStoredSequels(): SequelNotification[] {
     }
 
     // Auto-remove orphan sequels whose parent media was deleted or is not in library,
-    // AND auto-remove any sequel that is already owned/present in the user's collection!
+    // AND auto-remove any sequel that is already owned/present in the user's collection,
+    // AND auto-remove any sequel that has been dismissed by the user!
     const currentMedia = getStoredMedia();
     const mediaIds = new Set(currentMedia.map((m) => m.id));
     const mediaTitles = new Set(currentMedia.map((m) => m.title.toLowerCase()));
+    const dismissedSet = new Set(getDismissedSequelKeys());
 
     const activeSequels = upgraded.filter((s) => {
       const idMatch = s.parentMediaId ? mediaIds.has(s.parentMediaId) : false;
       const titleMatch = s.parentMediaTitle ? mediaTitles.has(s.parentMediaTitle.toLowerCase()) : false;
       const parentExists = idMatch || titleMatch;
       const alreadyOwned = isSequelInLibrary(s, currentMedia);
-      return parentExists && !alreadyOwned;
+      const isDismissed = isSequelDismissed(s, dismissedSet);
+      return parentExists && !alreadyOwned && !isDismissed;
     });
 
     if (activeSequels.length !== parsed.length) {
@@ -414,7 +432,10 @@ export function getStoredSequels(): SequelNotification[] {
 export function saveStoredSequels(sequels: SequelNotification[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(sequels));
+    const dismissedSet = new Set(getDismissedSequelKeys());
+    const valid = sequels.filter((s) => !isSequelDismissed(s, dismissedSet));
+    localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(valid));
+    localStorage.removeItem(LEGACY_SEQUELS_STORAGE_KEY);
   } catch (e) {
     console.error('Failed to save sequels to localStorage', e);
   }
@@ -597,10 +618,55 @@ export function deleteMediaItem(id: string): void {
   }
 }
 
-export function dismissSequel(id: string): void {
+export function dismissSequel(
+  sequelOrId: SequelNotification | string,
+  extraExternalId?: string,
+  extraTitle?: string
+): void {
+  if (typeof window === 'undefined') return;
+
   const current = getStoredSequels();
-  const filtered = current.filter((s) => s.id !== id);
+  const targetId = typeof sequelOrId === 'string' ? sequelOrId : sequelOrId?.id;
+  const targetExtId = (typeof sequelOrId === 'object' ? sequelOrId.external_id : extraExternalId)?.trim().toLowerCase();
+  const targetTitle = typeof sequelOrId === 'object' ? sequelOrId.sequelTitle : extraTitle;
+  const targetNormTitle = targetTitle ? normalizeSequelMatchKey(targetTitle) : '';
+
+  // Gather all unique keys for blacklist to prevent any resurrection
+  const keysToDismiss: string[] = [];
+  if (targetId) keysToDismiss.push(targetId);
+  if (targetExtId) keysToDismiss.push(targetExtId);
+  if (targetNormTitle) {
+    keysToDismiss.push(targetNormTitle);
+    for (const v of getNumberVariants(targetNormTitle)) {
+      keysToDismiss.push(v);
+    }
+  }
+
+  // Also collect matching keys from any existing stored sequel entry
+  for (const s of current) {
+    const idMatch = targetId ? s.id === targetId : false;
+    const extMatch = targetExtId && s.external_id ? s.external_id.trim().toLowerCase() === targetExtId : false;
+    const titleMatch = targetNormTitle && s.sequelTitle ? normalizeSequelMatchKey(s.sequelTitle) === targetNormTitle : false;
+    if (idMatch || extMatch || titleMatch) {
+      if (s.id) keysToDismiss.push(s.id);
+      if (s.external_id) keysToDismiss.push(s.external_id.trim().toLowerCase());
+      if (s.sequelTitle) {
+        const norm = normalizeSequelMatchKey(s.sequelTitle);
+        keysToDismiss.push(norm);
+        for (const v of getNumberVariants(norm)) {
+          keysToDismiss.push(v);
+        }
+      }
+    }
+  }
+
+  addDismissedSequelKey(keysToDismiss);
+
+  const dismissedSet = new Set(getDismissedSequelKeys());
+  const filtered = current.filter((s) => !isSequelDismissed(s, dismissedSet));
+
   saveStoredSequels(filtered);
+  localStorage.removeItem(LEGACY_SEQUELS_STORAGE_KEY);
 }
 
 export function acceptSequel(
@@ -633,8 +699,8 @@ export function acceptSequel(
 
   saveStoredMedia([newItem, ...currentMedia]);
 
-  // Remove sequel from radar
-  dismissSequel(sequel.id);
+  // Remove sequel from radar and mark as dismissed so it never returns
+  dismissSequel(sequel);
 
   return newItem;
 }
@@ -642,6 +708,8 @@ export function acceptSequel(
 export function resetLibraryToDefault(): { media: MediaItem[]; sequels: SequelNotification[] } {
   if (typeof window !== 'undefined') {
     localStorage.setItem(DEMO_CLEARED_FLAG_KEY, 'true');
+    clearDismissedSequels();
+    localStorage.removeItem(LEGACY_SEQUELS_STORAGE_KEY);
   }
   saveStoredMedia([]);
   saveStoredSequels([]);

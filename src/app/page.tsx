@@ -44,7 +44,7 @@ import {
   acceptSequel,
   resetLibraryToDefault,
 } from '@/lib/storage';
-import { isSequelInLibrary } from '@/lib/sequels';
+import { isSequelInLibrary, isSequelDismissed, normalizeSequelMatchKey } from '@/lib/sequels';
 import { getUnitIncrement, getMediaStatusBadge, cn } from '@/lib/utils';
 import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search } from 'lucide-react';
 
@@ -274,7 +274,9 @@ export default function Home() {
     }
 
     const currentMediaItems = hasBackfill ? backfilledMedia : loadedMedia;
-    const unownedLoadedSequels = loadedSequels.filter((s) => !isSequelInLibrary(s, currentMediaItems));
+    const unownedLoadedSequels = loadedSequels.filter(
+      (s) => !isSequelInLibrary(s, currentMediaItems) && !isSequelDismissed(s)
+    );
     if (unownedLoadedSequels.length !== loadedSequels.length) {
       saveStoredSequels(unownedLoadedSequels);
     }
@@ -618,9 +620,18 @@ export default function Home() {
     );
   };
 
-  const handleDismissSequel = (id: string) => {
-    dismissSequel(id);
-    setSequels((prev) => prev.filter((s) => s.id !== id));
+  const handleDismissSequel = (sequelOrId: SequelNotification | string) => {
+    const sequelObj = typeof sequelOrId === 'object' ? sequelOrId : sequels.find((s) => s.id === sequelOrId);
+    dismissSequel(sequelObj || sequelOrId);
+    const targetId = typeof sequelOrId === 'string' ? sequelOrId : sequelOrId?.id;
+    const targetTitle = sequelObj ? normalizeSequelMatchKey(sequelObj.sequelTitle) : '';
+    setSequels((prev) =>
+      prev.filter((s) => {
+        if (targetId && s.id === targetId) return false;
+        if (targetTitle && normalizeSequelMatchKey(s.sequelTitle) === targetTitle) return false;
+        return !isSequelDismissed(s);
+      })
+    );
     addToast('info', 'Fortsetzungsmeldung ignoriert');
   };
 
@@ -640,15 +651,15 @@ export default function Home() {
         const data = await res.json();
         const detectedSequels: SequelNotification[] = data.sequels || [];
 
-        // Exclude sequels that are already owned in the media library
-        const trulyNewSequels = detectedSequels.filter((s) => !isSequelInLibrary(s, media));
+        // Exclude sequels that are already owned in the media library or dismissed
+        const trulyNewSequels = detectedSequels.filter((s) => !isSequelInLibrary(s, media) && !isSequelDismissed(s));
 
         // Merge with existing sequels without duplicate external_id
         const existingExternalIds = new Set(sequels.map((s) => s.external_id));
         const newDetections = trulyNewSequels.filter((s) => !existingExternalIds.has(s.external_id));
 
         if (newDetections.length > 0) {
-          const merged = [...newDetections, ...sequels].filter((s) => !isSequelInLibrary(s, media));
+          const merged = [...newDetections, ...sequels].filter((s) => !isSequelInLibrary(s, media) && !isSequelDismissed(s));
           setSequels(merged);
           saveStoredSequels(merged);
           addToast(
@@ -657,8 +668,8 @@ export default function Home() {
             'Der Radar hat neue Releases für deine Bibliothek erkannt.'
           );
         } else {
-          // Clean existing sequels if any became owned in the meantime
-          const cleaned = sequels.filter((s) => !isSequelInLibrary(s, media));
+          // Clean existing sequels if any became owned or dismissed in the meantime
+          const cleaned = sequels.filter((s) => !isSequelInLibrary(s, media) && !isSequelDismissed(s));
           if (cleaned.length !== sequels.length) {
             setSequels(cleaned);
             saveStoredSequels(cleaned);
@@ -1032,9 +1043,9 @@ export default function Home() {
     };
   }, [media]);
 
-  // Sequel Radar: exclude sequels already present in user's library
+  // Sequel Radar: exclude sequels already present in user's library or dismissed
   const unownedSequels = useMemo(() => {
-    return sequels.filter((s) => !isSequelInLibrary(s, media));
+    return sequels.filter((s) => !isSequelInLibrary(s, media) && !isSequelDismissed(s));
   }, [sequels, media]);
 
   // Sequel Radar subcategories counts and filtered list
@@ -1059,7 +1070,7 @@ export default function Home() {
     saveStoredMedia(syncedMedia);
     setMedia(syncedMedia);
     if (syncedSequels && syncedSequels.length > 0) {
-      const validSequels = syncedSequels.filter((s) => !isSequelInLibrary(s, syncedMedia));
+      const validSequels = syncedSequels.filter((s) => !isSequelInLibrary(s, syncedMedia) && !isSequelDismissed(s));
       saveStoredSequels(validSequels);
       setSequels(validSequels);
     }
