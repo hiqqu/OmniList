@@ -23,11 +23,26 @@ export type GalaxySortKey =
 export type GalaxyGroupKey = 'none' | 'platform' | 'status' | 'genre' | 'release_year';
 
 export interface GalaxyFilterState {
+  // Videospiele
   platforms: string[]; // 'steam' | 'psn' | 'gog' | 'epic' | 'other'
   consoles: string[]; // 'PS5' | 'PS4' | 'PS3' | 'PC' | 'other'
-  ratings: string[]; // '90' | '80' | '70' | 'stars5' | 'stars4'
+
+  // Gemeinsame Filter
+  ratings: string[]; // '90' | '80' | '70' | 'stars5' | 'stars4' | 'stars3'
   tags: string[]; // genre/tag names
   statuses: string[]; // MediaStatus values
+  ownership?: string[]; // 'owned' | 'wishlist'
+
+  // Filme, Serien & Anime
+  eras?: string[]; // '2020s' | '2010s' | '2000s' | '1990s' | 'classic'
+  formats?: string[]; // 'miniseries' | 'compact' | 'longrunning' | 'anime_tv' | 'anime_movie' | 'anime_ova'
+
+  // Bücher
+  bookFormats?: string[]; // 'physical' | 'ebook' | 'audiobook'
+  pageLengths?: string[]; // 'short' | 'medium' | 'long'
+
+  // Alle Medien ('all')
+  types?: string[]; // 'game' | 'movie' | 'show' | 'anime' | 'book'
 }
 
 export interface GameConnectionInfo {

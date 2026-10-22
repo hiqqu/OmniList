@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Search, Plus, X, Cloud, Menu, Radar } from 'lucide-react';
-import { GalaxySortKey, GalaxyGroupKey, GalaxyFilterState } from '@/types/media';
+import { GalaxySortKey, GalaxyGroupKey, GalaxyFilterState, MediaType } from '@/types/media';
 import { GogSortDropdown } from './GogSortDropdown';
 import { GogFilterDropdown } from './GogFilterDropdown';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ interface HeaderProps {
   onFilterChange: (filters: GalaxyFilterState) => void;
   onResetFilters: () => void;
   availableTags?: string[];
+  activeType?: MediaType | 'all';
   onOpenAddModal: () => void;
   onOpenAddModalWithQuery?: (query: string) => void;
   onOpenSyncModal?: () => void;
@@ -42,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   onFilterChange,
   onResetFilters,
   availableTags = [],
+  activeType = 'all',
   onOpenAddModal,
   onOpenAddModalWithQuery,
   onOpenSyncModal,
@@ -120,6 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
             onFilterChange={onFilterChange}
             onResetFilters={onResetFilters}
             availableTags={availableTags}
+            activeType={activeType}
           />
 
           {/* GOG Galaxy Sort & Group Dropdown */}

@@ -109,6 +109,12 @@ export default function Home() {
     ratings: [],
     tags: [],
     statuses: [],
+    ownership: [],
+    eras: [],
+    formats: [],
+    bookFormats: [],
+    pageLengths: [],
+    types: [],
   });
   const [sequelFilterType, setSequelFilterType] = useState<MediaType | 'all'>('all');
 
@@ -136,6 +142,7 @@ export default function Home() {
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>();
     for (const item of media) {
+      if (selectedType !== 'all' && item.type !== selectedType) continue;
       if (item.genres) {
         for (const g of item.genres) {
           if (g.trim()) tagSet.add(g.trim());
@@ -143,7 +150,7 @@ export default function Home() {
       }
     }
     return Array.from(tagSet).sort();
-  }, [media]);
+  }, [media, selectedType]);
 
   const handleResetFilters = () => {
     setFilters({
@@ -152,6 +159,12 @@ export default function Home() {
       ratings: [],
       tags: [],
       statuses: [],
+      ownership: [],
+      eras: [],
+      formats: [],
+      bookFormats: [],
+      pageLengths: [],
+      types: [],
     });
     setSelectedPlatform('all');
     setSelectedStatus('all');
@@ -672,20 +685,93 @@ export default function Home() {
         }
       }
 
-      // Platform filter (from Galaxy multi-select filter)
+      // Platform filter (from Galaxy multi-select filter - only applies to games)
       if (filters.platforms.length > 0) {
+        if (item.type !== 'game') return false;
         const platform = resolveGamePlatform(item);
         if (!filters.platforms.includes(platform)) {
           return false;
         }
       }
 
-      // OS & consoles filter (from Galaxy multi-select filter)
+      // OS & consoles filter (from Galaxy multi-select filter - only applies to games)
       if (filters.consoles.length > 0) {
+        if (item.type !== 'game') return false;
         const consoleName = resolveGameConsole(item);
         if (!filters.consoles.includes(consoleName)) {
           return false;
         }
+      }
+
+      // Media types filter (when browsing all media)
+      if (filters.types && filters.types.length > 0) {
+        if (!filters.types.includes(item.type)) {
+          return false;
+        }
+      }
+
+      // Ownership filter
+      if (filters.ownership && filters.ownership.length > 0) {
+        const isOwned = item.isOwned === true || item.status === 'owned';
+        const matchesOwnership = filters.ownership.some((o) => {
+          if (o === 'owned') return isOwned;
+          if (o === 'wishlist') return !isOwned;
+          return false;
+        });
+        if (!matchesOwnership) return false;
+      }
+
+      // Release Era filter (for movies, shows, anime, books)
+      if (filters.eras && filters.eras.length > 0) {
+        const year = item.releaseDate ? parseInt(item.releaseDate.split('-')[0], 10) : 0;
+        const matchesEra = filters.eras.some((e) => {
+          if (e === '2020s') return year >= 2020;
+          if (e === '2010s') return year >= 2010 && year <= 2019;
+          if (e === '2000s') return year >= 2000 && year <= 2009;
+          if (e === '1990s') return year >= 1990 && year <= 1999;
+          if (e === 'classic') return year > 0 && year < 1990;
+          return false;
+        });
+        if (!matchesEra) return false;
+      }
+
+      // Format filter (for shows & anime)
+      if (filters.formats && filters.formats.length > 0) {
+        const seasons = item.progress?.totalSeasons || 1;
+        const matchesFormat = filters.formats.some((f) => {
+          if (f === 'miniseries') return item.type === 'show' && seasons === 1;
+          if (f === 'compact') return item.type === 'show' && seasons >= 2 && seasons <= 4;
+          if (f === 'longrunning') return item.type === 'show' && seasons >= 5;
+          if (f === 'anime_tv') return item.type === 'anime' && (seasons >= 1 || item.progress?.unit === 'episodes');
+          if (f === 'anime_movie') return item.type === 'anime' && (item.progress?.unit === 'minutes' || item.genres?.some((g) => /film|movie/i.test(g)));
+          if (f === 'anime_ova') return item.type === 'anime' && item.genres?.some((g) => /ova|special/i.test(g));
+          return false;
+        });
+        if (!matchesFormat) return false;
+      }
+
+      // Book Format filter
+      if (filters.bookFormats && filters.bookFormats.length > 0) {
+        const pubLower = (item.publisher || '').toLowerCase();
+        const matchesBookFormat = filters.bookFormats.some((bf) => {
+          if (bf === 'audiobook') return item.progress?.unit === 'hours' || /audible|audio|hörbuch/i.test(pubLower);
+          if (bf === 'ebook') return /kindle|ebook|e-book/i.test(pubLower) || item.isbn?.startsWith('B0');
+          if (bf === 'physical') return !item.isbn?.startsWith('B0') && !/audible|audio|hörbuch|kindle|ebook|e-book/i.test(pubLower);
+          return false;
+        });
+        if (!matchesBookFormat) return false;
+      }
+
+      // Page Length filter
+      if (filters.pageLengths && filters.pageLengths.length > 0) {
+        const pages = item.progress?.total || item.progress?.current || 0;
+        const matchesLength = filters.pageLengths.some((pl) => {
+          if (pl === 'short') return pages > 0 && pages < 200;
+          if (pl === 'medium') return pages >= 200 && pages <= 500;
+          if (pl === 'long') return pages > 500;
+          return false;
+        });
+        if (!matchesLength) return false;
       }
 
       // Rating filter (from Galaxy multi-select filter)
@@ -1000,6 +1086,7 @@ export default function Home() {
           onFilterChange={setFilters}
           onResetFilters={handleResetFilters}
           availableTags={availableTags}
+          activeType={selectedType}
           onOpenAddModal={() => handleOpenAddModal(selectedType !== 'all' ? selectedType : undefined)}
           onOpenAddModalWithQuery={(q) => handleOpenAddModal(selectedType !== 'all' ? selectedType : undefined, q)}
           onOpenSyncModal={() => handleOpenSyncModal('cloud')}
@@ -1195,6 +1282,168 @@ export default function Home() {
                       <X className="w-3.5 h-3.5" />
                     </button>
                   ))}
+
+                  {/* Active Galaxy Ownership Pills */}
+                  {(filters.ownership || []).map((o) => (
+                    <button
+                      key={o}
+                      onClick={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          ownership: (prev.ownership || []).filter((x) => x !== o),
+                        }))
+                      }
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-teal-500/20 hover:bg-teal-500/30 text-teal-200 border border-teal-500/40 transition-colors shadow-sm"
+                      title="Besitz-Filter entfernen"
+                    >
+                      <span>{o === 'owned' ? 'Im Besitz' : 'Wunschliste'}</span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ))}
+
+                  {/* Active Galaxy Era Pills */}
+                  {(filters.eras || []).map((e) => {
+                    const label =
+                      e === '2020s'
+                        ? '2020er'
+                        : e === '2010s'
+                        ? '2010er'
+                        : e === '2000s'
+                        ? '2000er'
+                        : e === '1990s'
+                        ? '90er'
+                        : 'Klassiker (<1990)';
+                    return (
+                      <button
+                        key={e}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            eras: (prev.eras || []).filter((x) => x !== e),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 transition-colors shadow-sm"
+                        title={`Ära "${label}" entfernen`}
+                      >
+                        <span>Ära: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+
+                  {/* Active Galaxy Format Pills */}
+                  {(filters.formats || []).map((f) => {
+                    const label =
+                      f === 'miniseries'
+                        ? 'Miniserie'
+                        : f === 'compact'
+                        ? '2-4 Staffeln'
+                        : f === 'longrunning'
+                        ? '5+ Staffeln'
+                        : f === 'anime_tv'
+                        ? 'TV-Serie'
+                        : f === 'anime_movie'
+                        ? 'Anime-Film'
+                        : 'OVA';
+                    return (
+                      <button
+                        key={f}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            formats: (prev.formats || []).filter((x) => x !== f),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 transition-colors shadow-sm"
+                        title={`Format "${label}" entfernen`}
+                      >
+                        <span>Format: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+
+                  {/* Active Galaxy Book Format Pills */}
+                  {(filters.bookFormats || []).map((bf) => {
+                    const label =
+                      bf === 'physical'
+                        ? 'Physisch'
+                        : bf === 'ebook'
+                        ? 'E-Book'
+                        : 'Hörbuch';
+                    return (
+                      <button
+                        key={bf}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            bookFormats: (prev.bookFormats || []).filter((x) => x !== bf),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-500/20 hover:bg-orange-500/30 text-orange-200 border border-orange-500/40 transition-colors shadow-sm"
+                        title={`Ausgabe "${label}" entfernen`}
+                      >
+                        <span>Ausgabe: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+
+                  {/* Active Galaxy Page Length Pills */}
+                  {(filters.pageLengths || []).map((pl) => {
+                    const label =
+                      pl === 'short'
+                        ? '< 200 S.'
+                        : pl === 'medium'
+                        ? '200-500 S.'
+                        : '> 500 S.';
+                    return (
+                      <button
+                        key={pl}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            pageLengths: (prev.pageLengths || []).filter((x) => x !== pl),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 transition-colors shadow-sm"
+                        title={`Umfang "${label}" entfernen`}
+                      >
+                        <span>Seiten: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+
+                  {/* Active Galaxy Media Types Pills */}
+                  {(filters.types || []).map((tp) => {
+                    const label =
+                      tp === 'game'
+                        ? 'Spiele'
+                        : tp === 'movie'
+                        ? 'Filme'
+                        : tp === 'show'
+                        ? 'Serien'
+                        : tp === 'anime'
+                        ? 'Anime'
+                        : 'Bücher';
+                    return (
+                      <button
+                        key={tp}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            types: (prev.types || []).filter((x) => x !== tp),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 transition-colors shadow-sm"
+                        title={`Medientyp "${label}" entfernen`}
+                      >
+                        <span>Typ: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
 
                   {/* Active Group By Indicator */}
                   {groupBy !== 'none' && (
