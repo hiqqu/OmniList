@@ -30,6 +30,8 @@ import {
   Trophy,
   Layers,
   Infinity,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getStoredMedia, updateMediaItem, deleteMediaItem } from '@/lib/storage';
@@ -194,6 +196,7 @@ export default function MediaDetailPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [personalNotes, setPersonalNotes] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
 
   useEffect(() => {
     if (!id && !rawId) return;
@@ -220,60 +223,107 @@ export default function MediaDetailPage() {
       setDetails(getEnrichedMediaDetails(active));
       setPersonalNotes(active.notes || '');
 
-      // Dynamically fetch real Open Library reader rating if missing
-      if (active.type === 'book' && !active.communityRating) {
-        const queryTerm = active.isbn ? `isbn:${active.isbn}` : active.title;
-        fetch(
-          `https://openlibrary.org/search.json?q=${encodeURIComponent(queryTerm)}&fields=key,ratings_average,ratings_count&limit=1`,
-          { headers: { 'User-Agent': 'OmniList/1.0' } }
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            const doc = data.docs?.[0];
-            if (doc && doc.ratings_average && doc.ratings_count > 0) {
-              const commRating = Math.round(doc.ratings_average * 10) / 10;
-              const commCount = doc.ratings_count;
-              const updatedItem = updateMediaItem(active.id, {
-                communityRating: commRating,
-                communityRatingsCount: commCount,
-              });
-              if (updatedItem) {
-                setItem(updatedItem);
-                setDetails(getEnrichedMediaDetails(updatedItem));
-              }
-            }
-          })
-          .catch((err) => console.warn('Could not fetch book ratings:', err));
-      }
-
-      // Dynamically resolve and persist Metacritic score if missing
+      // Check if local Metacritic score is available immediately
       if (active.type === 'game' && (!active.metacritic || active.metacritic <= 0)) {
         const localScore = getMediaMetacriticScore(active);
         if (localScore !== null) {
           const updatedItem = updateMediaItem(active.id, { metacritic: localScore });
           if (updatedItem) {
+            active = updatedItem;
             setItem(updatedItem);
             setDetails(getEnrichedMediaDetails(updatedItem));
           }
-        } else {
-          const queryParams = new URLSearchParams({
-            title: active.title,
-            ...(active.gameConnection?.serviceId ? { appId: active.gameConnection.serviceId } : {}),
-            ...(active.external_id ? { externalId: active.external_id } : {}),
-          });
-          fetch(`/api/metacritic?${queryParams.toString()}`)
-            .then((res) => res.json())
-            .then((data) => {
-              if (data?.score && typeof data.score === 'number' && data.score > 0) {
-                const updatedItem = updateMediaItem(active.id, { metacritic: data.score });
+        }
+      }
+
+      // Dynamically enrich media details (descriptions, external ratings, genres, metacritic) if missing or incomplete
+      const isPlaceholderSummary = (s?: string) =>
+        !s ||
+        s === 'Keine Beschreibung.' ||
+        s === 'Keine Zusammenfassung hinterlegt.' ||
+        s.startsWith('Plattformen:') ||
+        s.startsWith('Videospiel auf Steam') ||
+        s.startsWith('Videospiel in der offenen Spieledatenbank') ||
+        s.startsWith('Exakte Buch-Ausgabe');
+
+      const isCutOffAnimeSummary =
+        active.type === 'anime' &&
+        Boolean(active.summary && active.summary.length <= 310 && (active.summary.endsWith('...') || active.summary.endsWith('…') || active.summary.length === 300));
+
+      const needsGameEnrichment =
+        active.type === 'game' && (isPlaceholderSummary(active.summary) || !active.metacritic || active.metacritic <= 0);
+
+      const needsAnimeEnrichment =
+        active.type === 'anime' &&
+        (!active.communityRating ||
+          active.communityRating <= 0 ||
+          isPlaceholderSummary(active.summary) ||
+          isCutOffAnimeSummary);
+
+      const needsBookEnrichment =
+        active.type === 'book' && (!active.communityRating || active.communityRating <= 0);
+
+      if (needsGameEnrichment || needsAnimeEnrichment || needsBookEnrichment) {
+        const queryParams = new URLSearchParams({
+          type: active.type,
+          title: active.title,
+          ...(active.external_id ? { externalId: active.external_id } : {}),
+          ...(active.gameConnection?.serviceId ? { appId: active.gameConnection.serviceId } : {}),
+          ...(active.isbn ? { isbn: active.isbn } : {}),
+        });
+
+        fetch(`/api/enrich?${queryParams.toString()}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data && data.success) {
+              const updates: Partial<MediaItem> = {};
+
+              if (
+                data.summary &&
+                (isPlaceholderSummary(active.summary) ||
+                  (active.type === 'anime' && isCutOffAnimeSummary && data.summary.length > (active.summary?.length || 0)))
+              ) {
+                updates.summary = data.summary;
+              }
+              if (data.communityRating && (!active.communityRating || active.communityRating <= 0)) {
+                updates.communityRating = data.communityRating;
+                if (data.communityRatingsCount) updates.communityRatingsCount = data.communityRatingsCount;
+              }
+              if (data.metacritic && (!active.metacritic || active.metacritic <= 0)) {
+                updates.metacritic = data.metacritic;
+              }
+              if (
+                data.genres &&
+                data.genres.length > 0 &&
+                (!active.genres ||
+                  active.genres.length === 0 ||
+                  (active.genres.length === 1 && (active.genres[0] === 'Videospiel' || active.genres[0] === 'PC / Konsole')))
+              ) {
+                updates.genres = data.genres;
+              }
+              if (
+                data.creator &&
+                (!active.creator ||
+                  active.creator === 'Steam Store' ||
+                  active.creator === 'Videospiel' ||
+                  active.creator === 'Multiplattform')
+              ) {
+                updates.creator = data.creator;
+              }
+              if (data.publisher && !active.publisher) {
+                updates.publisher = data.publisher;
+              }
+
+              if (Object.keys(updates).length > 0) {
+                const updatedItem = updateMediaItem(active.id, updates);
                 if (updatedItem) {
                   setItem(updatedItem);
                   setDetails(getEnrichedMediaDetails(updatedItem));
                 }
               }
-            })
-            .catch((err) => console.warn('Could not fetch metacritic score:', err));
-        }
+            }
+          })
+          .catch((err) => console.warn('Could not enrich media details:', err));
       }
     }
     setIsLoaded(true);
@@ -669,6 +719,39 @@ export default function MediaDetailPage() {
                       M
                     </span>
                     <span>Metacritic {metacriticScore}</span>
+                  </span>
+                )}
+
+                {item.type === 'anime' && (item.communityRating || item.metacritic) && (
+                  <span
+                    className="text-xs font-bold px-3 py-1 rounded-full border bg-sky-500/15 text-sky-300 border-sky-500/30 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0"
+                    title={`AniList Community Score: ${
+                      item.communityRating
+                        ? item.communityRating > 10
+                          ? `${Math.round(item.communityRating)}%`
+                          : `${(item.communityRating * 10).toFixed(0)}%`
+                        : `${item.metacritic}%`
+                    }`}
+                  >
+                    <Star className="w-3.5 h-3.5 fill-sky-400 text-sky-400" />
+                    <span>
+                      AniList{' '}
+                      {item.communityRating
+                        ? item.communityRating > 10
+                          ? `${Math.round(item.communityRating)}%`
+                          : `${(item.communityRating * 10).toFixed(0)}%`
+                        : `${item.metacritic}%`}
+                    </span>
+                  </span>
+                )}
+
+                {item.type === 'book' && item.communityRating && (
+                  <span
+                    className="text-xs font-bold px-3 py-1 rounded-full border bg-amber-500/15 text-amber-300 border-amber-500/30 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0"
+                    title={`Leser-Bewertung: ${item.communityRating.toFixed(1)} / 5.0`}
+                  >
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>Leser-Wertung {item.communityRating.toFixed(1)} / 5.0</span>
                   </span>
                 )}
 
@@ -1117,9 +1200,35 @@ export default function MediaDetailPage() {
             <div className="md:col-span-2 space-y-6">
               <div className="p-6 rounded-2xl bg-[#181B22] border border-[#282D37] space-y-4">
                 <h3 className="text-base font-bold text-[#F1F3F7]">Handlung &amp; Zusammenfassung</h3>
-                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
-                  {item.summary || 'Keine Zusammenfassung hinterlegt.'}
-                </p>
+                <div className="relative">
+                  <p
+                    className={cn(
+                      'text-sm text-zinc-300 leading-relaxed whitespace-pre-line transition-all duration-300',
+                      !isSummaryExpanded && item.summary && item.summary.length > 360 ? 'line-clamp-4' : ''
+                    )}
+                  >
+                    {item.summary || 'Keine Zusammenfassung hinterlegt.'}
+                  </p>
+                  {item.summary && item.summary.length > 360 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
+                      className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors py-1 px-2.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/15 border border-sky-500/20"
+                    >
+                      {isSummaryExpanded ? (
+                        <>
+                          <ChevronUp className="w-3.5 h-3.5" />
+                          <span>Weniger anzeigen</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5" />
+                          <span>Vollständige Beschreibung anzeigen</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
 
                 {/* Genre Tags */}
                 {item.genres && item.genres.length > 0 && (
@@ -1357,10 +1466,10 @@ export default function MediaDetailPage() {
               <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center justify-between">
                 <div>
                   <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    Kritiker (Metascore)
+                    {item.type === 'anime' ? 'Kritiker & Rang (MAL)' : 'Kritiker (Metascore)'}
                   </span>
                   <span className="text-xs text-zinc-500 mt-0.5 block">
-                    Metacritic Aggregator
+                    {item.type === 'anime' ? 'MyAnimeList Aggregator' : 'Metacritic Aggregator'}
                   </span>
                 </div>
                 {metacriticScore !== null && metacriticStyle ? (
@@ -1372,6 +1481,15 @@ export default function MediaDetailPage() {
                       / 100
                     </span>
                   </div>
+                ) : item.type === 'anime' && item.metacritic ? (
+                  <div className="flex items-center gap-2">
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black text-black font-mono shadow-md bg-amber-500 text-black">
+                      {item.metacritic > 10 ? (item.metacritic / 10).toFixed(1) : item.metacritic.toFixed(1)}
+                    </span>
+                    <span className="text-xs font-bold text-amber-300">
+                      / 10
+                    </span>
+                  </div>
                 ) : (
                   <span className="text-xs text-zinc-500 italic">Nicht erfasst</span>
                 )}
@@ -1381,11 +1499,11 @@ export default function MediaDetailPage() {
               <div className="p-4 rounded-2xl bg-[#181B22] border border-[#282D37] flex items-center justify-between">
                 <div>
                   <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    Community &amp; Publikum
+                    {item.type === 'anime' ? 'AniList Community' : 'Community & Publikum'}
                   </span>
                   <span className="text-xs text-zinc-500 mt-0.5 block">
                     {item.communityRatingsCount
-                      ? `${item.communityRatingsCount.toLocaleString('de-DE')} Bewertungen`
+                      ? `${item.communityRatingsCount.toLocaleString('de-DE')} ${item.type === 'anime' ? 'User' : 'Bewertungen'}`
                       : 'Externe Plattformen'}
                   </span>
                 </div>
@@ -1393,9 +1511,15 @@ export default function MediaDetailPage() {
                   <div className="flex items-center gap-1.5">
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                     <span className="text-base font-black text-[#F1F3F7]">
-                      {item.communityRating.toFixed(1)}
+                      {item.type === 'anime'
+                        ? item.communityRating > 10
+                          ? `${Math.round(item.communityRating)}%`
+                          : `${(item.communityRating * 10).toFixed(0)}%`
+                        : item.communityRating.toFixed(1)}
                     </span>
-                    <span className="text-xs text-zinc-500">/ 5.0</span>
+                    <span className="text-xs text-zinc-500">
+                      {item.type === 'anime' ? '' : '/ 5.0'}
+                    </span>
                   </div>
                 ) : (
                   <span className="text-xs text-zinc-500 italic">Nicht erfasst</span>

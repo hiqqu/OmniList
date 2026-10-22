@@ -410,7 +410,15 @@ export class TMDBAdapter implements MediaAdapter {
               show.image?.medium?.replace('http://', 'https://');
 
             const summaryText = show.summary
-              ? show.summary.replace(/<[^>]*>?/gm, '').slice(0, 250)
+              ? show.summary
+                  .replace(/<br\s*[\/]?>/gi, '\n')
+                  .replace(/<p\b[^>]*>/gi, '')
+                  .replace(/<\/p>/gi, '\n\n')
+                  .replace(/<[^>]*>?/gm, '')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&#39;/g, "'")
+                  .trim()
               : 'Offizielle Serie.';
 
             items.push({

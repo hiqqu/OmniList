@@ -1015,7 +1015,7 @@ async function searchWikipediaGames(query: string): Promise<SearchResultItem[]> 
             coverUrl: coverUrl,
             releaseDate: yearMatch ? `${yearMatch[0]}-01-01` : undefined,
             summary: sumData.extract
-              ? sumData.extract.slice(0, 240) + '...'
+              ? sumData.extract.trim()
               : `Videospiel (${sumData.description || 'Konsole & PC'}).`,
             genres: ['Videospiel', sumData.description ? sumData.description.replace(/\b\d{4}\b/, '').trim() : 'Konsole & PC'],
             creator: sumData.description || 'Multiplattform',
@@ -1195,15 +1195,18 @@ export class RAWGAdapter implements MediaAdapter {
 
             if (!seenTitles.has(norm)) {
               seenTitles.add(norm);
+              // Check local catalog for authentic summary
+              const knownMatch = POPULAR_GAMES_CATALOG.find((k) => k.title.toLowerCase() === norm);
               items.push({
                 id: external_id,
                 external_id,
                 title: game.name,
                 type: 'game',
                 coverUrl,
-                summary: `Videospiel auf Steam (App-ID: ${game.id}).`,
-                genres: ['Videospiel', 'PC / Konsole'],
-                creator: 'Steam Store',
+                summary: knownMatch?.summary || undefined,
+                genres: knownMatch?.genres || ['Videospiel', 'PC / Konsole'],
+                creator: knownMatch?.creator || 'PC / Konsole',
+                publisher: knownMatch?.publisher,
                 franchise_id: `steam:franchise:${game.id}`,
                 totalUnits: 40,
                 unit: 'hours',

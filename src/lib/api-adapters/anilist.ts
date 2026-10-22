@@ -33,14 +33,16 @@ const MOCK_ANILIST_CATALOG: SearchResultItem[] = [
     type: 'anime',
     coverUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx154587-qQTzQnEJJ3oB.jpg',
     releaseDate: '2023-09-29',
-    summary: 'Die Elfenmagierin Frieren überlebt ihre menschlichen Gefährten und begibt sich auf eine emotionale Reise, um den wahren Wert von Zeit und Bindungen zu verstehen.',
+    summary: 'Die Elfenmagierin Frieren überlebt ihre menschlichen Gefährten und begibt sich auf eine emotionale Reise, um den wahren Wert von Zeit und menschlichen Bindungen zu verstehen.',
     genres: ['Fantasy', 'Abenteuer', 'Drama'],
     creator: 'Madhouse',
     franchise_id: 'anilist:franchise:frieren',
     collection_name: 'Frieren Saga',
     totalUnits: 28,
     unit: 'episodes',
-    rating: 4.9,
+    communityRating: 92,
+    communityRatingsCount: 380000,
+    metacritic: 94,
   },
   {
     id: 'anilist:113415',
@@ -50,14 +52,16 @@ const MOCK_ANILIST_CATALOG: SearchResultItem[] = [
     type: 'anime',
     coverUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-bbBWj4pEFseh.jpg',
     releaseDate: '2020-10-03',
-    summary: 'Yuji Itadori schluckt einen verfluchten Talisman und wird Teil der Welt der Flüche und Jujutsu-Zauberer.',
+    summary: 'Yuji Itadori schluckt einen verfluchten Talisman und wird Teil der Welt der Flüche und Jujutsu-Zauberer an der Tokyo Jujutsu High.',
     genres: ['Action', 'Fantasy', 'Supernatural'],
     creator: 'MAPPA',
     franchise_id: 'anilist:franchise:jjk',
     collection_name: 'Jujutsu Kaisen Universe',
     totalUnits: 24,
     unit: 'episodes',
-    rating: 4.7,
+    communityRating: 87,
+    communityRatingsCount: 420000,
+    metacritic: 87,
   },
   {
     id: 'anilist:151807',
@@ -67,14 +71,16 @@ const MOCK_ANILIST_CATALOG: SearchResultItem[] = [
     type: 'anime',
     coverUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1agTGhyCVB0.jpg',
     releaseDate: '2024-01-07',
-    summary: 'Der schwächste Jäger aller Zeiten, Sung Jin-Woo, erhält nach einem tödlichen Dungeon eine geheime Quest, die nur er sehen und leveln kann.',
+    summary: 'Der schwächste Jäger aller Zeiten, Sung Jin-Woo, erhält nach einem tödlichen Dungeon eine geheime Quest, die nur er sehen und aufleveln kann.',
     genres: ['Action', 'Fantasy', 'Abenteuer'],
     creator: 'A-1 Pictures',
     franchise_id: 'anilist:franchise:sololeveling',
     collection_name: 'Solo Leveling',
     totalUnits: 12,
     unit: 'episodes',
-    rating: 4.6,
+    communityRating: 84,
+    communityRatingsCount: 290000,
+    metacritic: 83,
   },
   {
     id: 'anilist:101922',
@@ -91,7 +97,9 @@ const MOCK_ANILIST_CATALOG: SearchResultItem[] = [
     collection_name: 'Demon Slayer Universe',
     totalUnits: 26,
     unit: 'episodes',
-    rating: 4.8,
+    communityRating: 86,
+    communityRatingsCount: 510000,
+    metacritic: 85,
   },
   {
     id: 'anilist:16498',
@@ -108,7 +116,9 @@ const MOCK_ANILIST_CATALOG: SearchResultItem[] = [
     collection_name: 'Attack on Titan',
     totalUnits: 25,
     unit: 'episodes',
-    rating: 4.9,
+    communityRating: 89,
+    communityRatingsCount: 650000,
+    metacritic: 89,
   },
   {
     id: 'anilist:21',
@@ -201,6 +211,27 @@ export class AniListAdapter implements MediaAdapter {
                 ).padStart(2, '0')}`
               : undefined;
 
+            const cleanSummary = m.description
+              ? m.description
+                  .replace(/<br\s*[\/]?>/gi, '\n')
+                  .replace(/<p\b[^>]*>/gi, '')
+                  .replace(/<\/p>/gi, '\n\n')
+                  .replace(/<[^>]*>?/gm, '')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&#39;/g, "'")
+                  .replace(/&rsquo;/g, "'")
+                  .replace(/&lsquo;/g, "'")
+                  .replace(/&ldquo;/g, '"')
+                  .replace(/&rdquo;/g, '"')
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim()
+              : 'Keine Beschreibung.';
+
+            const averageScore = m.averageScore || m.meanScore || undefined;
+
             return {
               id: external_id,
               external_id,
@@ -212,13 +243,15 @@ export class AniListAdapter implements MediaAdapter {
                 m.coverImage?.large ||
                 createAnimeSvgCover(title),
               releaseDate,
-              summary: m.description ? m.description.replace(/<[^>]*>?/gm, '').slice(0, 300) : 'Keine Beschreibung.',
+              summary: cleanSummary,
               genres: m.genres || ['Anime'],
               creator: m.studios?.nodes?.[0]?.name || 'Anime Studio',
               franchise_id: `anilist:franchise:${m.id}`,
               totalUnits: m.episodes || 12,
               unit: 'episodes' as const,
-              rating: m.averageScore ? Math.round((m.averageScore / 20) * 10) / 10 : 4.5,
+              rating: undefined,
+              communityRating: averageScore,
+              communityRatingsCount: m.popularity || undefined,
             };
           });
         }

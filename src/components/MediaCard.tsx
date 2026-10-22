@@ -587,6 +587,37 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <span>Metacritic {metacriticScore}</span>
               </span>
             )}
+            {item.type === 'anime' && (item.communityRating || item.metacritic) && (
+              <span
+                className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border bg-sky-500/15 text-sky-300 border-sky-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
+                title={`AniList Community Score: ${
+                  item.communityRating
+                    ? item.communityRating > 10
+                      ? `${Math.round(item.communityRating)}%`
+                      : `${(item.communityRating * 10).toFixed(0)}%`
+                    : `${item.metacritic}%`
+                }`}
+              >
+                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-sky-400 text-sky-400" />
+                <span>
+                  AniList{' '}
+                  {item.communityRating
+                    ? item.communityRating > 10
+                      ? `${Math.round(item.communityRating)}%`
+                      : `${(item.communityRating * 10).toFixed(0)}%`
+                    : `${item.metacritic}%`}
+                </span>
+              </span>
+            )}
+            {item.type === 'book' && item.communityRating && (
+              <span
+                className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border bg-amber-500/15 text-amber-300 border-amber-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
+                title={`Leser-Bewertung: ${item.communityRating.toFixed(1)} / 5.0`}
+              >
+                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-amber-400 text-amber-400" />
+                <span>{item.communityRating.toFixed(1)}</span>
+              </span>
+            )}
           </div>
 
           {/* Publisher / Collection line underneath badges */}

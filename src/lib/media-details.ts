@@ -489,10 +489,20 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
       ageRating: undefined,
       scores: {
         community: item.rating ? `${item.rating.toFixed(1)} / 5.0` : 'Nicht bewertet',
-        critics: realMetascore ? `${realMetascore} / 100` : undefined,
-        criticsLabel: realMetascore ? 'Metacritic' : undefined,
-        audience: item.communityRating ? `${item.communityRating.toFixed(1)} / 5.0` : undefined,
-        audienceLabel: item.communityRating ? 'AniList Community' : undefined,
+        critics: realMetascore
+          ? `${realMetascore} / 100`
+          : item.metacritic
+          ? `${item.metacritic > 10 ? (item.metacritic / 10).toFixed(2) : item.metacritic.toFixed(2)} / 10`
+          : undefined,
+        criticsLabel: realMetascore ? 'Metacritic' : item.metacritic ? 'MyAnimeList Score' : undefined,
+        audience: item.communityRating
+          ? `${item.communityRating > 10 ? Math.round(item.communityRating) + '%' : (item.communityRating * 10).toFixed(0) + '%'}${
+              item.communityRatingsCount
+                ? ` (${item.communityRatingsCount.toLocaleString('de-DE')} User)`
+                : ''
+            }`
+          : undefined,
+        audienceLabel: item.communityRating ? 'AniList Score' : undefined,
       },
       cast: item.creator ? [{ name: item.creator, role: 'Studio / Schöpfer' }] : [],
       reviews: [],
@@ -550,7 +560,7 @@ export function getEnrichedMediaDetails(item: MediaItem): EnrichedMediaDetails {
   const dynamic = typeDetails[item.type] || typeDetails.movie;
 
   return {
-    tagline: item.summary ? item.summary.slice(0, 80) + '...' : undefined,
+    tagline: undefined,
     ...dynamic,
     scores: {
       ...dynamic.scores,

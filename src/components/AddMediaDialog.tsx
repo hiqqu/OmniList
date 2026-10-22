@@ -716,6 +716,22 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                                 {result.communityRating.toFixed(1)}
                               </span>
                             ) : null
+                          ) : result.type === 'anime' ? (
+                            (result.communityRating || result.rating) ? (
+                              <span className="text-[11px] text-sky-400 font-bold flex items-center gap-1" title="AniList Community-Score">
+                                <Star className="w-3 h-3 fill-sky-400" />
+                                {result.communityRating
+                                  ? result.communityRating > 10
+                                    ? `${Math.round(result.communityRating)}%`
+                                    : `${(result.communityRating * 10).toFixed(0)}%`
+                                  : `${Math.round((result.rating || 0) * 20)}%`}
+                              </span>
+                            ) : null
+                          ) : result.metacritic ? (
+                            <span className="text-[11px] text-amber-400 font-bold flex items-center gap-0.5" title="Metacritic">
+                              <Star className="w-3 h-3 fill-amber-400" />
+                              Metacritic {result.metacritic}
+                            </span>
                           ) : result.rating ? (
                             <span className="text-[11px] text-amber-400 font-bold flex items-center gap-0.5">
                               <Star className="w-3 h-3 fill-amber-400" />
