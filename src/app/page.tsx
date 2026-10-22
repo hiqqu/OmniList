@@ -13,7 +13,7 @@ import { EditMediaModal } from '@/components/EditMediaModal';
 import { SyncModal } from '@/components/SyncModal';
 import { GameImportModal } from '@/components/GameImportModal';
 import { StatsBar } from '@/components/StatsBar';
-import { ImportResult } from '@/lib/game-import';
+import { ImportResult, getItemPlatform } from '@/lib/game-import';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
 import { MediaItem, MediaType, MediaStatus, SequelNotification } from '@/types/media';
 import {
@@ -40,6 +40,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'sequel_radar'>('dashboard');
   const [selectedType, setSelectedType] = useState<MediaType | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<MediaStatus | 'all'>('all');
+  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'steam' | 'psn' | 'gog'>('all');
   const [onlyOwned, setOnlyOwned] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('updated');
@@ -56,7 +57,7 @@ export default function Home() {
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const isFilterActive = selectedType !== 'all' || selectedStatus !== 'all' || onlyOwned;
+  const isFilterActive = selectedType !== 'all' || selectedStatus !== 'all' || onlyOwned || selectedPlatform !== 'all';
 
   const handleOpenAddModal = (tab?: MediaType, query?: string) => {
     let targetTab: MediaType | undefined = tab;
@@ -449,6 +450,14 @@ export default function Home() {
         return false;
       }
 
+      // Platform filter (Steam, PSN, GOG)
+      if (selectedPlatform !== 'all') {
+        const platform = getItemPlatform(item);
+        if (platform !== selectedPlatform) {
+          return false;
+        }
+      }
+
       // Instant search filter
       if (q) {
         const matchTitle = item.title.toLowerCase().includes(q);
@@ -481,7 +490,18 @@ export default function Home() {
       // default: updated
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
-  }, [media, selectedType, selectedStatus, searchQuery, sortBy]);
+  }, [media, selectedType, selectedStatus, selectedPlatform, onlyOwned, searchQuery, sortBy]);
+
+  // Platform counts for games
+  const platformCounts = useMemo(() => {
+    const games = media.filter((m) => m.type === 'game');
+    return {
+      all: games.length,
+      steam: games.filter((m) => getItemPlatform(m) === 'steam').length,
+      psn: games.filter((m) => getItemPlatform(m) === 'psn').length,
+      gog: games.filter((m) => getItemPlatform(m) === 'gog').length,
+    };
+  }, [media]);
 
   // Sequel Radar subcategories counts and filtered list
   const sequelCounts = useMemo(() => {
@@ -536,9 +556,22 @@ export default function Home() {
         currentView={currentView}
         onSelectView={setCurrentView}
         selectedType={selectedType}
-        onSelectType={setSelectedType}
+        onSelectType={(type) => {
+          setSelectedType(type);
+          if (type !== 'all' && type !== 'game') {
+            setSelectedPlatform('all');
+          }
+        }}
         selectedStatus={selectedStatus}
         onSelectStatus={setSelectedStatus}
+        selectedPlatform={selectedPlatform}
+        onSelectPlatform={(platform) => {
+          setSelectedPlatform(platform);
+          if (platform !== 'all' && selectedType !== 'game') {
+            setSelectedType('game');
+          }
+        }}
+        platformCounts={platformCounts}
         onlyOwned={onlyOwned}
         onToggleOnlyOwned={() => setOnlyOwned((prev) => !prev)}
         sequelCount={sequels.length}
@@ -635,6 +668,26 @@ export default function Home() {
                       <X className="w-3.5 h-3.5 text-zinc-400" />
                     </button>
                   )}
+                  {selectedPlatform !== 'all' && (
+                    <button
+                      onClick={() => setSelectedPlatform('all')}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors shadow-sm',
+                        selectedPlatform === 'steam'
+                          ? 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-sky-500/40'
+                          : selectedPlatform === 'psn'
+                          ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/40'
+                          : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border-purple-500/40'
+                      )}
+                      title="Plattform-Filter zurücksetzen"
+                    >
+                      <Gamepad2 className="w-3.5 h-3.5" />
+                      <span>
+                        Plattform: {selectedPlatform === 'steam' ? 'Steam' : selectedPlatform === 'psn' ? 'PlayStation' : 'GOG Galaxy'}
+                      </span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {onlyOwned && (
                     <button
                       onClick={() => setOnlyOwned(false)}
@@ -648,6 +701,47 @@ export default function Home() {
                   )}
                 </div>
               </div>
+
+              {/* Game Platform Filter Pills (when in Videospiele view) */}
+              {selectedType === 'game' && (
+                <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 scrollbar-thin">
+                  {[
+                    { id: 'all' as const, label: 'Alle Plattformen', count: platformCounts.all, activeStyle: 'bg-zinc-800 border-zinc-500 text-white shadow-sm' },
+                    { id: 'steam' as const, label: 'Steam', count: platformCounts.steam, iconColor: 'text-sky-400', activeStyle: 'bg-sky-500/20 border-sky-500/50 text-sky-200 shadow-sm shadow-sky-950/20' },
+                    { id: 'psn' as const, label: 'PlayStation', count: platformCounts.psn, iconColor: 'text-blue-400', activeStyle: 'bg-blue-500/20 border-blue-500/50 text-blue-200 shadow-sm shadow-blue-950/20' },
+                    { id: 'gog' as const, label: 'GOG Galaxy', count: platformCounts.gog, iconColor: 'text-purple-400', activeStyle: 'bg-purple-500/20 border-purple-500/50 text-purple-200 shadow-sm shadow-purple-950/20' },
+                  ].map((tab) => {
+                    const isActive = selectedPlatform === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setSelectedPlatform(tab.id)}
+                        className={cn(
+                          'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border',
+                          isActive
+                            ? tab.activeStyle
+                            : 'bg-[#181B22]/70 hover:bg-[#181B22] border-[#282D37] text-zinc-400 hover:text-zinc-200'
+                        )}
+                      >
+                        <Gamepad2 className={cn('w-3.5 h-3.5', isActive ? 'text-white' : tab.iconColor || 'text-zinc-400')} />
+                        <span>{tab.label}</span>
+                        <span
+                          className={cn(
+                            'px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none',
+                            isActive
+                              ? 'bg-white/20 text-white'
+                              : tab.count > 0
+                              ? 'bg-zinc-800 text-zinc-300'
+                              : 'bg-zinc-800/50 text-zinc-500'
+                          )}
+                        >
+                          {tab.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Media Card Grid (2:3 aspect ratio) */}
               {filteredAndSortedMedia.length > 0 ? (
@@ -671,22 +765,48 @@ export default function Home() {
                 /* Empty state */
                 <div className="py-20 flex flex-col items-center justify-center text-center p-6 rounded-3xl bg-[#181B22]/40 border border-dashed border-[#282D37]">
                   <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-[#282D37] flex items-center justify-center text-zinc-400 mb-4">
-                    {searchQuery ? <Search className="w-8 h-8 text-purple-400" /> : <Layers className="w-8 h-8" />}
+                    {searchQuery ? (
+                      <Search className="w-8 h-8 text-purple-400" />
+                    ) : selectedPlatform !== 'all' ? (
+                      <Gamepad2 className="w-8 h-8 text-purple-400" />
+                    ) : (
+                      <Layers className="w-8 h-8" />
+                    )}
                   </div>
                   <h3 className="text-base font-bold text-[#F1F3F7]">
-                    {searchQuery
+                    {selectedPlatform !== 'all'
+                      ? `Keine Spiele für ${selectedPlatform === 'steam' ? 'Steam' : selectedPlatform === 'psn' ? 'PlayStation' : 'GOG Galaxy'} gefunden`
+                      : searchQuery
                       ? `"${searchQuery}" nicht in deiner lokalen Sammlung`
                       : 'Keine Medien gefunden'}
                   </h3>
                   <p className="text-xs text-zinc-400 max-w-sm mt-1 mb-5 leading-relaxed">
-                    {searchQuery
+                    {selectedPlatform !== 'all'
+                      ? `In deiner Sammlung ist aktuell kein Spiel mit ${selectedPlatform === 'steam' ? 'Steam' : selectedPlatform === 'psn' ? 'PlayStation' : 'GOG Galaxy'} verknüpft.`
+                      : searchQuery
                       ? 'In deiner persönlichen Bibliothek existiert noch kein Eintrag dazu. Möchtest du im globalen Katalog danach suchen und ihn zu deiner Sammlung hinzufügen?'
                       : selectedType === 'all'
                       ? 'Deine Sammlung ist aktuell noch leer. Füge dein erstes Medium hinzu.'
                       : 'In dieser Kategorie befinden sich noch keine Medien.'}
                   </p>
                   <div className="flex items-center gap-3 flex-wrap justify-center">
-                    {searchQuery ? (
+                    {selectedPlatform !== 'all' ? (
+                      <>
+                        <button
+                          onClick={() => setSelectedPlatform('all')}
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-bold shadow-lg shadow-black/20 active:scale-95 transition-all"
+                        >
+                          <span>Alle Spiele anzeigen ({platformCounts.all})</span>
+                        </button>
+                        <button
+                          onClick={() => setIsGameImportModalOpen(true)}
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-950/40 active:scale-95 transition-all"
+                        >
+                          <Gamepad2 className="w-4 h-4" />
+                          <span>Spiele importieren</span>
+                        </button>
+                      </>
+                    ) : searchQuery ? (
                       <button
                         onClick={() => handleOpenAddModal(undefined, searchQuery)}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-950/40 active:scale-95 transition-all"

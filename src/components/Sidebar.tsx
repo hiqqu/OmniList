@@ -32,6 +32,9 @@ interface SidebarProps {
   onSelectType: (type: MediaType | 'all') => void;
   selectedStatus: MediaStatus | 'all';
   onSelectStatus: (status: MediaStatus | 'all') => void;
+  selectedPlatform?: 'all' | 'steam' | 'psn' | 'gog';
+  onSelectPlatform?: (platform: 'all' | 'steam' | 'psn' | 'gog') => void;
+  platformCounts?: { all: number; steam: number; psn: number; gog: number };
   onlyOwned?: boolean;
   onToggleOnlyOwned?: () => void;
   sequelCount: number;
@@ -53,6 +56,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectType,
   selectedStatus,
   onSelectStatus,
+  selectedPlatform = 'all',
+  onSelectPlatform,
+  platformCounts,
   onlyOwned,
   onToggleOnlyOwned,
   sequelCount,
@@ -294,6 +300,87 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span className={tf.color}>{tf.icon}</span>
                       <span>{tf.label}</span>
                     </button>
+                    {tf.id === 'game' && selectedType === 'game' && onSelectPlatform && (
+                      <div className="pl-6 pt-1 space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => handleItemClick(() => onSelectPlatform('all'))}
+                          className={cn(
+                            'w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all border',
+                            selectedPlatform === 'all'
+                              ? 'bg-purple-500/20 text-purple-200 border-purple-500/40 shadow-sm'
+                              : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+                          )}
+                        >
+                          <span>Alle Quellen</span>
+                          {platformCounts && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-400 font-mono">
+                              {platformCounts.all}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleItemClick(() => onSelectPlatform('steam'))}
+                          className={cn(
+                            'w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all border',
+                            selectedPlatform === 'steam'
+                              ? 'bg-sky-500/20 text-sky-200 border-sky-500/40 shadow-sm'
+                              : 'border-transparent text-zinc-400 hover:text-sky-300 hover:bg-sky-500/10'
+                          )}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                            <span>Steam</span>
+                          </span>
+                          {platformCounts && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-sky-950/60 text-sky-300 border border-sky-800/40 font-mono">
+                              {platformCounts.steam}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleItemClick(() => onSelectPlatform('psn'))}
+                          className={cn(
+                            'w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all border',
+                            selectedPlatform === 'psn'
+                              ? 'bg-blue-500/20 text-blue-200 border-blue-500/40 shadow-sm'
+                              : 'border-transparent text-zinc-400 hover:text-blue-300 hover:bg-blue-500/10'
+                          )}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                            <span>PlayStation</span>
+                          </span>
+                          {platformCounts && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-950/60 text-blue-300 border border-blue-800/40 font-mono">
+                              {platformCounts.psn}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleItemClick(() => onSelectPlatform('gog'))}
+                          className={cn(
+                            'w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all border',
+                            selectedPlatform === 'gog'
+                              ? 'bg-purple-500/20 text-purple-200 border-purple-500/40 shadow-sm'
+                              : 'border-transparent text-zinc-400 hover:text-purple-300 hover:bg-purple-500/10'
+                          )}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                            <span>GOG Galaxy</span>
+                          </span>
+                          {platformCounts && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-950/60 text-purple-300 border border-purple-800/40 font-mono">
+                              {platformCounts.gog}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    )}
                     {tf.id === 'game' && onOpenGameImportModal && (
                       <button
                         type="button"

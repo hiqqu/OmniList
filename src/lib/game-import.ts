@@ -114,6 +114,19 @@ export function isGameConnected(item: MediaItem): boolean {
 }
 
 /**
+ * Resolves the connected platform/service of a media item ('steam' | 'psn' | 'gog' | null)
+ */
+export function getItemPlatform(item: MediaItem): ConnectedGameService | null {
+  if (item.connectedService) return item.connectedService;
+  if (item.gameConnection?.service) return item.gameConnection.service;
+  if (item.external_id?.startsWith('steam:')) return 'steam';
+  if (item.external_id?.startsWith('psn:')) return 'psn';
+  if (item.external_id?.startsWith('gog:')) return 'gog';
+  if (item.publisher?.toLowerCase() === 'steam') return 'steam';
+  return null;
+}
+
+/**
  * Core deduplication and replacement engine:
  * If an imported game from Steam, PSN, or GOG matches an existing game in the library
  * that is NOT connected, the unconnected game is removed and replaced in-place by the new connected entry!
