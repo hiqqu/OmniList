@@ -6,6 +6,30 @@ export type ProgressUnit = 'episodes' | 'pages' | 'hours' | 'minutes' | 'seasons
 
 export type ConnectedGameService = 'steam' | 'psn' | 'gog';
 
+export type GalaxySortKey =
+  | 'achievements'
+  | 'critics_rating'
+  | 'date_added'
+  | 'game_time'
+  | 'genre'
+  | 'last_played'
+  | 'platform'
+  | 'rating'
+  | 'release_date'
+  | 'size_on_disk'
+  | 'tags'
+  | 'title';
+
+export type GalaxyGroupKey = 'none' | 'platform' | 'status' | 'genre' | 'release_year';
+
+export interface GalaxyFilterState {
+  platforms: string[]; // 'steam' | 'psn' | 'gog' | 'epic' | 'other'
+  consoles: string[]; // 'PS5' | 'PS4' | 'PS3' | 'PC' | 'other'
+  ratings: string[]; // '90' | '80' | '70' | 'stars5' | 'stars4'
+  tags: string[]; // genre/tag names
+  statuses: string[]; // MediaStatus values
+}
+
 export interface GameConnectionInfo {
   service: ConnectedGameService;
   serviceId?: string; // z. B. Steam AppID oder PSN Title ID

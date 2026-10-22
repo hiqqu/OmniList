@@ -33,9 +33,9 @@ interface SidebarProps {
   onSelectType: (type: MediaType | 'all') => void;
   selectedStatus: MediaStatus | 'all';
   onSelectStatus: (status: MediaStatus | 'all') => void;
-  selectedPlatform?: 'all' | 'steam' | 'psn' | 'gog';
-  onSelectPlatform?: (platform: 'all' | 'steam' | 'psn' | 'gog') => void;
-  platformCounts?: { all: number; steam: number; psn: number; gog: number };
+  selectedPlatform?: 'all' | 'steam' | 'psn' | 'gog' | 'epic' | 'other';
+  onSelectPlatform?: (platform: 'all' | 'steam' | 'psn' | 'gog' | 'epic' | 'other') => void;
+  platformCounts?: { all: number; steam: number; psn: number; gog: number; epic?: number; other?: number };
   onlyOwned?: boolean;
   onToggleOnlyOwned?: () => void;
   sequelCount: number;
@@ -382,6 +382,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           {platformCounts && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-950/60 text-purple-300 border border-purple-800/40 font-mono">
                               {platformCounts.gog}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleItemClick(() => onSelectPlatform('epic'))}
+                          className={cn(
+                            'w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all border',
+                            selectedPlatform === 'epic'
+                              ? 'bg-zinc-700/50 text-zinc-100 border-zinc-500 shadow-sm'
+                              : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+                          )}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                            <span>Epic</span>
+                          </span>
+                          {platformCounts && platformCounts.epic !== undefined && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-300 font-mono">
+                              {platformCounts.epic}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleItemClick(() => onSelectPlatform('other'))}
+                          className={cn(
+                            'w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all border',
+                            selectedPlatform === 'other'
+                              ? 'bg-zinc-700/50 text-zinc-100 border-zinc-500 shadow-sm'
+                              : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+                          )}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                            <span>Andere</span>
+                          </span>
+                          {platformCounts && platformCounts.other !== undefined && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-400 font-mono">
+                              {platformCounts.other}
                             </span>
                           )}
                         </button>

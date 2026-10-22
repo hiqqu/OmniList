@@ -12,11 +12,25 @@ import { AddMediaDialog } from '@/components/AddMediaDialog';
 import { EditMediaModal } from '@/components/EditMediaModal';
 import { SyncModal } from '@/components/SyncModal';
 import { StatsBar } from '@/components/StatsBar';
-import { ImportResult, getItemPlatform } from '@/lib/game-import';
+import {
+  ImportResult,
+  getItemPlatform,
+  resolveGamePlatform,
+  resolveGameConsole,
+  GalaxyPlatformFilter,
+} from '@/lib/game-import';
 import { getMediaMetacriticScore } from '@/lib/metacritic';
 import { isLiveServiceGame } from '@/lib/live-service';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
-import { MediaItem, MediaType, MediaStatus, SequelNotification } from '@/types/media';
+import {
+  MediaItem,
+  MediaType,
+  MediaStatus,
+  SequelNotification,
+  GalaxySortKey,
+  GalaxyGroupKey,
+  GalaxyFilterState,
+} from '@/types/media';
 import { runBackgroundAutoSync } from '@/lib/auto-sync';
 import {
   getStoredMedia,
@@ -33,6 +47,47 @@ import {
 import { getUnitIncrement, getMediaStatusBadge, cn } from '@/lib/utils';
 import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search } from 'lucide-react';
 
+function getAchievementsPct(item: MediaItem): number {
+  if (item.gameTracker?.achievements?.total && item.gameTracker.achievements.total > 0) {
+    return (item.gameTracker.achievements.current / item.gameTracker.achievements.total) * 100;
+  }
+  if (item.gameTracker?.completionist100 || item.gameTracker?.allAchievementsCompleted) return 100;
+  if (item.progress?.total && item.progress.total > 0) {
+    return (item.progress.current / item.progress.total) * 100;
+  }
+  return 0;
+}
+
+function getPlaytimeHours(item: MediaItem): number {
+  if (item.gameTracker?.playtimeHours && item.gameTracker.playtimeHours > 0) {
+    return item.gameTracker.playtimeHours;
+  }
+  if (item.progress?.unit === 'hours' && item.progress.current > 0) {
+    return item.progress.current;
+  }
+  if (item.gameConnection?.playtimeMinutes && item.gameConnection.playtimeMinutes > 0) {
+    return Math.round((item.gameConnection.playtimeMinutes / 60) * 10) / 10;
+  }
+  return 0;
+}
+
+function getLastPlayedTime(item: MediaItem): number {
+  if (item.gameConnection?.lastPlayed) {
+    const t = new Date(item.gameConnection.lastPlayed).getTime();
+    if (!isNaN(t)) return t;
+  }
+  const t = new Date(item.updatedAt).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+function getReleaseDateTime(item: MediaItem): number {
+  if (item.releaseDate) {
+    const t = new Date(item.releaseDate).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return 0;
+}
+
 export default function Home() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [sequels, setSequels] = useState<SequelNotification[]>([]);
@@ -42,10 +97,19 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'sequel_radar'>('dashboard');
   const [selectedType, setSelectedType] = useState<MediaType | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<MediaStatus | 'all'>('all');
-  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'steam' | 'psn' | 'gog'>('all');
+  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'steam' | 'psn' | 'gog' | 'epic' | 'other'>('all');
   const [onlyOwned, setOnlyOwned] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('updated');
+  const [sortBy, setSortBy] = useState<GalaxySortKey>('title');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [groupBy, setGroupBy] = useState<GalaxyGroupKey>('none');
+  const [filters, setFilters] = useState<GalaxyFilterState>({
+    platforms: [],
+    consoles: [],
+    ratings: [],
+    tags: [],
+    statuses: [],
+  });
   const [sequelFilterType, setSequelFilterType] = useState<MediaType | 'all'>('all');
 
   // Modals & States
@@ -69,7 +133,41 @@ export default function Home() {
     setIsSyncModalOpen(true);
   };
 
-  const isFilterActive = selectedType !== 'all' || selectedStatus !== 'all' || onlyOwned || selectedPlatform !== 'all';
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const item of media) {
+      if (item.genres) {
+        for (const g of item.genres) {
+          if (g.trim()) tagSet.add(g.trim());
+        }
+      }
+    }
+    return Array.from(tagSet).sort();
+  }, [media]);
+
+  const handleResetFilters = () => {
+    setFilters({
+      platforms: [],
+      consoles: [],
+      ratings: [],
+      tags: [],
+      statuses: [],
+    });
+    setSelectedPlatform('all');
+    setSelectedStatus('all');
+    setOnlyOwned(false);
+  };
+
+  const isFilterActive =
+    selectedType !== 'all' ||
+    selectedStatus !== 'all' ||
+    onlyOwned ||
+    selectedPlatform !== 'all' ||
+    filters.platforms.length > 0 ||
+    filters.consoles.length > 0 ||
+    filters.ratings.length > 0 ||
+    filters.tags.length > 0 ||
+    filters.statuses.length > 0;
 
   const handleOpenAddModal = (tab?: MediaType, query?: string) => {
     let targetTab: MediaType | undefined = tab;
@@ -522,7 +620,7 @@ export default function Home() {
     }
   };
 
-  // Instant local full-text search (< 10 ms) and filtering
+  // Instant local full-text search (< 10 ms) and filtering with Galaxy multi-criteria filters
   const filteredAndSortedMedia = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
@@ -532,24 +630,16 @@ export default function Home() {
         return false;
       }
 
-      // Status filter
+      // Status filter (from Sidebar single-select)
       if (selectedStatus !== 'all') {
         const isLive = isLiveServiceGame(item);
         if (selectedStatus === 'owned') {
-          if (!item.isOwned && item.status !== 'owned') {
-            return false;
-          }
+          if (!item.isOwned && item.status !== 'owned') return false;
         } else if (selectedStatus === 'live_service') {
-          if (!isLive) {
-            return false;
-          }
+          if (!isLive) return false;
         } else if (selectedStatus === 'completed') {
-          // Live-Service games cannot be completed
-          if (isLive || item.status !== 'completed') {
-            return false;
-          }
+          if (isLive || item.status !== 'completed') return false;
         } else if (selectedStatus === 'in_progress') {
-          // Live-Service games count as active when not planned
           if (isLive) {
             if (item.status === 'planned') return false;
           } else if (item.status !== 'in_progress') {
@@ -560,17 +650,64 @@ export default function Home() {
         }
       }
 
+      // Status filter (from Galaxy multi-select filter)
+      if (filters.statuses.length > 0) {
+        const isLive = isLiveServiceGame(item);
+        const itemStatus = isLive ? 'live_service' : item.status;
+        if (!filters.statuses.includes(itemStatus)) {
+          return false;
+        }
+      }
+
       // Combinable ownership filter (e.g. Planned + Owned)
       if (onlyOwned && !item.isOwned && item.status !== 'owned') {
         return false;
       }
 
-      // Platform filter (Steam, PSN, GOG)
+      // Platform filter (from Sidebar single-select)
       if (selectedPlatform !== 'all') {
-        const platform = getItemPlatform(item);
+        const platform = resolveGamePlatform(item);
         if (platform !== selectedPlatform) {
           return false;
         }
+      }
+
+      // Platform filter (from Galaxy multi-select filter)
+      if (filters.platforms.length > 0) {
+        const platform = resolveGamePlatform(item);
+        if (!filters.platforms.includes(platform)) {
+          return false;
+        }
+      }
+
+      // OS & consoles filter (from Galaxy multi-select filter)
+      if (filters.consoles.length > 0) {
+        const consoleName = resolveGameConsole(item);
+        if (!filters.consoles.includes(consoleName)) {
+          return false;
+        }
+      }
+
+      // Rating filter (from Galaxy multi-select filter)
+      if (filters.ratings.length > 0) {
+        const score = getMediaMetacriticScore(item) ?? 0;
+        const userRating = item.rating ?? 0;
+        const matchesRating = filters.ratings.some((r) => {
+          if (r === '90') return score >= 90;
+          if (r === '80') return score >= 80;
+          if (r === '70') return score >= 70;
+          if (r === 'stars5') return userRating >= 4.8;
+          if (r === 'stars4') return userRating >= 3.8;
+          if (r === 'stars3') return userRating >= 2.8;
+          return false;
+        });
+        if (!matchesRating) return false;
+      }
+
+      // Tags / Genre filter (from Galaxy multi-select filter)
+      if (filters.tags.length > 0) {
+        const hasTag = item.genres?.some((g) => filters.tags.includes(g.trim()));
+        if (!hasTag) return false;
       }
 
       // Instant search filter
@@ -589,53 +726,172 @@ export default function Home() {
       return true;
     });
 
-    // Sorting
-    return filtered.sort((a, b) => {
-      if (sortBy === 'title') {
-        return a.title.localeCompare(b.title);
-      }
-      if (sortBy === 'rating') {
-        const scoreA = getMediaMetacriticScore(a);
-        const scoreB = getMediaMetacriticScore(b);
-
-        // Sort descending by Metacritic score
-        if (scoreA !== null && scoreB !== null) {
-          if (scoreB !== scoreA) {
-            return scoreB - scoreA;
-          }
-        } else if (scoreA !== null) {
-          return -1;
-        } else if (scoreB !== null) {
-          return 1;
+    // 12-way GOG Galaxy Sorting
+    return [...filtered].sort((a, b) => {
+      let diff = 0;
+      switch (sortBy) {
+        case 'achievements': {
+          const achA = getAchievementsPct(a);
+          const achB = getAchievementsPct(b);
+          diff = achB - achA;
+          break;
         }
-
-        // Secondary fallback: Community rating or user rating
-        const fallbackA = (a.communityRating ? a.communityRating * 20 : 0) || (a.rating ? a.rating * 20 : 0);
-        const fallbackB = (b.communityRating ? b.communityRating * 20 : 0) || (b.rating ? b.rating * 20 : 0);
-        if (fallbackB !== fallbackA) {
-          return fallbackB - fallbackA;
+        case 'critics_rating': {
+          const scoreA = getMediaMetacriticScore(a) ?? -1;
+          const scoreB = getMediaMetacriticScore(b) ?? -1;
+          diff = scoreB - scoreA;
+          break;
         }
+        case 'date_added': {
+          const tA = new Date(a.createdAt || a.updatedAt).getTime();
+          const tB = new Date(b.createdAt || b.updatedAt).getTime();
+          diff = tB - tA;
+          break;
+        }
+        case 'game_time': {
+          const timeA = getPlaytimeHours(a);
+          const timeB = getPlaytimeHours(b);
+          diff = timeB - timeA;
+          break;
+        }
+        case 'genre': {
+          const gA = a.genres?.[0] || 'zzz';
+          const gB = b.genres?.[0] || 'zzz';
+          diff = gA.localeCompare(gB);
+          break;
+        }
+        case 'last_played': {
+          const lpA = getLastPlayedTime(a);
+          const lpB = getLastPlayedTime(b);
+          diff = lpB - lpA;
+          break;
+        }
+        case 'platform': {
+          const pA = resolveGamePlatform(a);
+          const pB = resolveGamePlatform(b);
+          diff = pA.localeCompare(pB);
+          break;
+        }
+        case 'rating': {
+          const rA = a.rating ?? -1;
+          const rB = b.rating ?? -1;
+          diff = rB - rA;
+          break;
+        }
+        case 'release_date': {
+          const rdA = getReleaseDateTime(a);
+          const rdB = getReleaseDateTime(b);
+          diff = rdB - rdA;
+          break;
+        }
+        case 'size_on_disk':
+          diff = a.title.localeCompare(b.title);
+          break;
+        case 'tags': {
+          const tA = a.collection_name || a.genres?.[0] || 'zzz';
+          const tB = b.collection_name || b.genres?.[0] || 'zzz';
+          diff = tA.localeCompare(tB);
+          break;
+        }
+        case 'title':
+        default:
+          diff = a.title.localeCompare(b.title);
+          break;
+      }
 
-        return a.title.localeCompare(b.title);
+      if (diff === 0) {
+        diff = a.title.localeCompare(b.title);
       }
-      if (sortBy === 'progress') {
-        const pctA = a.progress.total ? a.progress.current / a.progress.total : 0;
-        const pctB = b.progress.total ? b.progress.current / b.progress.total : 0;
-        return pctB - pctA;
+
+      // Handle natural vs inverted sort direction
+      const naturallyAscending = ['title', 'genre', 'platform', 'tags'].includes(sortBy);
+      if (naturallyAscending) {
+        return sortDirection === 'asc' ? diff : -diff;
+      } else {
+        return sortDirection === 'desc' ? diff : -diff;
       }
-      // default: updated
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
-  }, [media, selectedType, selectedStatus, selectedPlatform, onlyOwned, searchQuery, sortBy]);
+  }, [media, selectedType, selectedStatus, selectedPlatform, onlyOwned, searchQuery, sortBy, sortDirection, filters]);
+
+  // Grouped media helper (GOG Galaxy "Group by")
+  const groupedMedia = useMemo(() => {
+    if (groupBy === 'none') {
+      return [{ key: 'all', label: '', items: filteredAndSortedMedia }];
+    }
+
+    const groupsMap = new Map<string, { label: string; items: MediaItem[] }>();
+
+    if (groupBy === 'platform') {
+      const platformOrder: { id: GalaxyPlatformFilter; label: string }[] = [
+        { id: 'steam', label: 'Steam' },
+        { id: 'psn', label: 'PlayStation' },
+        { id: 'gog', label: 'GOG.com' },
+        { id: 'epic', label: 'Epic' },
+        { id: 'other', label: 'Andere Plattformen' },
+      ];
+      for (const p of platformOrder) {
+        groupsMap.set(p.id, { label: p.label, items: [] });
+      }
+      for (const item of filteredAndSortedMedia) {
+        const p = resolveGamePlatform(item);
+        const group = groupsMap.get(p) || groupsMap.get('other')!;
+        group.items.push(item);
+      }
+    } else if (groupBy === 'status') {
+      const statusOrder: { id: MediaStatus; label: string }[] = [
+        { id: 'in_progress', label: 'Gerade dabei' },
+        { id: 'live_service', label: 'Live-Service' },
+        { id: 'completed', label: 'Beendet' },
+        { id: 'planned', label: 'Geplant' },
+        { id: 'paused', label: 'Pausiert' },
+        { id: 'dropped', label: 'Abgebrochen' },
+      ];
+      for (const s of statusOrder) {
+        groupsMap.set(s.id, { label: s.label, items: [] });
+      }
+      for (const item of filteredAndSortedMedia) {
+        const isLive = isLiveServiceGame(item);
+        const key = isLive ? 'live_service' : item.status;
+        const group = groupsMap.get(key) || groupsMap.get('in_progress')!;
+        group.items.push(item);
+      }
+    } else if (groupBy === 'genre') {
+      for (const item of filteredAndSortedMedia) {
+        const genre = item.genres?.[0] || 'Ohne Genre';
+        if (!groupsMap.has(genre)) {
+          groupsMap.set(genre, { label: genre, items: [] });
+        }
+        groupsMap.get(genre)!.items.push(item);
+      }
+    } else if (groupBy === 'release_year') {
+      for (const item of filteredAndSortedMedia) {
+        let year = 'Unbekannt';
+        if (item.releaseDate) {
+          const match = item.releaseDate.match(/\b(19\d\d|20\d\d)\b/);
+          if (match) year = match[1];
+        }
+        if (!groupsMap.has(year)) {
+          groupsMap.set(year, { label: year, items: [] });
+        }
+        groupsMap.get(year)!.items.push(item);
+      }
+    }
+
+    return Array.from(groupsMap.entries())
+      .filter(([_, g]) => g.items.length > 0)
+      .map(([key, g]) => ({ key, label: g.label, items: g.items }));
+  }, [filteredAndSortedMedia, groupBy]);
 
   // Platform counts for games
   const platformCounts = useMemo(() => {
     const games = media.filter((m) => m.type === 'game');
     return {
       all: games.length,
-      steam: games.filter((m) => getItemPlatform(m) === 'steam').length,
-      psn: games.filter((m) => getItemPlatform(m) === 'psn').length,
-      gog: games.filter((m) => getItemPlatform(m) === 'gog').length,
+      steam: games.filter((m) => resolveGamePlatform(m) === 'steam').length,
+      psn: games.filter((m) => resolveGamePlatform(m) === 'psn').length,
+      gog: games.filter((m) => resolveGamePlatform(m) === 'gog').length,
+      epic: games.filter((m) => resolveGamePlatform(m) === 'epic').length,
+      other: games.filter((m) => resolveGamePlatform(m) === 'other').length,
     };
   }, [media]);
 
@@ -727,9 +983,25 @@ export default function Home() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           sortBy={sortBy}
-          onSortChange={setSortBy}
-          onOpenAddModal={() => handleOpenAddModal()}
-          onOpenAddModalWithQuery={(q) => handleOpenAddModal(undefined, q)}
+          sortDirection={sortDirection}
+          groupBy={groupBy}
+          onSortChange={(newSort) => {
+            if (newSort === sortBy) {
+              setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+            } else {
+              setSortBy(newSort);
+              const naturallyAscending = ['title', 'genre', 'platform', 'tags'].includes(newSort);
+              setSortDirection(naturallyAscending ? 'asc' : 'desc');
+            }
+          }}
+          onDirectionToggle={() => setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+          onGroupChange={setGroupBy}
+          filters={filters}
+          onFilterChange={setFilters}
+          onResetFilters={handleResetFilters}
+          availableTags={availableTags}
+          onOpenAddModal={() => handleOpenAddModal(selectedType !== 'all' ? selectedType : undefined)}
+          onOpenAddModalWithQuery={(q) => handleOpenAddModal(selectedType !== 'all' ? selectedType : undefined, q)}
           onOpenSyncModal={() => handleOpenSyncModal('cloud')}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           totalFilteredCount={filteredAndSortedMedia.length}
@@ -793,6 +1065,159 @@ export default function Home() {
                     </button>
                   )}
 
+                  {/* Active Galaxy Platforms Pills */}
+                  {filters.platforms.map((p) => {
+                    const label =
+                      p === 'steam'
+                        ? 'Steam'
+                        : p === 'psn'
+                        ? 'PlayStation'
+                        : p === 'gog'
+                        ? 'GOG.com'
+                        : p === 'epic'
+                        ? 'Epic'
+                        : 'Andere';
+                    return (
+                      <button
+                        key={p}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            platforms: prev.platforms.filter((x) => x !== p),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 transition-colors shadow-sm"
+                        title={`Filter "${label}" entfernen`}
+                      >
+                        <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Plattform: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+
+                  {/* Active Galaxy Consoles Pills */}
+                  {filters.consoles.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          consoles: prev.consoles.filter((x) => x !== c),
+                        }))
+                      }
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border border-blue-500/40 transition-colors shadow-sm"
+                      title={`Filter "${c}" entfernen`}
+                    >
+                      <span>System: {c}</span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ))}
+
+                  {/* Active Galaxy Status Pills */}
+                  {filters.statuses.map((st) => {
+                    const label =
+                      st === 'in_progress'
+                        ? 'Gerade dabei'
+                        : st === 'completed'
+                        ? 'Beendet'
+                        : st === 'planned'
+                        ? 'Geplant'
+                        : st === 'paused'
+                        ? 'Pausiert'
+                        : st === 'dropped'
+                        ? 'Abgebrochen'
+                        : 'Live-Service';
+                    return (
+                      <button
+                        key={st}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            statuses: prev.statuses.filter((x) => x !== st),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 transition-colors shadow-sm"
+                        title={`Status "${label}" entfernen`}
+                      >
+                        <span>Status: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+
+                  {/* Active Galaxy Rating Pills */}
+                  {filters.ratings.map((r) => {
+                    const label =
+                      r === '90'
+                        ? '90+ Metacritic'
+                        : r === '80'
+                        ? '80+ Metacritic'
+                        : r === '70'
+                        ? '70+ Metacritic'
+                        : r === 'stars5'
+                        ? '5 Sterne'
+                        : r === 'stars4'
+                        ? '4+ Sterne'
+                        : '3+ Sterne';
+                    return (
+                      <button
+                        key={r}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            ratings: prev.ratings.filter((x) => x !== r),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 transition-colors shadow-sm"
+                        title={`Wertung "${label}" entfernen`}
+                      >
+                        <span>Wertung: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+
+                  {/* Active Galaxy Tag Pills */}
+                  {filters.tags.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          tags: prev.tags.filter((x) => x !== t),
+                        }))
+                      }
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 transition-colors shadow-sm"
+                      title={`Tag "${t}" entfernen`}
+                    >
+                      <span>Tag: {t}</span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ))}
+
+                  {/* Active Group By Indicator */}
+                  {groupBy !== 'none' && (
+                    <button
+                      onClick={() => setGroupBy('none')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 transition-colors shadow-sm"
+                      title="Gruppierung aufheben"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-purple-400" />
+                      <span>
+                        Gruppiert:{' '}
+                        {groupBy === 'platform'
+                          ? 'Plattform'
+                          : groupBy === 'status'
+                          ? 'Status'
+                          : groupBy === 'genre'
+                          ? 'Genre'
+                          : 'Jahr'}
+                      </span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
                   {selectedStatus !== 'all' && (
                     <button
                       onClick={() => setSelectedStatus('all')}
@@ -803,26 +1228,26 @@ export default function Home() {
                       <X className="w-3.5 h-3.5 text-zinc-400" />
                     </button>
                   )}
+
                   {selectedPlatform !== 'all' && (
                     <button
                       onClick={() => setSelectedPlatform('all')}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors shadow-sm',
-                        selectedPlatform === 'steam'
-                          ? 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-sky-500/40'
-                          : selectedPlatform === 'psn'
-                          ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/40'
-                          : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border-purple-500/40'
-                      )}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 transition-colors shadow-sm"
                       title="Plattform-Filter zurücksetzen"
                     >
                       <Gamepad2 className="w-3.5 h-3.5" />
                       <span>
-                        Plattform: {selectedPlatform === 'steam' ? 'Steam' : selectedPlatform === 'psn' ? 'PlayStation' : 'GOG Galaxy'}
+                        Plattform:{' '}
+                        {selectedPlatform === 'steam'
+                          ? 'Steam'
+                          : selectedPlatform === 'psn'
+                          ? 'PlayStation'
+                          : 'GOG Galaxy'}
                       </span>
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
+
                   {onlyOwned && (
                     <button
                       onClick={() => setOnlyOwned(false)}
@@ -832,6 +1257,16 @@ export default function Home() {
                       <PackageCheck className="w-3.5 h-3.5 text-emerald-400" />
                       <span>Nur im Besitz</span>
                       <X className="w-3.5 h-3.5 text-emerald-400" />
+                    </button>
+                  )}
+
+                  {isFilterActive && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700 transition-colors"
+                      title="Alle Filter auf einmal zurücksetzen"
+                    >
+                      <span>Alle Filter zurücksetzen</span>
                     </button>
                   )}
                 </div>
@@ -845,12 +1280,30 @@ export default function Home() {
                     { id: 'steam' as const, label: 'Steam', count: platformCounts.steam, iconColor: 'text-sky-400', activeStyle: 'bg-sky-500/20 border-sky-500/50 text-sky-200 shadow-sm shadow-sky-950/20' },
                     { id: 'psn' as const, label: 'PlayStation', count: platformCounts.psn, iconColor: 'text-blue-400', activeStyle: 'bg-blue-500/20 border-blue-500/50 text-blue-200 shadow-sm shadow-blue-950/20' },
                     { id: 'gog' as const, label: 'GOG Galaxy', count: platformCounts.gog, iconColor: 'text-purple-400', activeStyle: 'bg-purple-500/20 border-purple-500/50 text-purple-200 shadow-sm shadow-purple-950/20' },
+                    { id: 'epic' as const, label: 'Epic', count: platformCounts.epic, iconColor: 'text-zinc-300', activeStyle: 'bg-zinc-700/40 border-zinc-500 text-zinc-100 shadow-sm' },
+                    { id: 'other' as const, label: 'Andere', count: platformCounts.other, iconColor: 'text-zinc-400', activeStyle: 'bg-zinc-700/40 border-zinc-500 text-zinc-200 shadow-sm' },
                   ].map((tab) => {
-                    const isActive = selectedPlatform === tab.id;
+                    const isAll = tab.id === 'all';
+                    const isActive = isAll
+                      ? filters.platforms.length === 0 && selectedPlatform === 'all'
+                      : filters.platforms.includes(tab.id) || selectedPlatform === tab.id;
                     return (
                       <button
                         key={tab.id}
-                        onClick={() => setSelectedPlatform(tab.id)}
+                        onClick={() => {
+                          if (isAll) {
+                            setSelectedPlatform('all');
+                            setFilters((prev) => ({ ...prev, platforms: [] }));
+                          } else {
+                            setSelectedPlatform('all');
+                            setFilters((prev) => {
+                              const set = new Set(prev.platforms);
+                              if (set.has(tab.id)) set.delete(tab.id);
+                              else set.add(tab.id);
+                              return { ...prev, platforms: Array.from(set) };
+                            });
+                          }
+                        }}
                         className={cn(
                           'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border',
                           isActive
@@ -878,23 +1331,39 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Media Card Grid (2:3 aspect ratio) */}
+              {/* Media Card Grid (2:3 aspect ratio) with GOG Galaxy Grouping */}
               {filteredAndSortedMedia.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 min-[2200px]:grid-cols-8 gap-2.5 sm:gap-3.5 md:gap-4 lg:gap-5">
-                  {filteredAndSortedMedia.map((item) => (
-                    <MediaCard
-                      key={item.id}
-                      item={item}
-                      onQuickIncrement={handleQuickIncrement}
-                      onUpdateStatus={handleUpdateStatus}
-                      onToggleOwned={handleToggleOwned}
-                      onToggleLiveService={handleToggleLiveService}
-                      onToggleGameStory={handleToggleGameStory}
-                      onToggleGame100={handleToggleGame100}
-                      onToggleGameAchievements={handleToggleGameAchievements}
-                      onEdit={setEditingItem}
-                      onDelete={handleDeleteMedia}
-                    />
+                <div className="space-y-8">
+                  {groupedMedia.map((group) => (
+                    <div key={group.key} className="space-y-3">
+                      {group.label && (
+                        <div className="flex items-center gap-2.5 pb-2 border-b border-[#282D37]/80">
+                          <h3 className="text-sm sm:text-base font-bold text-[#F1F3F7]">
+                            {group.label}
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-xs font-mono font-bold">
+                            {group.items.length}
+                          </span>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 min-[2200px]:grid-cols-8 gap-2.5 sm:gap-3.5 md:gap-4 lg:gap-5">
+                        {group.items.map((item) => (
+                          <MediaCard
+                            key={item.id}
+                            item={item}
+                            onQuickIncrement={handleQuickIncrement}
+                            onUpdateStatus={handleUpdateStatus}
+                            onToggleOwned={handleToggleOwned}
+                            onToggleLiveService={handleToggleLiveService}
+                            onToggleGameStory={handleToggleGameStory}
+                            onToggleGame100={handleToggleGame100}
+                            onToggleGameAchievements={handleToggleGameAchievements}
+                            onEdit={setEditingItem}
+                            onDelete={handleDeleteMedia}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (

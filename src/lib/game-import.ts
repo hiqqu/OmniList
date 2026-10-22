@@ -126,6 +126,53 @@ export function getItemPlatform(item: MediaItem): ConnectedGameService | null {
   return null;
 }
 
+export type GalaxyPlatformFilter = 'steam' | 'psn' | 'gog' | 'epic' | 'other';
+
+/**
+ * Resolves full platform category matching GOG Galaxy filter options:
+ * 'steam' | 'psn' | 'gog' | 'epic' | 'other'
+ */
+export function resolveGamePlatform(item: MediaItem): GalaxyPlatformFilter {
+  const service = getItemPlatform(item);
+  if (service) return service;
+
+  const ext = (item.external_id || '').toLowerCase();
+  const pub = (item.publisher || '').toLowerCase();
+
+  if (ext.startsWith('epic:') || pub.includes('epic')) return 'epic';
+  if (pub === 'steam') return 'steam';
+  if (pub.includes('playstation')) return 'psn';
+  if (pub.includes('gog')) return 'gog';
+
+  return 'other';
+}
+
+/**
+ * Resolves OS & console category matching GOG Galaxy filter options:
+ * 'PS5' | 'PS4' | 'PS3' | 'PC' | 'other'
+ */
+export function resolveGameConsole(item: MediaItem): 'PS5' | 'PS4' | 'PS3' | 'PC' | 'other' {
+  const badgeInfo = getGamePlatformBadgeInfo(item);
+  if (badgeInfo?.label) {
+    const lbl = badgeInfo.label.toUpperCase();
+    if (lbl.includes('PS5')) return 'PS5';
+    if (lbl.includes('PS4')) return 'PS4';
+    if (lbl.includes('PS3')) return 'PS3';
+  }
+
+  const p = resolveGamePlatform(item);
+  if (p === 'steam' || p === 'gog' || p === 'epic') return 'PC';
+  if (p === 'psn') return 'PS5';
+
+  const title = (item.title || '').toUpperCase();
+  if (title.includes('(PS5)')) return 'PS5';
+  if (title.includes('(PS4)')) return 'PS4';
+  if (title.includes('(PS3)')) return 'PS3';
+  if (title.includes('(PC)')) return 'PC';
+
+  return 'other';
+}
+
 export interface GamePlatformBadgeInfo {
   label: string;
   service: ConnectedGameService;

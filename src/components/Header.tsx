@@ -1,16 +1,27 @@
 'use client';
 
 import React from 'react';
-import { Search, Plus, ArrowUpDown, X, Cloud, Menu, Radar } from 'lucide-react';
+import { Search, Plus, X, Cloud, Menu, Radar } from 'lucide-react';
+import { GalaxySortKey, GalaxyGroupKey, GalaxyFilterState } from '@/types/media';
+import { GogSortDropdown } from './GogSortDropdown';
+import { GogFilterDropdown } from './GogFilterDropdown';
 import { cn } from '@/lib/utils';
 
-export type SortOption = 'updated' | 'title' | 'rating' | 'progress';
+export type SortOption = GalaxySortKey;
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  sortBy: SortOption;
-  onSortChange: (sort: SortOption) => void;
+  sortBy: GalaxySortKey;
+  sortDirection: 'asc' | 'desc';
+  groupBy: GalaxyGroupKey;
+  onSortChange: (sort: GalaxySortKey) => void;
+  onDirectionToggle: () => void;
+  onGroupChange: (group: GalaxyGroupKey) => void;
+  filters: GalaxyFilterState;
+  onFilterChange: (filters: GalaxyFilterState) => void;
+  onResetFilters: () => void;
+  availableTags?: string[];
   onOpenAddModal: () => void;
   onOpenAddModalWithQuery?: (query: string) => void;
   onOpenSyncModal?: () => void;
@@ -22,7 +33,15 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   sortBy,
+  sortDirection,
+  groupBy,
   onSortChange,
+  onDirectionToggle,
+  onGroupChange,
+  filters,
+  onFilterChange,
+  onResetFilters,
+  availableTags = [],
   onOpenAddModal,
   onOpenAddModalWithQuery,
   onOpenSyncModal,
@@ -93,23 +112,25 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Controls: Sort Dropdown, Sync Button & Add Button */}
+        {/* Controls: Filter Button, Sort Dropdown, Sync Button & Add Button */}
         <div className="flex items-center gap-2 sm:gap-3 justify-between sm:justify-end shrink-0">
-          {/* Sort Dropdown */}
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-[#181B22] border border-[#282D37] rounded-full px-2.5 sm:px-3.5 py-1.5 text-xs text-zinc-400 shrink-0">
-            <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-            <span className="text-zinc-500 hidden md:inline">Sortieren:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => onSortChange(e.target.value as SortOption)}
-              className="bg-transparent text-[#F1F3F7] font-semibold focus:outline-none cursor-pointer text-xs"
-            >
-              <option value="updated" className="bg-[#181B22] text-[#F1F3F7]">Zuletzt aktualisiert</option>
-              <option value="title" className="bg-[#181B22] text-[#F1F3F7]">Titel (A-Z)</option>
-              <option value="rating" className="bg-[#181B22] text-[#F1F3F7]">Beste Bewertung (Metacritic)</option>
-              <option value="progress" className="bg-[#181B22] text-[#F1F3F7]">Höchster Fortschritt</option>
-            </select>
-          </div>
+          {/* GOG Galaxy Filter Dropdown */}
+          <GogFilterDropdown
+            filters={filters}
+            onFilterChange={onFilterChange}
+            onResetFilters={onResetFilters}
+            availableTags={availableTags}
+          />
+
+          {/* GOG Galaxy Sort & Group Dropdown */}
+          <GogSortDropdown
+            sortBy={sortBy}
+            sortDirection={sortDirection}
+            groupBy={groupBy}
+            onSortChange={onSortChange}
+            onDirectionToggle={onDirectionToggle}
+            onGroupChange={onGroupChange}
+          />
 
           {/* Cloud-Sync & Backup Button */}
           {onOpenSyncModal && (
