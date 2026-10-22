@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Star, Trash2, Save, PackageCheck, BookOpen, Sparkles, Loader2, Image as ImageIcon, Gamepad2, Trophy, Clock, Building2, Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Star, Trash2, Save, PackageCheck, BookOpen, Sparkles, Loader2, Image as ImageIcon, Gamepad2, Trophy, Clock, Building2, Layers, ChevronDown, ChevronUp, Infinity } from 'lucide-react';
 import { MediaItem, MediaStatus, ProgressUnit } from '@/types/media';
 import { getMediaTypeBadge, cn } from '@/lib/utils';
 import { formatIsbn } from '@/lib/api-adapters/googlebooks';
 import { BookEditionItem } from '@/app/api/book-editions/route';
 import { createBookSvgCover, getMediaCoverFallback } from '@/lib/book-cover';
+import { isLiveServiceGame } from '@/lib/live-service';
 
 interface EditMediaModalProps {
   item: MediaItem | null;
@@ -50,6 +51,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   const [gameStoryCompleted, setGameStoryCompleted] = useState<boolean>(false);
   const [gameCompletionist100, setGameCompletionist100] = useState<boolean>(false);
   const [gameAllAchievementsCompleted, setGameAllAchievementsCompleted] = useState<boolean>(false);
+  const [gameIsLiveService, setGameIsLiveService] = useState<boolean>(false);
 
   useEffect(() => {
     if (item) {
@@ -86,6 +88,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
             item.gameTracker.achievements.total > 0 &&
             item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
         ));
+        setGameIsLiveService(isLiveServiceGame(item));
       }
 
       if (item.type === 'book') {
@@ -210,6 +213,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       creator: creator.trim() || undefined,
       status: resolvedStatus,
       isOwned,
+      isLiveService: isGame ? gameIsLiveService : undefined,
       rating: typeof rating === 'number' ? rating : undefined,
       metacritic: typeof metacritic === 'number' ? metacritic : undefined,
       summary: summary.trim() || undefined,
@@ -230,9 +234,10 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       gameTracker: isGame
         ? {
             playtimeHours: currentNum,
-            storyCompleted: gameStoryCompleted,
+            storyCompleted: gameIsLiveService ? false : gameStoryCompleted,
             completionist100: gameCompletionist100,
             allAchievementsCompleted: gameAllAchievementsCompleted,
+            isLiveService: gameIsLiveService,
             achievements: undefined,
           }
         : item.gameTracker,
@@ -466,17 +471,33 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                 />
               </div>
 
+              {/* Live-Service Checkbox */}
+              <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#181B22] border border-[#282D37] cursor-pointer hover:border-cyan-500/40 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={gameIsLiveService}
+                  onChange={(e) => setGameIsLiveService(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-cyan-500 focus:ring-cyan-500 cursor-pointer accent-cyan-500"
+                />
+                <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300">
+                  <Infinity className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span>Live-Service / Endlos-Spiel (Multiplayer / keine Kampagne)</span>
+                </div>
+              </label>
+
               {/* Checkboxes: Story, 100% & Alle Achievements */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <label className="flex items-center gap-2 p-2.5 rounded-xl bg-[#181B22] border border-[#282D37] cursor-pointer hover:border-purple-500/40 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={gameStoryCompleted}
-                    onChange={(e) => setGameStoryCompleted(e.target.checked)}
-                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-purple-500 focus:ring-purple-500 cursor-pointer accent-purple-500"
-                  />
-                  <span className="text-xs font-bold text-zinc-300">Story beendet</span>
-                </label>
+                {!gameIsLiveService && (
+                  <label className="flex items-center gap-2 p-2.5 rounded-xl bg-[#181B22] border border-[#282D37] cursor-pointer hover:border-purple-500/40 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={gameStoryCompleted}
+                      onChange={(e) => setGameStoryCompleted(e.target.checked)}
+                      className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-purple-500 focus:ring-purple-500 cursor-pointer accent-purple-500"
+                    />
+                    <span className="text-xs font-bold text-zinc-300">Story beendet</span>
+                  </label>
+                )}
 
                 <label className="flex items-center gap-2 p-2.5 rounded-xl bg-[#181B22] border border-[#282D37] cursor-pointer hover:border-amber-500/40 transition-colors">
                   <input

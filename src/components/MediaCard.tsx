@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award, Gamepad2 } from 'lucide-react';
+import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, PlayCircle, PauseCircle, PackageCheck, Info, Check, Clock, Trophy, Building2, Layers, XCircle, Award, Gamepad2, Infinity } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
 import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
+import { isLiveServiceGame } from '@/lib/live-service';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -50,6 +51,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   const metacriticScore = getMediaMetacriticScore(item);
   const metacriticStyle = metacriticScore !== null ? getMetacriticBadgeStyle(metacriticScore) : null;
+  const isLiveService = isGame && isLiveServiceGame(item);
 
   const currentProgress = item.progress.current;
   const totalProgress = item.progress.total || 0;
@@ -481,6 +483,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <span>Metacritic {metacriticScore}</span>
               </span>
             )}
+
+            {isLiveService && (
+              <span
+                className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0"
+                title="Live-Service / Endlos-Spiel ohne klassisches Kampagnen-Ende"
+              >
+                <Infinity className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
+                <span>Live-Service</span>
+              </span>
+            )}
           </div>
 
           {/* Publisher / Collection line underneath badges */}
@@ -513,27 +525,37 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               </span>
             </div>
 
-            {/* Badges: Story & 100% & Achievements */}
+            {/* Badges: Story (or Endlos) & 100% & Achievements */}
             <div className="flex items-center gap-1 flex-wrap">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleGameStory?.(item.id);
-                }}
-                className={cn(
-                  'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
-                  isGameStoryDone
-                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30'
-                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
-                )}
-                title="Klicken zum Umschalten: Story beendet"
-              >
-                <span>Story</span>
-                <span className={isGameStoryDone ? "text-purple-300 font-extrabold" : "text-zinc-500"}>
-                  {isGameStoryDone ? '✓' : '—'}
+              {isLiveService ? (
+                <span
+                  className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 shadow-sm"
+                  title="Live-Service / Endlostitel (keine Kampagne)"
+                >
+                  <Infinity className="w-2.5 h-2.5 text-cyan-400" />
+                  <span>Endlos</span>
                 </span>
-              </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleGameStory?.(item.id);
+                  }}
+                  className={cn(
+                    'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
+                    isGameStoryDone
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30'
+                      : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
+                  )}
+                  title="Klicken zum Umschalten: Story beendet"
+                >
+                  <span>Story</span>
+                  <span className={isGameStoryDone ? "text-purple-300 font-extrabold" : "text-zinc-500"}>
+                    {isGameStoryDone ? '✓' : '—'}
+                  </span>
+                </button>
+              )}
 
               <button
                 type="button"

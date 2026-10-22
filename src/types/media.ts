@@ -20,6 +20,7 @@ export interface GameTracker {
   storyCompleted?: boolean;
   completionist100?: boolean;
   allAchievementsCompleted?: boolean; // Checkbox: Alle Erfolge freigeschaltet (100% Achievements)
+  isLiveService?: boolean; // Live-Service / Endless Multiplayer ohne Kampagnen-Ende
   achievements?: {
     current: number;
     total: number;
@@ -42,6 +43,7 @@ export interface MediaItem {
   type: MediaType;
   status: MediaStatus;
   isOwned?: boolean; // Gekauft / Im physischen oder digitalen Besitz
+  isLiveService?: boolean; // Live-Service / Endlos-Spiel ohne klassisches Kampagnen-Ende
   coverUrl: string;
   bannerUrl?: string;
   rating?: number; // 0 - 5 scale, e.g. 4.5 (Persönliche Bewertung des Nutzers)

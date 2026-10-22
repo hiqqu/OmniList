@@ -29,12 +29,14 @@ import {
   Award,
   Trophy,
   Layers,
+  Infinity,
 } from 'lucide-react';
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getStoredMedia, updateMediaItem, deleteMediaItem } from '@/lib/storage';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, getProgressUnitLabel, cn } from '@/lib/utils';
 import { getEnrichedMediaDetails, EnrichedMediaDetails } from '@/lib/media-details';
 import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
+import { isLiveServiceGame } from '@/lib/live-service';
 import { EditMediaModal } from '@/components/EditMediaModal';
 import { getMediaCoverFallback } from '@/lib/book-cover';
 
@@ -147,6 +149,7 @@ export default function MediaDetailPage() {
 
   const metacriticScore = getMediaMetacriticScore(item);
   const metacriticStyle = metacriticScore !== null ? getMetacriticBadgeStyle(metacriticScore) : null;
+  const isLiveService = isGame && isLiveServiceGame(item);
 
   const currentProgress = item.progress.current;
   const totalProgress = item.progress.total || 0;
@@ -457,6 +460,16 @@ export default function MediaDetailPage() {
                     <span>Metacritic {metacriticScore}</span>
                   </span>
                 )}
+
+                {isLiveService && (
+                  <span
+                    className="text-xs font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0"
+                    title="Live-Service / Endlos-Spiel ohne klassisches Kampagnen-Ende"
+                  >
+                    <Infinity className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Live-Service</span>
+                  </span>
+                )}
               </div>
 
               {/* Metadata Badges Bar */}
@@ -591,19 +604,29 @@ export default function MediaDetailPage() {
                       </button>
                     </div>
 
-                    {/* Game: Story Toggle */}
-                    <button
-                      onClick={handleToggleGameStory}
-                      className={cn(
-                        'flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-xs border transition-all active:scale-95',
-                        isGameStoryDone
-                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                          : 'bg-[#181B22] text-zinc-400 hover:text-white border-[#282D37]'
-                      )}
-                    >
-                      <Check className="w-3.5 h-3.5 text-purple-400 stroke-[2.5]" />
-                      <span>{isGameStoryDone ? 'Story beendet' : 'Story offen'}</span>
-                    </button>
+                    {/* Game: Story Toggle or Live-Service Indicator */}
+                    {isLiveService ? (
+                      <div
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-xs bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm"
+                        title="Live-Service / Endlostitel (keine Kampagne)"
+                      >
+                        <Infinity className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Endlos</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleToggleGameStory}
+                        className={cn(
+                          'flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-xs border transition-all active:scale-95',
+                          isGameStoryDone
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : 'bg-[#181B22] text-zinc-400 hover:text-white border-[#282D37]'
+                        )}
+                      >
+                        <Check className="w-3.5 h-3.5 text-purple-400 stroke-[2.5]" />
+                        <span>{isGameStoryDone ? 'Story beendet' : 'Story offen'}</span>
+                      </button>
+                    )}
 
                     {/* Game: 100% Toggle */}
                     <button
