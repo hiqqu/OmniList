@@ -6,6 +6,7 @@ import { Star, Plus, MoreVertical, Edit2, Trash2, CheckCircle2, BookmarkCheck, P
 import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, cn } from '@/lib/utils';
 import { getMediaCoverFallback } from '@/lib/book-cover';
+import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -46,6 +47,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       item.gameTracker.achievements.total > 0 &&
       item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
   );
+
+  const metacriticScore = getMediaMetacriticScore(item);
+  const metacriticStyle = metacriticScore !== null ? getMetacriticBadgeStyle(metacriticScore) : null;
 
   const currentProgress = item.progress.current;
   const totalProgress = item.progress.total || 0;
@@ -141,67 +145,46 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </button>
         </div>
 
-        {/* Rating Badge at Bottom Left of Poster */}
-        <div
-          className={cn(
-            'absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full backdrop-blur text-[10px] sm:text-xs font-bold shadow-md transition-opacity duration-200',
-            item.rating !== undefined && item.rating !== null
-              ? 'bg-[#0F1117]/80 border border-amber-500/30 text-amber-400'
-              : 'bg-[#0F1117]/60 border border-zinc-700/40 text-zinc-400',
-            showMenu && 'opacity-0 pointer-events-none'
-          )}
-        >
-          <Star
+        {/* Quick Increment Button Overlay - only for movies, shows, anime, books (hidden for games) */}
+        {!isGame && (
+          <div
             className={cn(
-              'w-3 h-3 sm:w-3.5 sm:h-3.5',
-              item.rating !== undefined && item.rating !== null
-                ? 'fill-amber-400 text-amber-400'
-                : 'text-zinc-500'
-            )}
-          />
-          <span>{item.rating !== undefined && item.rating !== null ? item.rating.toFixed(1) : '—'}</span>
-        </div>
-
-        {/* Quick Increment Button Overlay */}
-        <div
-          className={cn(
-            'absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-10 transition-opacity duration-200',
-            showMenu && 'opacity-0 pointer-events-none'
-          )}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickIncrement(item.id);
-            }}
-            disabled={!isGame && isCompleted}
-            title={
-              isGame
-                ? `+1 Std. Spielzeit loggen (aktuell ${gamePlaytime} Std.)`
-                : isCompleted
-                ? 'Bereits alle Einheiten beendet'
-                : `Schnell-Fortschritt (${incrementInfo.label})`
-            }
-            className={cn(
-              'flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full font-bold text-[11px] sm:text-xs shadow-lg backdrop-blur transition-all',
-              !isGame && isCompleted
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default'
-                : `active:scale-95 hover:scale-105 ${typeButtonStyles[item.type]}`
+              'absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-10 transition-opacity duration-200',
+              showMenu && 'opacity-0 pointer-events-none'
             )}
           >
-            {!isGame && isCompleted ? (
-              <>
-                <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 stroke-[2.5]" />
-                <span>{isMovie ? 'Gesehen' : 'Fertig'}</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
-                <span>{isGame ? '1 Std.' : incrementInfo.label.replace(/^\+/, '')}</span>
-              </>
-            )}
-          </button>
-        </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickIncrement(item.id);
+              }}
+              disabled={isCompleted}
+              title={
+                isCompleted
+                  ? 'Bereits alle Einheiten beendet'
+                  : `Schnell-Fortschritt (${incrementInfo.label})`
+              }
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full font-bold text-[11px] sm:text-xs shadow-lg backdrop-blur transition-all',
+                isCompleted
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default'
+                  : `active:scale-95 hover:scale-105 ${typeButtonStyles[item.type]}`
+              )}
+            >
+              {isCompleted ? (
+                <>
+                  <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 stroke-[2.5]" />
+                  <span>{isMovie ? 'Gesehen' : 'Fertig'}</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
+                  <span>{incrementInfo.label.replace(/^\+/, '')}</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Dropdown Menu - positioned neatly within card boundaries */}
@@ -476,6 +459,27 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   </span>
                 );
               })()
+            )}
+            {metacriticScore !== null && metacriticStyle && (
+              <span
+                className={cn(
+                  'text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0',
+                  metacriticStyle.bgClass,
+                  metacriticStyle.colorClass,
+                  metacriticStyle.borderClass
+                )}
+                title={`Metacritic Score: ${metacriticScore}/100`}
+              >
+                <span
+                  className={cn(
+                    'w-3.5 h-3.5 rounded flex items-center justify-center text-[8px] font-black text-black font-mono leading-none',
+                    metacriticStyle.badgeBg
+                  )}
+                >
+                  M
+                </span>
+                <span>Metacritic {metacriticScore}</span>
+              </span>
             )}
           </div>
 

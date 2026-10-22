@@ -28,6 +28,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   const [status, setStatus] = useState<MediaStatus>('in_progress');
   const [isOwned, setIsOwned] = useState<boolean>(false);
   const [rating, setRating] = useState<number | ''>('');
+  const [metacritic, setMetacritic] = useState<number | ''>('');
   const [currentProgress, setCurrentProgress] = useState<number>(0);
   const [totalProgress, setTotalProgress] = useState<number>(0);
   const [unit, setUnit] = useState<ProgressUnit>('episodes');
@@ -57,6 +58,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       setStatus(item.status);
       setIsOwned(Boolean(item.isOwned || item.status === 'owned'));
       setRating(typeof item.rating === 'number' ? item.rating : '');
+      setMetacritic(typeof item.metacritic === 'number' ? item.metacritic : '');
       setCurrentProgress(item.progress.current);
       setTotalProgress(item.progress.total || 0);
       setUnit(item.progress.unit);
@@ -209,6 +211,7 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
       status: resolvedStatus,
       isOwned,
       rating: typeof rating === 'number' ? rating : undefined,
+      metacritic: typeof metacritic === 'number' ? metacritic : undefined,
       summary: summary.trim() || undefined,
       notes: notes.trim() || undefined,
       publisher: publisher.trim() || undefined,
@@ -379,6 +382,45 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
                     rating !== '' ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'
                   )}
                 />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-zinc-400">
+                  Metacritic Score (0 – 100)
+                </label>
+                {metacritic !== '' && (
+                  <button
+                    type="button"
+                    onClick={() => setMetacritic('')}
+                    className="text-[11px] text-zinc-500 hover:text-rose-400 transition-colors"
+                  >
+                    Entfernen
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="Automatisch oder z. B. 86"
+                  value={metacritic}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setMetacritic('');
+                    } else {
+                      const num = parseInt(val, 10);
+                      setMetacritic(isNaN(num) ? '' : Math.min(100, Math.max(0, num)));
+                    }
+                  }}
+                  className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-xl pl-8 pr-3 py-2 text-sm text-[#F1F3F7] placeholder-zinc-600 focus:outline-none"
+                />
+                <span className="w-4 h-4 rounded bg-emerald-500/20 text-emerald-400 font-mono text-[9px] font-black absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
+                  M
+                </span>
               </div>
             </div>
           </div>

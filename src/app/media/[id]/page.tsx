@@ -34,6 +34,7 @@ import { MediaItem, MediaStatus, MediaType } from '@/types/media';
 import { getStoredMedia, updateMediaItem, deleteMediaItem } from '@/lib/storage';
 import { getMediaTypeBadge, getMediaStatusBadge, getUnitIncrement, getProgressUnitLabel, cn } from '@/lib/utils';
 import { getEnrichedMediaDetails, EnrichedMediaDetails } from '@/lib/media-details';
+import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
 import { EditMediaModal } from '@/components/EditMediaModal';
 import { getMediaCoverFallback } from '@/lib/book-cover';
 
@@ -143,6 +144,9 @@ export default function MediaDetailPage() {
       item.gameTracker.achievements.total > 0 &&
       item.gameTracker.achievements.current >= item.gameTracker.achievements.total)
   );
+
+  const metacriticScore = getMediaMetacriticScore(item);
+  const metacriticStyle = metacriticScore !== null ? getMetacriticBadgeStyle(metacriticScore) : null;
 
   const currentProgress = item.progress.current;
   const totalProgress = item.progress.total || 0;
@@ -434,6 +438,23 @@ export default function MediaDetailPage() {
                       {item.gameConnection?.serviceName || item.connectedService.toUpperCase()}
                       {item.gameConnection?.accountUsername ? ` (${item.gameConnection.accountUsername})` : ' verknüpft'}
                     </span>
+                  </span>
+                )}
+
+                {metacriticScore !== null && metacriticStyle && (
+                  <span
+                    className={cn(
+                      'text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0',
+                      metacriticStyle.bgClass,
+                      metacriticStyle.colorClass,
+                      metacriticStyle.borderClass
+                    )}
+                    title={`Metacritic Score: ${metacriticScore}/100`}
+                  >
+                    <span className={cn('w-4 h-4 rounded flex items-center justify-center text-[9px] font-black text-black font-mono leading-none', metacriticStyle.badgeBg)}>
+                      M
+                    </span>
+                    <span>Metacritic {metacriticScore}</span>
                   </span>
                 )}
               </div>

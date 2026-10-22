@@ -45,6 +45,7 @@ export interface MediaItem {
   coverUrl: string;
   bannerUrl?: string;
   rating?: number; // 0 - 5 scale, e.g. 4.5 (Persönliche Bewertung des Nutzers)
+  metacritic?: number; // Metacritic / Metascore (0 - 100)
   communityRating?: number; // Reale externe Leser-/Community-Bewertung (z. B. von Open Library oder TMDB)
   communityRatingsCount?: number; // Anzahl der externen Bewertungen
   releaseDate?: string;
