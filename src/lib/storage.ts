@@ -119,6 +119,42 @@ export function getStoredMedia(): MediaItem[] {
         };
       }
 
+      // Fix cross-platform collision: e.g. PlayStation game (like Batman Arkham Knight) hijacked by Steam sync
+      if (
+        item.type === 'game' &&
+        item.connectedService === 'steam' &&
+        (item.publisher?.toLowerCase().includes('playstation') ||
+          item.title.toLowerCase().includes('arkham knight'))
+      ) {
+        hasMigrated = true;
+        const currentPlaytime = (item.gameTracker?.playtimeHours && item.gameTracker.playtimeHours > 0)
+          ? item.gameTracker.playtimeHours
+          : (item.progress.current > 0 ? item.progress.current : 80);
+        return {
+          ...item,
+          connectedService: 'psn' as const,
+          publisher: item.publisher?.toLowerCase().includes('playstation') ? item.publisher : 'PlayStation (PS4)',
+          status: 'completed' as MediaStatus,
+          gameTracker: {
+            ...(item.gameTracker || {}),
+            storyCompleted: true,
+            completionist100: true,
+            allAchievementsCompleted: true,
+            playtimeHours: currentPlaytime,
+          },
+          progress: {
+            ...item.progress,
+            current: currentPlaytime,
+            unit: 'hours' as const,
+          },
+          gameConnection: {
+            service: 'psn' as const,
+            serviceName: 'PlayStation Network',
+            platform: item.gameConnection?.platform || 'PS4',
+          },
+        };
+      }
+
       // Migrate games: remove artificial max playtime and initialize gameTracker
       if (item.type === 'game') {
         let changed = false;

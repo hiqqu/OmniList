@@ -59,6 +59,10 @@ export async function runBackgroundAutoSync(
 
     const updatedMedia = currentMedia.map((item) => {
       if (item.type !== 'game') return item;
+      // Only match against existing Steam games; never touch or overwrite PlayStation or GOG games
+      const isSteamGame = item.connectedService === 'steam' || item.external_id?.startsWith('steam:');
+      if (!isSteamGame) return item;
+
       const match = fetchedGames.find(
         (sg) =>
           item.external_id === `steam:${sg.appid}` ||
@@ -95,7 +99,8 @@ export async function runBackgroundAutoSync(
       const alreadyInList = currentMedia.some(
         (m) =>
           m.external_id === `steam:${sg.appid}` ||
-          m.title.toLowerCase().trim() === sg.name.toLowerCase().trim()
+          ((m.connectedService === 'steam' || m.external_id?.startsWith('steam:')) &&
+            m.title.toLowerCase().trim() === sg.name.toLowerCase().trim())
       );
       if (alreadyInList) continue;
 

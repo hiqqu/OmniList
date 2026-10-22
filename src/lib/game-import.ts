@@ -61,9 +61,23 @@ export function normalizeGameTitle(title: string): string {
  * Checks if two games match by external ID or normalized title
  */
 export function areGamesMatching(
-  gameA: { title: string; external_id?: string },
-  gameB: { title: string; external_id?: string }
+  gameA: { title: string; external_id?: string; connectedService?: string },
+  gameB: { title: string; external_id?: string; connectedService?: string }
 ): boolean {
+  // If both games have explicit connected services and they are different, they are distinct platform releases
+  const getService = (g: { external_id?: string; connectedService?: string }) => {
+    if (g.connectedService) return g.connectedService;
+    if (g.external_id?.startsWith('steam:')) return 'steam';
+    if (g.external_id?.startsWith('psn:')) return 'psn';
+    if (g.external_id?.startsWith('gog:')) return 'gog';
+    return null;
+  };
+  const sA = getService(gameA);
+  const sB = getService(gameB);
+  if (sA && sB && sA !== sB) {
+    return false;
+  }
+
   // 1. Direct external ID match
   if (gameA.external_id && gameB.external_id && gameA.external_id === gameB.external_id) {
     return true;
@@ -279,7 +293,7 @@ export function importGamesWithDeduplication(
 
     // 1. Search for matching existing game in library
     const existingIndex = resultList.findIndex(
-      (m) => m.type === 'game' && areGamesMatching(m, { title: incoming.title, external_id: externalId })
+      (m) => m.type === 'game' && areGamesMatching(m, { title: incoming.title, external_id: externalId, connectedService: incoming.service })
     );
 
     if (existingIndex !== -1) {
@@ -361,15 +375,15 @@ export function importGamesWithDeduplication(
               playtimeHrs > (existing.gameTracker?.playtimeHours || 0)
                 ? playtimeHrs
                 : existing.gameTracker?.playtimeHours,
-            storyCompleted: incoming.storyCompleted ?? existing.gameTracker?.storyCompleted,
-            completionist100: incoming.completionist100 ?? existing.gameTracker?.completionist100,
+            storyCompleted: existing.gameTracker?.storyCompleted || incoming.storyCompleted,
+            completionist100: existing.gameTracker?.completionist100 || incoming.completionist100,
             allAchievementsCompleted:
-              incoming.allAchievementsCompleted ?? existing.gameTracker?.allAchievementsCompleted,
+              existing.gameTracker?.allAchievementsCompleted || incoming.allAchievementsCompleted,
           },
           gameConnection: {
             ...(existing.gameConnection || {}),
-            service: incoming.service,
-            serviceName,
+            service: existing.gameConnection?.service || incoming.service,
+            serviceName: existing.gameConnection?.serviceName || serviceName,
             playtimeMinutes: incoming.playtimeMinutes || Math.round(playtimeHrs * 60),
             lastPlayed: incoming.lastPlayed || existing.gameConnection?.lastPlayed,
             accountUsername: accountUsername || existing.gameConnection?.accountUsername,

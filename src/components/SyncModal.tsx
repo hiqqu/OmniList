@@ -472,16 +472,29 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         return;
       }
 
-      // 2. Bestehende Spiele in der OmniList identifizieren
+      // 2. Bestehende Spiele in der OmniList identifizieren (Plattform-Trennung: PlayStation- oder GOG-Spiele niemals überschreiben)
       const existingGames = media.filter((m) => m.type === 'game');
       const matchedAppIds: number[] = [];
       const matches = existingGames.map((item) => {
-        const match = fetchedGames.find(
-          (sg) =>
-            item.external_id === `steam:${sg.appid}` ||
-            item.gameConnection?.serviceId === String(sg.appid) ||
-            normalizeTitle(sg.name) === normalizeTitle(item.title)
-        );
+        const isSteamGame = item.connectedService === 'steam' || item.external_id?.startsWith('steam:');
+        const isUnconnected = !item.connectedService && !item.gameConnection?.service && !item.external_id?.startsWith('psn:') && !item.external_id?.startsWith('gog:');
+
+        let match: SteamGameItem | undefined = undefined;
+        if (isSteamGame) {
+          match = fetchedGames.find(
+            (sg) =>
+              item.external_id === `steam:${sg.appid}` ||
+              item.gameConnection?.serviceId === String(sg.appid) ||
+              normalizeTitle(sg.name) === normalizeTitle(item.title)
+          );
+        } else if (isUnconnected) {
+          match = fetchedGames.find(
+            (sg) =>
+              item.external_id === `steam:${sg.appid}` ||
+              normalizeTitle(sg.name) === normalizeTitle(item.title)
+          );
+        }
+
         if (match) matchedAppIds.push(match.appid);
         return { item, match };
       });
@@ -547,12 +560,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
       // 5. Neue Spiele identifizieren (Duplikate und bereits gelöschte Spiele ausschließen)
       const matchedAppIdSet = new Set(matchedAppIds);
-      const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
+      const existingSteamTitles = new Set(
+        media
+          .filter((m) => m.type === 'game' && (m.connectedService === 'steam' || m.external_id?.startsWith('steam:')))
+          .map((m) => normalizeTitle(m.title))
+      );
       let skippedDeletedCount = 0;
 
       const newGamesToAdd = fetchedGames.filter((sg) => {
         if (matchedAppIdSet.has(sg.appid)) return false;
-        if (existingTitles.has(normalizeTitle(sg.name))) return false;
+        if (existingSteamTitles.has(normalizeTitle(sg.name))) return false;
         if (onlyPlayed && sg.playtimeMinutes <= 0) return false;
 
         // Gelöschte Spiele ignorieren
@@ -656,16 +673,29 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         return;
       }
 
-      // 1. Matches finden
+      // 1. Matches finden (Plattform-Trennung: Steam- oder GOG-Spiele niemals überschreiben)
       const existingGames = media.filter((m) => m.type === 'game');
       const matchedIds: string[] = [];
       const matches = existingGames.map((item) => {
-        const match = fetchedGames.find(
-          (pg) =>
-            item.external_id === pg.id ||
-            item.gameConnection?.serviceId === pg.id ||
-            normalizeTitle(pg.name) === normalizeTitle(item.title)
-        );
+        const isPsnGame = item.connectedService === 'psn' || item.external_id?.startsWith('psn:');
+        const isUnconnected = !item.connectedService && !item.gameConnection?.service && !item.external_id?.startsWith('steam:') && !item.external_id?.startsWith('gog:');
+
+        let match: PsnGameItem | undefined = undefined;
+        if (isPsnGame) {
+          match = fetchedGames.find(
+            (pg) =>
+              item.external_id === pg.id ||
+              item.gameConnection?.serviceId === pg.id ||
+              normalizeTitle(pg.name) === normalizeTitle(item.title)
+          );
+        } else if (isUnconnected) {
+          match = fetchedGames.find(
+            (pg) =>
+              item.external_id === pg.id ||
+              normalizeTitle(pg.name) === normalizeTitle(item.title)
+          );
+        }
+
         if (match) matchedIds.push(match.id);
         return { item, match };
       });
@@ -709,12 +739,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
       // 3. Neue Spiele hinzufügen (gelöschte überspringen)
       const matchedIdSet = new Set(matchedIds);
-      const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
+      const existingPsnTitles = new Set(
+        media
+          .filter((m) => m.type === 'game' && (m.connectedService === 'psn' || m.external_id?.startsWith('psn:')))
+          .map((m) => normalizeTitle(m.title))
+      );
       let skippedDeletedCount = 0;
 
       const newGamesToAdd = fetchedGames.filter((pg) => {
         if (matchedIdSet.has(pg.id)) return false;
-        if (existingTitles.has(normalizeTitle(pg.name))) return false;
+        if (existingPsnTitles.has(normalizeTitle(pg.name))) return false;
 
         if (isGameDeleted(pg.id, pg.name)) {
           skippedDeletedCount++;
@@ -831,16 +865,29 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         return;
       }
 
-      // 1. Matches finden
+      // 1. Matches finden (Plattform-Trennung: Steam- oder PlayStation-Spiele niemals überschreiben)
       const existingGames = media.filter((m) => m.type === 'game');
       const matchedIds: string[] = [];
       const matches = existingGames.map((item) => {
-        const match = fetchedGames.find(
-          (gg) =>
-            item.external_id === gg.id ||
-            item.gameConnection?.serviceId === String(gg.gameId) ||
-            normalizeTitle(gg.title) === normalizeTitle(item.title)
-        );
+        const isGogGame = item.connectedService === 'gog' || item.external_id?.startsWith('gog:');
+        const isUnconnected = !item.connectedService && !item.gameConnection?.service && !item.external_id?.startsWith('steam:') && !item.external_id?.startsWith('psn:');
+
+        let match: GogGameItem | undefined = undefined;
+        if (isGogGame) {
+          match = fetchedGames.find(
+            (gg) =>
+              item.external_id === gg.id ||
+              item.gameConnection?.serviceId === String(gg.gameId) ||
+              normalizeTitle(gg.title) === normalizeTitle(item.title)
+          );
+        } else if (isUnconnected) {
+          match = fetchedGames.find(
+            (gg) =>
+              item.external_id === gg.id ||
+              normalizeTitle(gg.title) === normalizeTitle(item.title)
+          );
+        }
+
         if (match) matchedIds.push(String(match.id));
         return { item, match };
       });
@@ -886,12 +933,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
       // 3. Neue Spiele hinzufügen (gelöschte überspringen)
       const matchedIdSet = new Set(matchedIds);
-      const existingTitles = new Set(media.map((m) => normalizeTitle(m.title)));
+      const existingGogTitles = new Set(
+        media
+          .filter((m) => m.type === 'game' && (m.connectedService === 'gog' || m.external_id?.startsWith('gog:')))
+          .map((m) => normalizeTitle(m.title))
+      );
       let skippedDeletedCount = 0;
 
       const newGamesToAdd = fetchedGames.filter((gg) => {
         if (matchedIdSet.has(String(gg.id))) return false;
-        if (existingTitles.has(normalizeTitle(gg.title))) return false;
+        if (existingGogTitles.has(normalizeTitle(gg.title))) return false;
 
         if (isGameDeleted(gg.id, gg.title)) {
           skippedDeletedCount++;
