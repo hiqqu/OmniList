@@ -8,6 +8,7 @@ interface GogGame {
   playtimeHours: number;
   coverUrl?: string;
   bannerUrl?: string;
+  lastPlayed?: string;
   achievements?: {
     current: number;
     total: number;
@@ -22,11 +23,11 @@ const GOG_REDIRECT_URI = 'https://embed.gog.com/on_login_success?origin=client';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, token: customToken, code: customCode, username: customUser } = body;
+    const { token: customToken, code: customCode, username: customUser } = body;
 
     let authToken = (customToken || process.env.GOG_TOKEN || '').trim();
     let authCode = (customCode || '').trim();
-    const username = (customUser || process.env.GOG_USERNAME || '').trim();
+    let username = (customUser || process.env.GOG_USERNAME || '').trim();
 
     // Check if token or code was passed inside username or token field (e.g. user pasted full URL or code into input)
     if (!authCode) {
@@ -38,7 +39,10 @@ export async function POST(req: NextRequest) {
         }
       } else if (username.includes('code=')) {
         const match = username.match(/[?&]code=([^&]+)/);
-        if (match) authCode = match[1];
+        if (match) {
+          authCode = match[1];
+          username = '';
+        }
       }
     }
 
@@ -85,9 +89,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ACTION: get-profile & games via Token (GOG Galaxy API)
+    let userId = '';
+    let profileUsername = username || '';
+
+    // If authToken is present, fetch profile info
     if (authToken) {
-      // 1. Fetch user data
       const userRes = await fetch('https://embed.gog.com/userData.json', {
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -95,18 +101,17 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      let userId = '';
-      let profileUsername = username || 'GOG Spieler';
-
       if (userRes.ok) {
         const userData = await userRes.json();
         if (userData && userData.isLoggedIn) {
           userId = String(userData.userId || userData.id || '');
-          profileUsername = userData.username || profileUsername;
+          if (userData.username) {
+            profileUsername = userData.username;
+          }
         }
       }
 
-      if (!userId) {
+      if (!userId && !profileUsername) {
         return NextResponse.json(
           {
             error: 'GOG-Sitzung ungültig oder abgelaufen. Bitte erneuere deinen GOG-Code.',
@@ -115,29 +120,108 @@ export async function POST(req: NextRequest) {
           { status: 401 }
         );
       }
+    }
 
-      // 2. Fetch played games with playtime
-      let playedGamesList: any[] = [];
-      try {
-        const gameplayRes = await fetch(
-          `https://gameplay.gog.com/clients/46899977096215648/users/${userId}/games`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              'User-Agent': 'Mozilla/5.0 OmniList/1.0',
-            },
-          }
-        );
-        if (gameplayRes.ok) {
-          const rawGameplay = await gameplayRes.json();
-          playedGamesList = Array.isArray(rawGameplay) ? rawGameplay : rawGameplay.games || [];
+    if (!profileUsername) {
+      profileUsername = 'GOG Spieler';
+    }
+
+    // Map to hold collected games
+    interface ExtractedGame {
+      gameId: string;
+      title: string;
+      playtimeMinutes: number;
+      lastPlayed?: string;
+      achievements?: GogGame['achievements'];
+      coverUrl?: string;
+      bannerUrl?: string;
+    }
+
+    const gamesMap = new Map<string, ExtractedGame>();
+
+    const formatImg = (img?: string) => {
+      if (!img) return undefined;
+      if (img.startsWith('//')) return `https:${img}`;
+      if (img.startsWith('http')) return img;
+      return `https://${img}`;
+    };
+
+    // 1. Fetch played and listed games with exact stats & playtime from GOG stats endpoint
+    try {
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const statsUrl = `https://embed.gog.com/u/${encodeURIComponent(profileUsername)}/games/stats?sort=date_last_played&order=desc&page=${page}`;
+        const headers: Record<string, string> = {
+          'User-Agent': 'Mozilla/5.0 OmniList/1.0',
+        };
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`;
         }
-      } catch (err) {
-        console.warn('Could not fetch GOG gameplay stats:', err);
-      }
 
-      // 3. Fetch all owned game IDs
-      let ownedGameIds: (string | number)[] = [];
+        const statsRes = await fetch(statsUrl, { headers });
+        if (!statsRes.ok) break;
+
+        const statsData = await statsRes.json();
+        totalPages = typeof statsData.pages === 'number' ? statsData.pages : 1;
+        const pageItems = Array.isArray(statsData._embedded?.items) ? statsData._embedded.items : [];
+
+        for (const item of pageItems) {
+          if (!item?.game?.id) continue;
+          const gId = String(item.game.id);
+
+          let playtimeMinutes = 0;
+          let lastPlayed: string | undefined = undefined;
+          let achievementsPercentage: number | undefined = undefined;
+
+          if (item.stats && typeof item.stats === 'object' && !Array.isArray(item.stats)) {
+            const userStats = (userId && item.stats[userId]) || Object.values(item.stats)[0];
+            if (userStats) {
+              if (typeof userStats.playtime === 'number') {
+                playtimeMinutes = userStats.playtime;
+              }
+              if (typeof userStats.lastSession === 'string' && userStats.lastSession.trim()) {
+                lastPlayed = userStats.lastSession;
+              }
+              if (typeof userStats.achievementsPercentage === 'number') {
+                achievementsPercentage = userStats.achievementsPercentage;
+              }
+            }
+          }
+
+          let achievements: GogGame['achievements'] = undefined;
+          if (achievementsPercentage !== undefined) {
+            achievements = {
+              current: achievementsPercentage,
+              total: 100,
+              completionist100: achievementsPercentage === 100,
+            };
+          } else if (item.game.achievementSupport) {
+            achievements = {
+              current: 0,
+              total: 100,
+              completionist100: false,
+            };
+          }
+
+          gamesMap.set(gId, {
+            gameId: gId,
+            title: item.game.title || `GOG Spiel ${gId}`,
+            playtimeMinutes,
+            lastPlayed,
+            achievements,
+            coverUrl: formatImg(item.game.image),
+          });
+        }
+
+        page++;
+      } while (page <= totalPages && page <= 10);
+    } catch (err) {
+      console.warn('Could not fetch GOG stats:', err);
+    }
+
+    // 2. If authToken is available, fetch all owned game IDs to include backlog games that haven't been launched
+    if (authToken) {
       try {
         const ownedRes = await fetch('https://embed.gog.com/user/data/games', {
           headers: {
@@ -147,172 +231,101 @@ export async function POST(req: NextRequest) {
         });
         if (ownedRes.ok) {
           const ownedData = await ownedRes.json();
-          ownedGameIds = Array.isArray(ownedData.owned) ? ownedData.owned : [];
+          const ownedGameIds: (string | number)[] = Array.isArray(ownedData.owned) ? ownedData.owned : [];
+          for (const ogId of ownedGameIds) {
+            const gId = String(ogId);
+            if (!gamesMap.has(gId)) {
+              gamesMap.set(gId, {
+                gameId: gId,
+                title: `GOG Spiel ${gId}`,
+                playtimeMinutes: 0,
+              });
+            }
+          }
         }
       } catch (err) {
         console.warn('Could not fetch GOG owned games:', err);
       }
-
-      // Merge played and owned games
-      const gamesMap = new Map<string, { gameId: string; minutesPlayed: number }>();
-
-      // Insert played games first
-      for (const pg of playedGamesList) {
-        if (!pg.game_id) continue;
-        const gId = String(pg.game_id);
-        gamesMap.set(gId, {
-          gameId: gId,
-          minutesPlayed: pg.minutes_played || 0,
-        });
-      }
-
-      // Insert owned games that might not have playtime yet
-      for (const ogId of ownedGameIds) {
-        const gId = String(ogId);
-        if (!gamesMap.has(gId)) {
-          gamesMap.set(gId, {
-            gameId: gId,
-            minutesPlayed: 0,
-          });
-        }
-      }
-
-      const allMerged = Array.from(gamesMap.values());
-      // Sort by playtime descending, then unplayed
-      allMerged.sort((a, b) => b.minutesPlayed - a.minutesPlayed);
-
-      const allGameIds = allMerged.map((g) => g.gameId);
-
-      // 4. Batch fetch metadata from Product API in chunks of 50
-      const productMetaMap = new Map<string, { title: string; coverUrl?: string; bannerUrl?: string }>();
-      const chunkSize = 50;
-
-      for (let i = 0; i < allGameIds.length; i += chunkSize) {
-        const chunk = allGameIds.slice(i, i + chunkSize);
-        try {
-          const prodRes = await fetch(`https://api.gog.com/products?ids=${chunk.join(',')}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0 OmniList/1.0' },
-          });
-          if (prodRes.ok) {
-            const prods = await prodRes.json();
-            if (Array.isArray(prods)) {
-              for (const p of prods) {
-                const fixUrl = (u?: string) => (u ? (u.startsWith('//') ? 'https:' + u : u) : undefined);
-                productMetaMap.set(String(p.id), {
-                  title: p.title || `GOG Spiel ${p.id}`,
-                  coverUrl: fixUrl(p.images?.logo2x || p.images?.logo),
-                  bannerUrl: fixUrl(p.images?.background),
-                });
-              }
-            }
-          }
-        } catch {
-          // ignore chunk error
-        }
-      }
-
-      // 5. Fetch achievements for played games with minutesPlayed > 0 (up to top 30 to stay fast)
-      const achievementsMap = new Map<string, GogGame['achievements']>();
-      const gamesToFetchAchievements = allMerged.filter((g) => g.minutesPlayed > 0).slice(0, 30);
-
-      await Promise.all(
-        gamesToFetchAchievements.map(async (g) => {
-          try {
-            const achRes = await fetch(
-              `https://gameplay.gog.com/clients/46899977096215648/users/${userId}/games/${g.gameId}/achievements`,
-              {
-                headers: {
-                  Authorization: `Bearer ${authToken}`,
-                  'User-Agent': 'Mozilla/5.0 OmniList/1.0',
-                },
-              }
-            );
-            if (achRes.ok) {
-              const achData = await achRes.json();
-              const total = achData.total_count ?? (Array.isArray(achData.achievements) ? achData.achievements.length : 0);
-              const current = achData.unlocked_count ?? 0;
-              if (total > 0) {
-                achievementsMap.set(g.gameId, {
-                  current,
-                  total,
-                  completionist100: current === total && total > 0,
-                });
-              }
-            }
-          } catch {
-            // Ignore achievement error
-          }
-        })
-      );
-
-      // Build enriched games list
-      const enrichedGames: GogGame[] = allMerged.map((g) => {
-        const meta = productMetaMap.get(g.gameId);
-        const minutes = g.minutesPlayed;
-        const hours = Math.round((minutes / 60) * 10) / 10;
-        return {
-          id: `gog:${g.gameId}`,
-          gameId: g.gameId,
-          title: meta?.title || `GOG Spiel ${g.gameId}`,
-          playtimeMinutes: minutes,
-          playtimeHours: hours,
-          coverUrl: meta?.coverUrl || `https://images.gog-statics.com/${g.gameId}.jpg`,
-          bannerUrl: meta?.bannerUrl,
-          achievements: achievementsMap.get(g.gameId),
-        };
-      });
-
-      return NextResponse.json({
-        success: true,
-        username: profileUsername,
-        token: authToken,
-        games: enrichedGames,
-      });
     }
 
-    // Fallback: Query public profile by username
-    if (username) {
-      const pubRes = await fetch(
-        `https://www.gog.com/u/${encodeURIComponent(username)}/games/stats?sort=date_last_played&order=desc`,
-        {
+    // 3. Batch fetch metadata (proper title and banner artwork) from Product API in chunks of 50
+    const missingMetaIds = Array.from(gamesMap.values())
+      .filter((g) => !g.coverUrl || g.title.startsWith('GOG Spiel ') || !g.bannerUrl)
+      .map((g) => g.gameId);
+
+    const chunkSize = 50;
+    for (let i = 0; i < missingMetaIds.length; i += chunkSize) {
+      const chunk = missingMetaIds.slice(i, i + chunkSize);
+      try {
+        const prodRes = await fetch(`https://api.gog.com/products?ids=${chunk.join(',')}`, {
           headers: { 'User-Agent': 'Mozilla/5.0 OmniList/1.0' },
+        });
+        if (prodRes.ok) {
+          const prods = await prodRes.json();
+          if (Array.isArray(prods)) {
+            for (const p of prods) {
+              const g = gamesMap.get(String(p.id));
+              if (g) {
+                const fixUrl = (u?: string) => (u ? (u.startsWith('//') ? 'https:' + u : u) : undefined);
+                if (p.title && g.title.startsWith('GOG Spiel ')) {
+                  g.title = p.title;
+                }
+                if (!g.coverUrl) {
+                  g.coverUrl = fixUrl(p.images?.logo2x || p.images?.logo);
+                }
+                if (!g.bannerUrl) {
+                  g.bannerUrl = fixUrl(p.images?.background);
+                }
+              }
+            }
+          }
         }
-      );
-
-      if (pubRes.ok) {
-        const text = await pubRes.text();
-        try {
-          const data = JSON.parse(text);
-          const rawItems = Array.isArray(data) ? data : data.games || [];
-          const games: GogGame[] = rawItems.map((item: any) => ({
-            id: `gog:${item.id || item.game_id}`,
-            gameId: item.id || item.game_id,
-            title: item.title || item.name || 'GOG Spiel',
-            playtimeMinutes: item.minutes_played || 0,
-            playtimeHours: Math.round(((item.minutes_played || 0) / 60) * 10) / 10,
-            coverUrl: item.image ? (item.image.startsWith('//') ? `https:${item.image}.jpg` : `https:${item.image}.jpg`) : undefined,
-          }));
-
-          return NextResponse.json({
-            success: true,
-            username,
-            games,
-          });
-        } catch {
-          // Profile HTML response or private profile
-        }
+      } catch {
+        // ignore chunk error
       }
+    }
 
+    if (gamesMap.size === 0) {
       return NextResponse.json(
         {
-          error: `GOG blockiert anonyme Profil-Abfragen (Fehler ${pubRes.status}). Bitte nutze den GOG-Login-Code oben für den direkten Abgleich.`,
-          hint: 'Klicke im GOG-Reiter auf "Login-Code abrufen", um dich mit 1 Klick anzumelden.',
+          error: `Keine GOG-Spiele für '${profileUsername}' gefunden oder das GOG-Profil ist auf privat gestellt.`,
+          hint: 'Klicke im GOG-Reiter auf "Login-Code holen", um dich mit 1 Klick anzumelden.',
         },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ error: 'Keine gültigen GOG-Daten gefunden.' }, { status: 400 });
+    // Build enriched games list
+    const enrichedGames: GogGame[] = Array.from(gamesMap.values()).map((g) => {
+      const minutes = g.playtimeMinutes || 0;
+      const hours = Math.round((minutes / 60) * 10) / 10;
+      return {
+        id: `gog:${g.gameId}`,
+        gameId: g.gameId,
+        title: g.title,
+        playtimeMinutes: minutes,
+        playtimeHours: hours,
+        coverUrl: g.coverUrl || `https://images.gog-statics.com/${g.gameId}.jpg`,
+        bannerUrl: g.bannerUrl,
+        lastPlayed: g.lastPlayed,
+        achievements: g.achievements,
+      };
+    });
+
+    // Sort by playtime descending, then alphabetically
+    enrichedGames.sort((a, b) => {
+      if (b.playtimeMinutes !== a.playtimeMinutes) {
+        return b.playtimeMinutes - a.playtimeMinutes;
+      }
+      return a.title.localeCompare(b.title);
+    });
+
+    return NextResponse.json({
+      success: true,
+      username: profileUsername,
+      token: authToken,
+      games: enrichedGames,
+    });
   } catch (error: any) {
     console.error('Error in /api/sync/gog:', error);
     return NextResponse.json(

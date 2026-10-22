@@ -86,6 +86,7 @@ interface GogGameItem {
   playtimeHours: number;
   coverUrl?: string;
   bannerUrl?: string;
+  lastPlayed?: string;
   achievements?: {
     current: number;
     total: number;
@@ -857,11 +858,14 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           ...item,
           external_id: item.external_id?.startsWith('gog:') ? item.external_id : gg.id,
           connectedService: 'gog' as const,
+          status: item.status === 'planned' && gg.playtimeHours > 0 ? 'in_progress' : item.status,
           gameConnection: {
             service: 'gog' as const,
             serviceId: String(gg.gameId),
             serviceName: 'GOG Galaxy',
             accountUsername: effectiveUsername,
+            playtimeMinutes: gg.playtimeMinutes,
+            lastPlayed: gg.lastPlayed || item.gameConnection?.lastPlayed,
           },
           progress: {
             ...item.progress,
@@ -911,7 +915,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           id: `media-gog-${gg.gameId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           title: gg.title,
           type: 'game',
-          status: gg.playtimeHours > 0 ? 'in_progress' : 'planned',
+          status: gg.achievements?.completionist100 ? 'completed' : gg.playtimeHours > 0 ? 'in_progress' : 'planned',
           isOwned: true,
           coverUrl: gg.coverUrl || '',
           bannerUrl: gg.bannerUrl,
@@ -922,12 +926,14 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             serviceId: String(gg.gameId),
             serviceName: 'GOG Galaxy',
             accountUsername: effectiveUsername,
+            playtimeMinutes: gg.playtimeMinutes,
+            lastPlayed: gg.lastPlayed,
           },
           publisher: 'GOG.com',
           progress: { current: gg.playtimeHours, unit: 'hours' },
           gameTracker: {
             playtimeHours: gg.playtimeHours,
-            storyCompleted: false,
+            storyCompleted: gg.achievements?.completionist100 || false,
             completionist100: gg.achievements?.completionist100 || false,
             allAchievementsCompleted: gg.achievements ? (gg.achievements.completionist100 || (gg.achievements.total > 0 && gg.achievements.current >= gg.achievements.total)) : false,
             achievements: gg.achievements ? { current: gg.achievements.current, total: gg.achievements.total } : undefined,
