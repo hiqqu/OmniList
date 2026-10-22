@@ -47,6 +47,7 @@ const LEGACY_STORAGE_SYNC_CODE_KEY = 'omnitrack_last_sync_code_v1';
 const STORAGE_STEAM_INPUT_KEY = 'omnilist_steam_input_v1';
 const STORAGE_PSN_NPSSO_KEY = 'omnilist_psn_npsso_v1';
 const STORAGE_GOG_USER_KEY = 'omnilist_gog_username_v1';
+const STORAGE_GOG_TOKEN_KEY = 'omnilist_gog_token_v1';
 
 interface SteamGameItem {
   appid: number;
@@ -132,6 +133,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
   // GOG State
   const [gogUsername, setGogUsername] = useState('');
+  const [gogCode, setGogCode] = useState('');
+  const [isGogExpired, setIsGogExpired] = useState(false);
   const [gogGames, setGogGames] = useState<GogGameItem[]>([]);
   const [isGogLoading, setIsGogLoading] = useState(false);
   const [isGogSyncing, setIsGogSyncing] = useState(false);
@@ -162,6 +165,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         }
       }
       setGogUsername(localStorage.getItem(STORAGE_GOG_USER_KEY) || '');
+      setGogCode(localStorage.getItem(STORAGE_GOG_TOKEN_KEY) || '');
 
       setFeedback(null);
     }
@@ -219,6 +223,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
               },
               gog: {
                 username: gogUsername.trim(),
+                token: gogCode.trim(),
               },
             },
           },
@@ -313,6 +318,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({
           localStorage.setItem(STORAGE_GOG_USER_KEY, pulledIntegrations.gog.username);
         }
 
+        if (pulledIntegrations?.gog?.token) {
+          setGogCode(pulledIntegrations.gog.token);
+          localStorage.setItem(STORAGE_GOG_TOKEN_KEY, pulledIntegrations.gog.token);
+        }
+
         onApplySync(pulledMedia, pulledSequels);
         setFeedback({
           type: 'success',
@@ -349,7 +359,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       integrations: {
         steam: { steamInput: steamInput.trim() },
         psn: { npsso: psnNpsso.trim() },
-        gog: { username: gogUsername.trim() },
+        gog: { username: gogUsername.trim(), token: gogCode.trim() },
       },
     };
 
@@ -393,6 +403,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         if (restoredIntegrations?.gog?.username) {
           setGogUsername(restoredIntegrations.gog.username);
           localStorage.setItem(STORAGE_GOG_USER_KEY, restoredIntegrations.gog.username);
+        }
+
+        if (restoredIntegrations?.gog?.token) {
+          setGogCode(restoredIntegrations.gog.token);
+          localStorage.setItem(STORAGE_GOG_TOKEN_KEY, restoredIntegrations.gog.token);
         }
 
         if (Array.isArray(restoredMedia) && restoredMedia.length >= 0) {
@@ -770,24 +785,42 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
   // ================= GOG UNIFIED SMART SYNC =================
   const handleSyncGog = async () => {
+    const code = gogCode.trim();
     const username = gogUsername.trim();
-    if (!username) {
-      setFeedback({ type: 'error', message: 'Bitte gib deinen GOG-Benutzernamen ein.' });
+    if (!code && !username) {
+      setFeedback({ type: 'error', message: 'Bitte gib deinen GOG Login-Code oder deinen GOG-Benutzernamen ein.' });
       return;
     }
 
     setIsGogLoading(true);
     setFeedback(null);
-    localStorage.setItem(STORAGE_GOG_USER_KEY, username);
+    if (username) localStorage.setItem(STORAGE_GOG_USER_KEY, username);
+    if (code) localStorage.setItem(STORAGE_GOG_TOKEN_KEY, code);
 
     try {
       const res = await fetch('/api/sync/gog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ code, token: code, username }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Fehler beim Abrufen der GOG-Spiele');
+      if (!res.ok) {
+        if (data.expired || res.status === 401) {
+          setIsGogExpired(true);
+        }
+        throw new Error(data.error || 'Fehler beim Abrufen der GOG-Spiele');
+      }
+
+      setIsGogExpired(false);
+      const effectiveUsername = data.username || username || 'GOG';
+      if (data.username) {
+        setGogUsername(data.username);
+        localStorage.setItem(STORAGE_GOG_USER_KEY, data.username);
+      }
+      if (data.token) {
+        setGogCode(data.token);
+        localStorage.setItem(STORAGE_GOG_TOKEN_KEY, data.token);
+      }
 
       const fetchedGames: GogGameItem[] = data.games || [];
       setGogGames(fetchedGames);
@@ -828,7 +861,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             service: 'gog' as const,
             serviceId: String(gg.gameId),
             serviceName: 'GOG Galaxy',
-            accountUsername: username,
+            accountUsername: effectiveUsername,
           },
           progress: {
             ...item.progress,
@@ -888,7 +921,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             service: 'gog',
             serviceId: String(gg.gameId),
             serviceName: 'GOG Galaxy',
-            accountUsername: username,
+            accountUsername: effectiveUsername,
           },
           publisher: 'GOG.com',
           progress: { current: gg.playtimeHours, unit: 'hours' },
@@ -1249,28 +1282,59 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                         <span>GOG Galaxy anbinden</span>
                       </h4>
                       <a
-                        href="https://www.gog.com"
+                        href="https://auth.gog.com/auth?client_id=46899977096215655&redirect_uri=https://embed.gog.com/on_login_success?origin=client&response_type=code&layout=client2"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[10px] text-purple-400 hover:underline flex items-center gap-1"
+                        className="text-[10px] text-purple-400 hover:underline flex items-center gap-1 font-semibold"
                       >
-                        <span>GOG.com</span>
+                        <span>Login-Code holen</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-zinc-300 space-y-1">
+                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-zinc-300 space-y-1.5">
                       <div className="flex items-center gap-1.5 font-bold text-purple-300">
                         <ShieldCheck className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                        <span>Intelligente Synchronisation</span>
+                        <span>Offizieller GOG-Abgleich (Spiele, Spielzeiten & Erfolge)</span>
                       </div>
-                      <p className="text-zinc-400 leading-relaxed">
-                        Liest GOG-Spiele, Spielzeiten und Galaxy-Achievements aus. Bestehende Titel werden aktualisiert, gelöschte Spiele bleiben gelöscht.
+                      <p className="text-zinc-400 leading-relaxed text-[11px]">
+                        Da GOG unauthentifizierte Profil-Abfragen blockiert, nutze bitte den offiziellen Login-Code:
                       </p>
+                      <ol className="list-decimal list-inside text-zinc-300 text-[11px] space-y-0.5">
+                        <li>Klicke oben rechts auf <strong>"Login-Code holen"</strong> (GOG im Browser eingeloggt lassen).</li>
+                        <li>Kopiere die URL aus der Browser-Adresszeile (oder den Teil <code>code=...</code>).</li>
+                        <li>Füge die URL oder den Code unten ein und klicke auf Synchronisieren.</li>
+                      </ol>
+                    </div>
+
+                    {isGogExpired && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2 animate-fadeIn">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>GOG-Sitzung erneuern</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-300 leading-relaxed">
+                          Dein GOG-Code oder Token ist abgelaufen. Deine bisherigen Spiele bleiben erhalten. Hole dir bitte über den Link oben einen frischen Code.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-zinc-300">GOG Login-Code oder Rückruf-URL</label>
+                      <input
+                        type="password"
+                        value={gogCode}
+                        onChange={(e) => setGogCode(e.target.value)}
+                        placeholder="Kopiere die URL oder den Code hier hinein..."
+                        className="w-full bg-[#181B22] border border-[#282D37] focus:border-purple-500 rounded-xl px-3.5 py-2 text-xs text-[#F1F3F7] font-mono focus:outline-none"
+                      />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-semibold text-zinc-300">GOG-Benutzername (für öffentliche Profile)</label>
+                      <label className="text-[11px] font-semibold text-zinc-400 flex items-center justify-between">
+                        <span>GOG-Benutzername</span>
+                        <span className="text-[10px] text-zinc-500">Wird beim Sync automatisch ermittelt</span>
+                      </label>
                       <input
                         type="text"
                         value={gogUsername}
