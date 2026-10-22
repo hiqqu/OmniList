@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
       console.error('PSN Auth Error:', authErr);
       return NextResponse.json(
         {
-          error: 'Ungültiger oder abgelaufener PlayStation NPSSO-Token.',
+          error: 'PlayStation NPSSO-Token ist abgelaufen oder ungültig.',
+          expired: true,
           hint: 'Bitte erstelle dir auf https://ca.account.sony.com/api/v1/ssocookie einen frischen Token (du musst im Browser bei PlayStation angemeldet sein).',
         },
         { status: 401 }

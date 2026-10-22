@@ -14,6 +14,7 @@ import {
   Info,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Key,
   Gamepad2,
   ExternalLink,
@@ -110,6 +111,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
   // PSN State
   const [psnNpsso, setPsnNpsso] = useState('');
+  const [isPsnExpired, setIsPsnExpired] = useState(false);
   const [psnGames, setPsnGames] = useState<PsnGameItem[]>([]);
   const [isPsnLoading, setIsPsnLoading] = useState(false);
   const [isPsnSyncing, setIsPsnSyncing] = useState(false);
@@ -131,7 +133,15 @@ export const SyncModal: React.FC<SyncModalProps> = ({
       }
 
       setSteamInput(localStorage.getItem(STORAGE_STEAM_INPUT_KEY) || '');
-      setPsnNpsso(localStorage.getItem(STORAGE_PSN_NPSSO_KEY) || '');
+      const savedPsn = localStorage.getItem(STORAGE_PSN_NPSSO_KEY) || '';
+      setPsnNpsso(savedPsn);
+      const savedPsnTime = localStorage.getItem('omnilist_psn_saved_at_v1');
+      if (savedPsn && savedPsnTime) {
+        const daysOld = Math.floor((Date.now() - parseInt(savedPsnTime, 10)) / (1000 * 60 * 60 * 24));
+        if (daysOld >= 55) {
+          setIsPsnExpired(true);
+        }
+      }
       setGogUsername(localStorage.getItem(STORAGE_GOG_USER_KEY) || '');
 
       setFeedback(null);
@@ -538,8 +548,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         body: JSON.stringify({ action: 'get-games', npsso: psnNpsso.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Fehler beim Abrufen der PlayStation-Daten');
+      if (!res.ok) {
+        if (data.expired || res.status === 401) {
+          setIsPsnExpired(true);
+          addToast('error', 'PSN-Token abgelaufen', 'Bitte erneuere deinen PlayStation NPSSO-Token');
+        }
+        throw new Error(data.error || 'Fehler beim Abrufen der PlayStation-Daten');
+      }
 
+      setIsPsnExpired(false);
+      localStorage.setItem('omnilist_psn_saved_at_v1', Date.now().toString());
       setPsnGames(data.games || []);
       setFeedback({ type: 'success', message: `${data.games?.length || 0} PlayStation-Titel & Trophäen geladen!` });
       addToast('success', 'PSN verbunden', `${data.games?.length || 0} Titel gefunden`);
@@ -914,11 +932,14 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 <button
                   onClick={() => { setGamingSubTab('psn'); setFeedback(null); }}
                   className={cn(
-                    'flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center',
+                    'flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center flex items-center justify-center gap-1.5',
                     gamingSubTab === 'psn' ? 'bg-blue-700 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'
                   )}
                 >
-                  PlayStation (PSN)
+                  <span>PlayStation (PSN)</span>
+                  {isPsnExpired && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Token erneuern erforderlich" />
+                  )}
                 </button>
                 <button
                   onClick={() => { setGamingSubTab('gog'); setFeedback(null); }}
@@ -1022,6 +1043,27 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                     <p className="text-xs text-zinc-400 leading-relaxed">
                       Liest automatisch deine PlayStation-Spiele (PS5/PS4), Spielzeiten und Trophäen (Bronze, Silber, Gold, Platin) aus.
                     </p>
+
+                    {isPsnExpired && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2 animate-fadeIn">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>PlayStation NPSSO-Token erneuern</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-300 leading-relaxed">
+                          Dein PlayStation-Token ist abgelaufen oder ungültig. Deine bisherigen PlayStation-Spiele bleiben sicher in deiner Liste gespeichert. Um neue Spiele oder Trophäen abzugleichen, trage bitte ein frisches Cookie von Sony ein.
+                        </p>
+                        <a
+                          href="https://ca.account.sony.com/api/v1/ssocookie"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-semibold border border-amber-500/40 transition-colors"
+                        >
+                          <span>Neuen Token bei Sony generieren</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    )}
 
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-semibold text-zinc-300">PlayStation NPSSO-Token (64 Zeichen)</label>
