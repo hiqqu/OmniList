@@ -238,28 +238,28 @@ export const EditMediaModal: React.FC<EditMediaModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-[#181B22] border border-[#282D37] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-lg bg-[#181B22] border border-[#282D37] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
         {/* Header */}
-        <div className="p-4 border-b border-[#282D37] flex items-center justify-between bg-[#0F1117]/60">
+        <div className="p-3.5 sm:p-4 border-b border-[#282D37] flex items-center justify-between bg-[#0F1117]/60 shrink-0">
           <div className="flex items-center gap-2">
             <span
               className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${typeBadge.bgClass} ${typeBadge.colorClass}`}
             >
               {typeBadge.label}
             </span>
-            <h3 className="font-bold text-[#F1F3F7] text-base">Eintrag anpassen</h3>
+            <h3 className="font-bold text-[#F1F3F7] text-sm sm:text-base">Eintrag anpassen</h3>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-3.5 sm:p-5 space-y-4 overflow-y-auto flex-1">
           {/* Title & Creator */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

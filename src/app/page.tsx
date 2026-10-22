@@ -5,6 +5,7 @@ import {
   Sidebar,
 } from '@/components/Sidebar';
 import { Header, SortOption } from '@/components/Header';
+import { MobileNav } from '@/components/MobileNav';
 import { MediaCard } from '@/components/MediaCard';
 import { SequelCard } from '@/components/SequelCard';
 import { AddMediaDialog } from '@/components/AddMediaDialog';
@@ -46,9 +47,12 @@ export default function Home() {
   const [addModalInitialTab, setAddModalInitialTab] = useState<MediaType | undefined>(undefined);
   const [addModalInitialQuery, setAddModalInitialQuery] = useState<string>('');
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const isFilterActive = selectedType !== 'all' || selectedStatus !== 'all' || onlyOwned;
 
   const handleOpenAddModal = (tab?: MediaType, query?: string) => {
     let targetTab: MediaType | undefined = tab;
@@ -516,6 +520,8 @@ export default function Home() {
         onCheckSequels={handleCheckSequels}
         onResetLibrary={handleResetLibrary}
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Content Area */}
@@ -529,11 +535,12 @@ export default function Home() {
           onOpenAddModal={() => handleOpenAddModal()}
           onOpenAddModalWithQuery={(q) => handleOpenAddModal(undefined, q)}
           onOpenSyncModal={() => setIsSyncModalOpen(true)}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           totalFilteredCount={filteredAndSortedMedia.length}
         />
 
         {/* View Content */}
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1920px] w-full mx-auto pb-24 lg:pb-8">
           {currentView === 'dashboard' ? (
             /* ================= DASHBOARD VIEW ================= */
             <>
@@ -606,7 +613,7 @@ export default function Home() {
 
               {/* Media Card Grid (2:3 aspect ratio) */}
               {filteredAndSortedMedia.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 min-[2200px]:grid-cols-8 gap-2.5 sm:gap-3.5 md:gap-4 lg:gap-5">
                   {filteredAndSortedMedia.map((item) => (
                     <MediaCard
                       key={item.id}
@@ -754,6 +761,20 @@ export default function Home() {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileNav
+        currentView={currentView}
+        onSelectView={(view) => {
+          setCurrentView(view);
+          setIsMobileMenuOpen(false);
+        }}
+        onOpenMobileDrawer={() => setIsMobileMenuOpen((prev) => !prev)}
+        onOpenAddModal={() => handleOpenAddModal()}
+        onOpenSyncModal={() => setIsSyncModalOpen(true)}
+        sequelCount={sequels.length}
+        isFilterActive={isFilterActive}
+      />
     </div>
   );
 }

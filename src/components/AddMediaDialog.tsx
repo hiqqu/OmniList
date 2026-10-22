@@ -358,31 +358,31 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
   const isShowingRecommendations = !searchQuery.trim();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
       {/* Dialog Window */}
-      <div className="relative w-full max-w-3xl bg-[#181B22] border border-[#282D37] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
+      <div className="relative w-full max-w-3xl bg-[#181B22] border border-[#282D37] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[88vh]">
         {/* Header */}
-        <div className="p-5 border-b border-[#282D37] flex items-center justify-between bg-[#0F1117]/60">
+        <div className="p-3.5 sm:p-5 border-b border-[#282D37] flex items-center justify-between bg-[#0F1117]/60">
           <div>
-            <h2 className="text-lg font-bold text-[#F1F3F7] flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-[#F1F3F7] flex items-center gap-2">
               <Plus className="w-5 h-5 text-zinc-300" />
-              Medium zur Sammlung hinzufügen
+              <span>Medium zur Sammlung hinzufügen</span>
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5">
               Live-Suche über TMDB, AniList, Open Library &amp; alle Konsolen / PC-Spieledatenbanken
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Type Preselection Tabs */}
-        <div className="px-5 pt-4 pb-2 border-b border-[#282D37] bg-[#181B22]">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="px-3 sm:px-5 pt-3 sm:pt-4 pb-2 border-b border-[#282D37] bg-[#181B22]">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none pb-1 sm:flex-wrap">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -390,7 +390,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                   key={tab.id}
                   onClick={() => handleSelectTab(tab.id)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all',
+                    'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold transition-all shrink-0 whitespace-nowrap',
                     isActive
                       ? tab.activeClass
                       : 'bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] hover:bg-zinc-800 border border-[#282D37]'
@@ -404,7 +404,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
           </div>
 
           {/* Search Input Bar */}
-          <div className="relative mt-4 mb-2 flex items-center gap-2">
+          <div className="relative mt-2.5 sm:mt-4 mb-2 flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -420,9 +420,9 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                     ? 'Anime (z. B. Frieren, Solo Leveling, One Piece)...'
                     : activeTab === 'book'
                     ? 'Titel, Autor oder ISBN (z. B. 978-3-442-17858-2)...'
-                    : 'Videospielen (z. B. Batman Arkham, Zelda, Bloodborne, Mario, Elden Ring)...'
+                    : 'Videospielen (z. B. Batman Arkham, Zelda, Elden Ring)...'
                 }`}
-                className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-full pl-10 pr-20 py-2.5 text-sm text-[#F1F3F7] placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition-all"
+                className="w-full bg-[#0F1117] border border-[#282D37] focus:border-zinc-500 rounded-full pl-9 sm:pl-10 pr-9 sm:pr-20 py-2 sm:py-2.5 text-xs sm:text-sm text-[#F1F3F7] placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition-all"
               />
               {searchQuery && (
                 <button
@@ -430,7 +430,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                     setSearchQuery('');
                     executeSearch('', activeTab);
                   }}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#F1F3F7]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#F1F3F7] p-0.5"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -440,10 +440,10 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
             <button
               onClick={() => executeSearch(searchQuery, activeTab)}
               disabled={isLoading}
-              className="px-5 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-[#F1F3F7] font-bold text-xs border border-zinc-700 transition-colors flex items-center gap-1.5"
+              className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-[#F1F3F7] font-bold text-xs border border-zinc-700 transition-colors flex items-center gap-1.5 shrink-0"
             >
               {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-300" /> : <Search className="w-3.5 h-3.5" />}
-              <span>Suchen</span>
+              <span className="hidden xs:inline sm:inline">Suchen</span>
             </button>
           </div>
 

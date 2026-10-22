@@ -312,38 +312,39 @@ export default function MediaDetailPage() {
   return (
     <div className="min-h-screen bg-[#0F1117] text-[#F1F3F7] antialiased">
       {/* Top Sticky Bar */}
-      <header className="sticky top-0 z-30 bg-[#0F1117]/90 backdrop-blur-md border-b border-[#282D37] px-6 py-3.5">
+      <header className="sticky top-0 z-30 bg-[#0F1117]/90 backdrop-blur-md border-b border-[#282D37] px-3.5 sm:px-6 py-2.5 sm:py-3.5">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-all border border-zinc-700"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-all border border-zinc-700"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Zurück zur Übersicht</span>
+            <span className="hidden xs:inline sm:inline">Zurück zur Übersicht</span>
+            <span className="inline xs:hidden sm:hidden">Zurück</span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#181B22] hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold border border-[#282D37] transition-all"
+              className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-[#181B22] hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold border border-[#282D37] transition-all"
             >
               <Edit2 className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Eintrag bearbeiten</span>
+              <span>Bearbeiten</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Hero Header with Backdrop Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-[#181B22] to-[#0F1117] border-b border-[#282D37] pt-8 pb-12">
+      <div className="relative overflow-hidden bg-gradient-to-b from-[#181B22] to-[#0F1117] border-b border-[#282D37] pt-6 sm:pt-8 pb-8 sm:pb-12">
         {/* Subtle glowing ambient lighting */}
         <div className="absolute top-0 right-0 w-[500px] h-[350px] bg-gradient-to-b from-zinc-700/10 via-zinc-800/5 to-transparent blur-3xl pointer-events-none" />
 
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 relative z-10">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 sm:gap-8">
             {/* Poster Card */}
             <div className={cn(
-              'w-56 md:w-64 aspect-poster rounded-2xl overflow-hidden bg-[#181B22] border-2 shadow-2xl flex-shrink-0 relative group transition-transform duration-300 hover:scale-[1.02]',
+              'w-48 sm:w-56 md:w-64 aspect-poster rounded-2xl overflow-hidden bg-[#181B22] border-2 shadow-2xl flex-shrink-0 relative group transition-transform duration-300 hover:scale-[1.02]',
               typeAccentBorder[item.type]
             )}>
               <img
@@ -714,8 +715,8 @@ export default function MediaDetailPage() {
       </div>
 
       {/* Navigation Tabs Bar */}
-      <div className="bg-[#181B22] border-b border-[#282D37] sticky top-[57px] z-20">
-        <div className="max-w-6xl mx-auto px-6 flex items-center gap-2 overflow-x-auto py-2">
+      <div className="bg-[#181B22] border-b border-[#282D37] sticky top-[49px] sm:top-[57px] z-20">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 flex items-center gap-2 overflow-x-auto py-2 scrollbar-none">
           <button
             onClick={() => setActiveTab('overview')}
             className={cn(
@@ -783,7 +784,7 @@ export default function MediaDetailPage() {
       </div>
 
       {/* Main Content Area */}
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      <main className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 pb-20">
         {/* ================= TAB 1: OVERVIEW ================= */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

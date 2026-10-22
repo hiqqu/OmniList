@@ -19,6 +19,7 @@ import {
   Cloud,
   Check,
   XCircle,
+  X,
 } from 'lucide-react';
 import { MediaType, MediaStatus } from '@/types/media';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,8 @@ interface SidebarProps {
   onCheckSequels: () => void;
   onResetLibrary: () => void;
   onOpenSyncModal?: () => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
   className?: string;
 }
 
@@ -56,8 +59,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCheckSequels,
   onResetLibrary,
   onOpenSyncModal,
+  isMobileOpen = false,
+  onCloseMobile,
   className,
 }) => {
+  const handleItemClick = (action: () => void) => {
+    action();
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   const typeFilters: {
     id: MediaType | 'all';
     label: string;
@@ -167,15 +179,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  return (
-    <aside
-      className={cn(
-        'w-64 flex-shrink-0 bg-[#181B22]/95 backdrop-blur border-r border-[#282D37] flex flex-col h-screen sticky top-0 select-none z-30',
-        className
-      )}
-    >
+  const renderContent = (isMobile: boolean) => (
+    <>
       {/* Brand Header */}
-      <div className="p-5 border-b border-[#282D37] flex items-center justify-between">
+      <div className="p-4 sm:p-5 border-b border-[#282D37] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-zinc-700 to-zinc-500 flex items-center justify-center shadow-lg shadow-black/30 border border-zinc-600/50">
             <Radar className="w-5 h-5 text-white animate-pulse" />
@@ -187,6 +194,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <p className="text-xs text-zinc-400">All-in-One Medien Hub</p>
           </div>
         </div>
+
+        {isMobile && onCloseMobile && (
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+            title="Menü schließen"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -198,7 +216,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div className="space-y-1.5">
             <button
-              onClick={() => onSelectView('dashboard')}
+              onClick={() => handleItemClick(() => onSelectView('dashboard'))}
               className={cn(
                 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-sm font-bold transition-all',
                 currentView === 'dashboard'
@@ -221,12 +239,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
-              onClick={() => onSelectView('sequel_radar')}
+              onClick={() => handleItemClick(() => onSelectView('sequel_radar'))}
               className={cn(
-                'w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-sm font-semibold transition-all group relative',
+                'w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-sm font-bold transition-all',
                 currentView === 'sequel_radar'
-                  ? 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white font-bold shadow-md shadow-rose-950/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+                  ? 'bg-rose-500 text-white shadow-md shadow-rose-950/30'
+                  : 'text-zinc-400 hover:bg-rose-500/10 hover:text-rose-300'
               )}
             >
               <div className="flex items-center gap-3">
@@ -262,7 +280,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <button
                     key={tf.id}
-                    onClick={() => onSelectType(tf.id)}
+                    onClick={() => handleItemClick(() => onSelectType(tf.id))}
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium border transition-all',
                       isActive
@@ -291,7 +309,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <button
                     key={sf.id}
-                    onClick={() => onSelectStatus(sf.id)}
+                    onClick={() => handleItemClick(() => onSelectStatus(sf.id))}
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all',
                       isActive
@@ -318,7 +336,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </div>
                 <button
-                  onClick={onToggleOnlyOwned}
+                  onClick={() => handleItemClick(() => onToggleOnlyOwned())}
                   className={cn(
                     'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium border transition-all',
                     onlyOwned
@@ -354,7 +372,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-[#282D37] space-y-2 bg-[#181B22]/50">
         {onOpenSyncModal && (
           <button
-            onClick={onOpenSyncModal}
+            onClick={() => handleItemClick(() => onOpenSyncModal())}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all active:scale-95 shadow-sm"
           >
             <Cloud className="w-3.5 h-3.5 text-emerald-400" />
@@ -372,7 +390,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <button
-          onClick={onResetLibrary}
+          onClick={() => handleItemClick(() => onResetLibrary())}
           className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium text-zinc-500 hover:text-rose-400 transition-colors"
           title="Setzt die gesamte Mediensammlung zurück"
         >
@@ -380,6 +398,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>Sammlung zurücksetzen</span>
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile Drawer Backdrop & Slide-out Sheet */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
+            onClick={onCloseMobile}
+          />
+          {/* Drawer Panel */}
+          <aside className="relative z-50 w-72 max-w-[85vw] h-full bg-[#181B22] border-r border-[#282D37] flex flex-col shadow-2xl animate-slideRight select-none">
+            {renderContent(true)}
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop Persistent Sidebar */}
+      <aside
+        className={cn(
+          'hidden lg:flex w-64 xl:w-72 flex-shrink-0 bg-[#181B22]/95 backdrop-blur border-r border-[#282D37] flex-col h-screen sticky top-0 select-none z-30',
+          className
+        )}
+      >
+        {renderContent(false)}
+      </aside>
+    </>
   );
 };

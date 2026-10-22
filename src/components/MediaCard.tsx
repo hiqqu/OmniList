@@ -119,11 +119,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-[#181B22] via-[#0F1117]/40 to-black/30 pointer-events-none" />
 
         {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-20 pointer-events-auto">
+        <div className="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 flex items-center justify-between gap-1 sm:gap-2 z-20 pointer-events-auto">
           {/* Media Type Badge */}
           <span
             className={cn(
-              'px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-md backdrop-blur border',
+              'px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold tracking-wider uppercase shadow-md backdrop-blur border',
               typeBadge.bgClass,
               typeBadge.colorClass,
               typeBadge.borderClass
@@ -135,16 +135,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           {/* Menu Trigger */}
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="w-7 h-7 rounded-full bg-[#0F1117]/70 hover:bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center backdrop-blur transition-colors"
+            className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#0F1117]/70 hover:bg-[#0F1117] text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center backdrop-blur transition-colors"
           >
-            <MoreVertical className="w-4 h-4" />
+            <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
 
         {/* Rating Badge at Bottom Left of Poster */}
         <div
           className={cn(
-            'absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full backdrop-blur text-xs font-bold shadow-md transition-opacity duration-200',
+            'absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full backdrop-blur text-[10px] sm:text-xs font-bold shadow-md transition-opacity duration-200',
             item.rating !== undefined && item.rating !== null
               ? 'bg-[#0F1117]/80 border border-amber-500/30 text-amber-400'
               : 'bg-[#0F1117]/60 border border-zinc-700/40 text-zinc-400',
@@ -153,7 +153,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         >
           <Star
             className={cn(
-              'w-3.5 h-3.5',
+              'w-3 h-3 sm:w-3.5 sm:h-3.5',
               item.rating !== undefined && item.rating !== null
                 ? 'fill-amber-400 text-amber-400'
                 : 'text-zinc-500'
@@ -165,7 +165,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         {/* Quick Increment Button Overlay */}
         <div
           className={cn(
-            'absolute bottom-3 right-3 z-10 transition-opacity duration-200',
+            'absolute bottom-2 right-2 sm:bottom-3 sm:right-3 z-10 transition-opacity duration-200',
             showMenu && 'opacity-0 pointer-events-none'
           )}
         >
@@ -183,7 +183,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 : `Schnell-Fortschritt (${incrementInfo.label})`
             }
             className={cn(
-              'flex items-center gap-1 px-3 py-1 rounded-full font-bold text-xs shadow-lg backdrop-blur transition-all',
+              'flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full font-bold text-[11px] sm:text-xs shadow-lg backdrop-blur transition-all',
               !isGame && isCompleted
                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default'
                 : `active:scale-95 hover:scale-105 ${typeButtonStyles[item.type]}`
@@ -191,12 +191,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           >
             {!isGame && isCompleted ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 stroke-[2.5]" />
                 <span>{isMovie ? 'Gesehen' : 'Fertig'}</span>
               </>
             ) : (
               <>
-                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
                 <span>{isGame ? '1 Std.' : incrementInfo.label.replace(/^\+/, '')}</span>
               </>
             )}
@@ -208,7 +208,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       {showMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-          <div className="absolute right-2 top-11 w-44 max-w-[calc(100%-16px)] rounded-xl bg-[#181B22] border border-[#282D37] shadow-2xl py-1 z-50 text-xs">
+          <div className="absolute right-2 top-10 sm:top-11 w-44 max-w-[calc(100%-16px)] rounded-xl bg-[#181B22] border border-[#282D37] shadow-2xl py-1 z-50 text-xs">
             <div className="px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
               Status ändern
             </div>
@@ -426,15 +426,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       )}
 
       {/* Card Body & Progress Section */}
-      <div className="p-3.5 flex flex-col flex-1 justify-between gap-3 bg-[#181B22]">
+      <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 justify-between gap-2 sm:gap-3 bg-[#181B22]">
         <div>
           {/* Status & Ownership Badges line - side by side */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
+            <span className={cn('text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0', statusBadge.bgClass, statusBadge.colorClass)}>
               {statusBadge.label}
             </span>
             {item.isOwned && item.status !== 'owned' && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
+              <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0">
                 <PackageCheck className="w-3 h-3 text-emerald-400" />
                 <span>Im Besitz</span>
               </span>
@@ -443,7 +443,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
           {/* Publisher / Collection line underneath badges */}
           {displayPublisher && (
-            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 truncate mt-1.5" title={displayPublisher}>
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-zinc-400 truncate mt-1 sm:mt-1.5" title={displayPublisher}>
               {item.type === 'book' ? (
                 <Building2 className="w-3 h-3 text-orange-400/80 shrink-0" />
               ) : (
@@ -459,7 +459,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           <Link
             href={`/media/${item.id}`}
             className={cn(
-              'font-bold text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block mt-1.5',
+              'font-bold text-xs sm:text-sm text-[#F1F3F7] transition-colors line-clamp-1 cursor-pointer block mt-1 sm:mt-1.5',
               typeTextHover[item.type]
             )}
             title={item.title}
@@ -468,7 +468,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </Link>
 
           {/* Creator / Release info */}
-          <p className="text-xs text-zinc-400 truncate mt-0.5">
+          <p className="text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">
             {item.creator || (item.releaseDate ? item.releaseDate.split('-')[0] : '—')}
           </p>
         </div>
@@ -476,11 +476,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         {/* Progress Bar & Tracker Section */}
         {isGame ? (
           /* ============= GAME TRACKER UI ============= */
-          <div className="space-y-2 pt-2 border-t border-[#282D37]">
+          <div className="space-y-1.5 sm:space-y-2 pt-1.5 sm:pt-2 border-t border-[#282D37]">
             {/* Playtime Header */}
-            <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400">
+            <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-medium text-zinc-400">
               <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3 text-purple-400" />
+                <Clock className="w-3 h-3 text-purple-400 shrink-0" />
                 <span>Spielzeit</span>
               </span>
               <span className="text-[#F1F3F7] font-bold">
@@ -489,7 +489,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             </div>
 
             {/* Badges: Story & 100% & Achievements */}
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1 flex-wrap">
               <button
                 type="button"
                 onClick={(e) => {
@@ -497,7 +497,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   onToggleGameStory?.(item.id);
                 }}
                 className={cn(
-                  'text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
+                  'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
                   isGameStoryDone
                     ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30'
                     : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
@@ -517,7 +517,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   onToggleGame100?.(item.id);
                 }}
                 className={cn(
-                  'text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
+                  'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
                   isGame100Done
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
                     : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
@@ -537,7 +537,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                   onToggleGameAchievements?.(item.id);
                 }}
                 className={cn(
-                  'text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
+                  'text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded transition-all flex items-center gap-1',
                   isGameAchievementsDone
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
                     : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-600'
@@ -554,8 +554,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </div>
         ) : isMovie ? (
           /* ============= MOVIE TRACKER UI ============= */
-          <div className="space-y-1.5 pt-2 border-t border-[#282D37]">
-            <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400">
+          <div className="space-y-1 sm:space-y-1.5 pt-1.5 sm:pt-2 border-t border-[#282D37]">
+            <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-medium text-zinc-400">
               <span>{isCompleted ? 'Laufzeit' : 'Fortschritt'}</span>
               <span className="text-[#F1F3F7] font-bold">
                 {isCompleted
@@ -576,8 +576,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </div>
         ) : (
           /* ============= SHOW / ANIME / BOOK UI ============= */
-          <div className="space-y-1.5 pt-2 border-t border-[#282D37]">
-            <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400">
+          <div className="space-y-1 sm:space-y-1.5 pt-1.5 sm:pt-2 border-t border-[#282D37]">
+            <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-medium text-zinc-400">
               <span>Fortschritt</span>
               <span className="text-[#F1F3F7] font-bold">
                 {currentProgress}

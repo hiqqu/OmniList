@@ -248,29 +248,29 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-[#181B22] border border-[#282D37] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-lg bg-[#181B22] border border-[#282D37] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
         {/* Header */}
-        <div className="p-4 border-b border-[#282D37] flex items-center justify-between bg-[#0F1117]/60">
+        <div className="p-3.5 sm:p-4 border-b border-[#282D37] flex items-center justify-between bg-[#0F1117]/60 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <Cloud className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-[#F1F3F7] text-base">Geräte-Sync &amp; Backup</h3>
-              <p className="text-[11px] text-zinc-400">Sammlung zwischen PC, Smartphone &amp; Tablet abgleichen</p>
+              <h3 className="font-bold text-[#F1F3F7] text-sm sm:text-base">Geräte-Sync &amp; Backup</h3>
+              <p className="text-[10px] sm:text-[11px] text-zinc-400">Sammlung zwischen PC, Smartphone &amp; Tablet abgleichen</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-[#F1F3F7] flex items-center justify-center transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-[#282D37] bg-[#0F1117]/40 px-4 pt-2 gap-2">
+        <div className="flex border-b border-[#282D37] bg-[#0F1117]/40 px-3 sm:px-4 pt-2 gap-2 shrink-0">
           <button
             onClick={() => setActiveTab('cloud')}
             className={cn(
@@ -299,7 +299,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         </div>
 
         {/* Body Content */}
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           {feedback && (
             <div
               className={cn(
