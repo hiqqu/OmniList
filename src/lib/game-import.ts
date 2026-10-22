@@ -126,6 +126,76 @@ export function getItemPlatform(item: MediaItem): ConnectedGameService | null {
   return null;
 }
 
+export interface GamePlatformBadgeInfo {
+  label: string;
+  service: ConnectedGameService;
+  bgClass: string;
+  colorClass: string;
+  borderClass: string;
+  tooltip: string;
+}
+
+/**
+ * Returns badge info for a game's platform/console.
+ * For PlayStation, extracts and displays the actual console (e.g. 'PS5', 'PS4', 'PS3', 'PS Vita') instead of generic 'PSN'.
+ */
+export function getGamePlatformBadgeInfo(item: MediaItem): GamePlatformBadgeInfo | null {
+  const service = getItemPlatform(item);
+  if (!service) return null;
+
+  if (service === 'psn') {
+    let consoleName = item.gameConnection?.platform;
+    if (!consoleName && item.publisher) {
+      const match = item.publisher.match(/PlayStation\s*\(([^)]+)\)/i);
+      if (match && match[1]) {
+        consoleName = match[1].trim();
+      }
+    }
+    if (!consoleName && item.title) {
+      const match = item.title.match(/\((PS5|PS4|PS3|PS Vita|PSP)\)/i);
+      if (match && match[1]) {
+        consoleName = match[1].toUpperCase();
+      }
+    }
+    if (!consoleName) {
+      consoleName = 'PS5';
+    }
+
+    return {
+      label: consoleName,
+      service: 'psn',
+      bgClass: 'bg-blue-500/15',
+      colorClass: 'text-blue-300',
+      borderClass: 'border-blue-500/30',
+      tooltip: `Plattform: ${consoleName} (PlayStation)`,
+    };
+  }
+
+  if (service === 'steam') {
+    return {
+      label: 'Steam',
+      service: 'steam',
+      bgClass: 'bg-sky-500/15',
+      colorClass: 'text-sky-300',
+      borderClass: 'border-sky-500/30',
+      tooltip: 'Verknüpft mit Steam',
+    };
+  }
+
+  if (service === 'gog') {
+    return {
+      label: 'GOG',
+      service: 'gog',
+      bgClass: 'bg-purple-500/15',
+      colorClass: 'text-purple-300',
+      borderClass: 'border-purple-500/30',
+      tooltip: 'Verknüpft mit GOG Galaxy',
+    };
+  }
+
+  return null;
+}
+
 /**
  * Core deduplication and replacement engine:
  * If an imported game from Steam, PSN, or GOG matches an existing game in the library

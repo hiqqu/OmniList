@@ -671,6 +671,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             service: 'psn' as const,
             serviceId: pg.id,
             serviceName: 'PlayStation Network',
+            platform: pg.platform || item.gameConnection?.platform || 'PS5',
             lastPlayed: undefined,
           },
           progress: {
@@ -730,6 +731,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             service: 'psn',
             serviceId: pg.id,
             serviceName: 'PlayStation Network',
+            platform: pg.platform || 'PS5',
           },
           publisher: `PlayStation (${pg.platform || 'PS5'})`,
           progress: { current: pg.playtimeHours, unit: 'hours' },

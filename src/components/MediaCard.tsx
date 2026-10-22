@@ -8,6 +8,7 @@ import { getMediaTypeBadge, getMediaStatusBadge, getEffectiveMediaStatusBadge, g
 import { getMediaCoverFallback } from '@/lib/book-cover';
 import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
 import { isLiveServiceGame } from '@/lib/live-service';
+import { getGamePlatformBadgeInfo } from '@/lib/game-import';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -73,11 +74,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       (isGame ? isGame100Done || isGameStoryDone : totalProgress > 0 && currentProgress >= totalProgress)
     );
 
-  const displayPublisher =
-    item.publisher ||
-    (item.type === 'book' && item.collection_name
-      ? item.collection_name.replace(/\s*Ausgabe$/i, '').trim()
-      : item.collection_name);
+  const platformBadge = isGame ? getGamePlatformBadgeInfo(item) : null;
+
+  // Don't show publisher line if it is just a repeated platform tag like "PlayStation (PS4)", "Steam", "GOG.com"
+  const isPlatformPublisher =
+    isGame &&
+    Boolean(
+      item.publisher &&
+      /^(playstation(\s*\(.*\))?|steam|gog(\.com)?)$/i.test(item.publisher.trim())
+    );
+
+  const displayPublisher = isPlatformPublisher
+    ? undefined
+    : item.publisher ||
+      (item.type === 'book' && item.collection_name
+        ? item.collection_name.replace(/\s*Ausgabe$/i, '').trim()
+        : item.collection_name);
 
   const isStockOrEmptyCover = !item.coverUrl || item.coverUrl.includes('images.unsplash.com');
   const displayCover = isStockOrEmptyCover ? getMediaCoverFallback(item) : item.coverUrl;
@@ -552,26 +564,19 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 <span>Im Besitz</span>
               </span>
             )}
-            {(item.connectedService || item.external_id?.startsWith('steam:') || item.external_id?.startsWith('psn:') || item.external_id?.startsWith('gog:')) && (
-              (() => {
-                const s = item.connectedService || (item.external_id?.startsWith('steam:') ? 'steam' : item.external_id?.startsWith('psn:') ? 'psn' : 'gog');
-                return (
-                  <span
-                    className={cn(
-                      'text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0',
-                      s === 'steam'
-                        ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
-                        : s === 'psn'
-                        ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-                        : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
-                    )}
-                    title={`Verknüpft mit ${item.gameConnection?.serviceName || s.toUpperCase()}`}
-                  >
-                    <Gamepad2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    <span>{s === 'steam' ? 'Steam' : s === 'psn' ? 'PSN' : 'GOG'}</span>
-                  </span>
-                );
-              })()
+            {platformBadge && (
+              <span
+                className={cn(
+                  'text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0',
+                  platformBadge.bgClass,
+                  platformBadge.colorClass,
+                  platformBadge.borderClass
+                )}
+                title={platformBadge.tooltip}
+              >
+                <Gamepad2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                <span>{platformBadge.label}</span>
+              </span>
             )}
             {metacriticScore !== null && metacriticStyle && (
               <span

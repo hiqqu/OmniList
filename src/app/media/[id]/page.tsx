@@ -37,6 +37,7 @@ import { getMediaTypeBadge, getMediaStatusBadge, getEffectiveMediaStatusBadge, g
 import { getEnrichedMediaDetails, EnrichedMediaDetails } from '@/lib/media-details';
 import { getMediaMetacriticScore, getMetacriticBadgeStyle } from '@/lib/metacritic';
 import { isLiveServiceGame } from '@/lib/live-service';
+import { getGamePlatformBadgeInfo } from '@/lib/game-import';
 import { EditMediaModal } from '@/components/EditMediaModal';
 import { getMediaCoverFallback } from '@/lib/book-cover';
 
@@ -321,6 +322,7 @@ export default function MediaDetailPage() {
   const metacriticScore = getMediaMetacriticScore(item);
   const metacriticStyle = metacriticScore !== null ? getMetacriticBadgeStyle(metacriticScore) : null;
   const isLiveService = isGame && isLiveServiceGame(item);
+  const platformBadge = isGame ? getGamePlatformBadgeInfo(item) : null;
 
   const currentProgress = item.progress.current;
   const totalProgress = item.progress.total || 0;
@@ -646,21 +648,20 @@ export default function MediaDetailPage() {
                   </span>
                 )}
 
-                {item.connectedService && (
+                {platformBadge && (
                   <span
                     className={cn(
                       'text-xs font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0',
-                      item.connectedService === 'steam'
-                        ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
-                        : item.connectedService === 'psn'
-                        ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-                        : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                      platformBadge.bgClass,
+                      platformBadge.colorClass,
+                      platformBadge.borderClass
                     )}
+                    title={platformBadge.tooltip}
                   >
                     <Gamepad2 className="w-3.5 h-3.5" />
                     <span>
-                      {item.gameConnection?.serviceName || item.connectedService.toUpperCase()}
-                      {item.gameConnection?.accountUsername ? ` (${item.gameConnection.accountUsername})` : ' verknüpft'}
+                      {platformBadge.label}
+                      {item.gameConnection?.accountUsername ? ` (${item.gameConnection.accountUsername})` : ''}
                     </span>
                   </span>
                 )}

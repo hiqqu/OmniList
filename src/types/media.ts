@@ -10,6 +10,7 @@ export interface GameConnectionInfo {
   service: ConnectedGameService;
   serviceId?: string; // z. B. Steam AppID oder PSN Title ID
   serviceName: string; // 'Steam', 'PlayStation Network', 'GOG Galaxy'
+  platform?: string; // z. B. 'PS5', 'PS4'
   playtimeMinutes?: number;
   lastPlayed?: string;
   connectedAt?: string;

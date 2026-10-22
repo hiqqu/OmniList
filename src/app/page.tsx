@@ -130,6 +130,19 @@ export default function Home() {
           hasBackfill = true;
           updatedItem = { ...updatedItem, status: 'in_progress' };
         }
+        if (item.publisher && !item.gameConnection?.platform) {
+          const match = item.publisher.match(/PlayStation\s*\(([^)]+)\)/i);
+          if (match && match[1]) {
+            hasBackfill = true;
+            updatedItem = {
+              ...updatedItem,
+              gameConnection: {
+                ...(updatedItem.gameConnection || { service: 'psn', serviceName: 'PlayStation Network' }),
+                platform: match[1].trim(),
+              },
+            };
+          }
+        }
         if (!item.metacritic || item.metacritic <= 0) {
           const score = getMediaMetacriticScore(updatedItem);
           if (score !== null) {
