@@ -52,18 +52,56 @@ async function resolveSteamId64(input: string, apiKey: string): Promise<string |
   return null;
 }
 
+function resolveSteamApiKey(customKey?: string): string {
+  if (customKey && customKey.trim().length > 0) {
+    return customKey.trim().replace(/^["']|["']$/g, '');
+  }
+
+  const envCandidates = [
+    process.env.STEAM_API_KEY,
+    process.env.STEAM_KEY,
+    process.env.STEAM_WEB_API_KEY,
+    process.env.STEAM_APIKEY,
+    process.env.STEAM_TOKEN,
+    process.env.NEXT_PUBLIC_STEAM_API_KEY,
+  ];
+
+  for (const candidate of envCandidates) {
+    if (candidate && candidate.trim().length > 0) {
+      return candidate.trim().replace(/^["']|["']$/g, '');
+    }
+  }
+
+  // Also check if any env var contains STEAM and KEY/TOKEN
+  for (const [k, v] of Object.entries(process.env)) {
+    const upper = k.toUpperCase();
+    if (upper.includes('STEAM') && (upper.includes('KEY') || upper.includes('TOKEN') || upper.includes('SECRET'))) {
+      if (v && v.trim().length > 0) {
+        return v.trim().replace(/^["']|["']$/g, '');
+      }
+    }
+  }
+
+  return '';
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action, steamInput, apiKey: customKey, appIds } = body;
 
-    const apiKey = (customKey || process.env.STEAM_API_KEY || '').trim();
+    const apiKey = resolveSteamApiKey(customKey);
 
     if (!apiKey) {
+      const isVercel = Boolean(process.env.VERCEL);
+      const hint = isVercel
+        ? 'Auf Vercel wurde kein Steam Web API Key gefunden. Bitte prüfe in den Vercel Project Settings unter Environment Variables, ob der Name STEAM_API_KEY lautet und die Häkchen für Production und Preview aktiv sind.'
+        : 'Du führst die App lokal auf deinem PC aus. Vercel-Umgebungsvariablen liegen nur in der Cloud und werden nicht automatisch auf deinen PC heruntergeladen. Trage deinen Steam Key entweder im Eingabefeld ein, erstelle eine lokale .env.local Datei mit STEAM_API_KEY=..., oder teste direkt auf deiner Live-Vercel-URL.';
+
       return NextResponse.json(
         {
           error: 'Kein Steam Web API Key konfiguriert.',
-          hint: 'Trage deinen kostenlosen Steam Web API Key in die Einstellungen oder als STEAM_API_KEY in Vercel/.env.local ein.',
+          hint,
         },
         { status: 400 }
       );
@@ -195,8 +233,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const hasServerKey = Boolean(process.env.STEAM_API_KEY && process.env.STEAM_API_KEY.trim().length > 0);
+  const key = resolveSteamApiKey();
+  const hasServerKey = Boolean(key && key.length > 0);
+  const isVercel = Boolean(process.env.VERCEL);
+  const steamKeysFound = Object.keys(process.env).filter((k) => k.toUpperCase().includes('STEAM'));
+
   return NextResponse.json({
     hasServerKey,
+    isVercel,
+    steamKeysFound,
   });
 }

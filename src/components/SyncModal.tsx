@@ -461,7 +461,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         body: JSON.stringify({ action: 'get-games', steamInput: steamInput.trim(), apiKey: steamApiKey.trim() }),
       });
       const gamesData = await gamesRes.json();
-      if (!gamesRes.ok) throw new Error(gamesData.error || 'Fehler beim Abrufen der Steam-Spiele');
+      if (!gamesRes.ok) {
+        const fullMsg = gamesData.hint ? `${gamesData.error} ${gamesData.hint}` : (gamesData.error || 'Fehler beim Abrufen der Steam-Spiele');
+        throw new Error(fullMsg);
+      }
 
       setSteamGames(gamesData.games || []);
       setFeedback({ type: 'success', message: `${gamesData.games?.length || 0} Steam-Spiele geladen!` });
