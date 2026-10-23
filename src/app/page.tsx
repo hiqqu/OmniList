@@ -22,6 +22,7 @@ import {
 import { getMediaMetacriticScore } from '@/lib/metacritic';
 import { isLiveServiceGame } from '@/lib/live-service';
 import { ToastContainer, ToastMessage } from '@/components/Toast';
+import { TrashModal } from '@/components/TrashModal';
 import {
   MediaItem,
   MediaType,
@@ -40,6 +41,8 @@ import {
   addMediaItem,
   updateMediaItem,
   deleteMediaItem,
+  getStoredTrash,
+  restoreTrashItem,
   dismissSequel,
   acceptSequel,
   resetLibraryToDefault,
@@ -130,6 +133,8 @@ export default function Home() {
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
+  const [trashCount, setTrashCount] = useState(0);
 
   const handleOpenGamingSync = () => {
     setSyncModalTab('gaming');
@@ -216,13 +221,21 @@ export default function Home() {
   };
 
   // Toast Helper
-  const addToast = useCallback((type: 'success' | 'info' | 'warning' | 'error', title: string, description?: string) => {
-    const id = `toast-${Date.now()}-${Math.random()}`;
-    setToasts((prev) => [...prev, { id, type, title, description }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
-  }, []);
+  const addToast = useCallback(
+    (
+      type: 'success' | 'info' | 'warning' | 'error',
+      title: string,
+      description?: string,
+      action?: { label: string; onClick: () => void }
+    ) => {
+      const id = `toast-${Date.now()}-${Math.random()}`;
+      setToasts((prev) => [...prev, { id, type, title, description, action }]);
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, action ? 6500 : 4000);
+    },
+    []
+  );
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -232,6 +245,7 @@ export default function Home() {
   useEffect(() => {
     const loadedMedia = getStoredMedia();
     const loadedSequels = getStoredSequels();
+    setTrashCount(getStoredTrash().length);
 
     // Auto-backfill Metacritic scores & normalize Live-Service game status
     let hasBackfill = false;
@@ -590,6 +604,7 @@ export default function Home() {
     const target = media.find((m) => m.id === id);
     deleteMediaItem(id);
     setMedia((prev) => prev.filter((m) => m.id !== id));
+    setTrashCount(getStoredTrash().length);
     setSequels((prev) =>
       prev.filter(
         (s) =>
@@ -598,8 +613,33 @@ export default function Home() {
       )
     );
     if (target) {
-      addToast('info', `Aus Sammlung entfernt`, target.title);
+      addToast(
+        'info',
+        'In den Papierkorb verschoben',
+        `"${target.title}" kann jederzeit wiederhergestellt werden.`,
+        {
+          label: 'Rückgängig',
+          onClick: () => {
+            const restored = restoreTrashItem(target.id);
+            if (restored) {
+              setMedia(getStoredMedia());
+              setTrashCount(getStoredTrash().length);
+              addToast('success', 'Wiederhergestellt', `"${restored.title}" ist wieder in der Sammlung.`);
+            }
+          },
+        }
+      );
     }
+  };
+
+  const handleItemRestored = (restoredItem: MediaItem) => {
+    setMedia(getStoredMedia());
+    setTrashCount(getStoredTrash().length);
+  };
+
+  const handleAllRestored = (restoredItems: MediaItem[]) => {
+    setMedia(getStoredMedia());
+    setTrashCount(0);
   };
 
   // Add Medium from Search Modal
@@ -1205,6 +1245,8 @@ export default function Home() {
         onToggleOnlyOwned={() => setOnlyOwned((prev) => !prev)}
         sequelCount={unownedSequels.length}
         totalMediaCount={media.length}
+        trashCount={trashCount}
+        onOpenTrashModal={() => setIsTrashModalOpen(true)}
         isCheckingSequels={isCheckingSequels}
         onCheckSequels={handleCheckSequels}
         onResetLibrary={handleResetLibrary}
@@ -1988,6 +2030,18 @@ export default function Home() {
         onApplySync={handleApplySync}
         addToast={addToast}
         initialTab={syncModalTab}
+      />
+
+      {/* Recycle Bin / Trash Modal */}
+      <TrashModal
+        isOpen={isTrashModalOpen}
+        onClose={() => {
+          setIsTrashModalOpen(false);
+          setTrashCount(getStoredTrash().length);
+        }}
+        onItemRestored={handleItemRestored}
+        onAllRestored={handleAllRestored}
+        addToast={addToast}
       />
 
       {/* Toast Notifications */}

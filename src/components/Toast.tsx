@@ -9,6 +9,10 @@ export interface ToastMessage {
   type: 'success' | 'info' | 'warning' | 'error';
   title: string;
   description?: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 interface ToastProps {
@@ -45,14 +49,27 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
             <Info className="w-4 h-4 text-zinc-300 flex-shrink-0 mt-0.5" />
           )}
 
-          <div className="flex-1">
-            <h5 className="font-bold text-[#F1F3F7] text-xs">{t.title}</h5>
-            {t.description && <p className="text-zinc-400 mt-0.5">{t.description}</p>}
+          <div className="flex-1 min-w-0">
+            <h5 className="font-bold text-[#F1F3F7] text-xs truncate">{t.title}</h5>
+            {t.description && <p className="text-zinc-400 mt-0.5 line-clamp-2">{t.description}</p>}
           </div>
+
+          {t.action && (
+            <button
+              onClick={() => {
+                t.action?.onClick();
+                onDismiss(t.id);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold text-[11px] border border-zinc-600 transition-colors shrink-0 shadow-sm"
+            >
+              {t.action.label}
+            </button>
+          )}
 
           <button
             onClick={() => onDismiss(t.id)}
-            className="text-zinc-400 hover:text-[#F1F3F7] transition-colors"
+            className="text-zinc-400 hover:text-[#F1F3F7] transition-colors p-0.5"
+            aria-label="Benachrichtigung schließen"
           >
             <X className="w-3.5 h-3.5" />
           </button>

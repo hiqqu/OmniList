@@ -576,23 +576,71 @@ export function isGameDeleted(externalId?: string, title?: string): boolean {
   return false;
 }
 
-export function deleteMediaItem(id: string): void {
+export interface TrashItem {
+  id: string;
+  item: MediaItem;
+  deletedAt: string;
+}
+
+export const TRASH_STORAGE_KEY = 'omnilist_trash_media_v1';
+const MAX_TRASH_ITEMS = 100;
+
+export function getStoredTrash(): TrashItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(TRASH_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: TrashItem[] = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error('Failed to get trash items', e);
+    return [];
+  }
+}
+
+export function saveStoredTrash(items: TrashItem[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const capped = items.slice(0, MAX_TRASH_ITEMS);
+    localStorage.setItem(TRASH_STORAGE_KEY, JSON.stringify(capped));
+  } catch (e) {
+    console.error('Failed to save trash items', e);
+  }
+}
+
+export function deleteMediaItem(id: string): MediaItem | null {
   const current = getStoredMedia();
   const target = current.find((m) => m.id === id);
   const filtered = current.filter((m) => m.id !== id);
   saveStoredMedia(filtered);
 
-  // If a game is deleted by user, track its ID/title so subsequent syncs do not re-add it
-  if (target && target.type === 'game') {
-    if (target.external_id) {
-      addDeletedGameKey(target.external_id);
+  if (target) {
+    const trash = getStoredTrash();
+    const existingIndex = trash.findIndex((t) => t.id === id);
+    const newTrashItem: TrashItem = {
+      id: target.id,
+      item: target,
+      deletedAt: new Date().toISOString(),
+    };
+    if (existingIndex >= 0) {
+      trash[existingIndex] = newTrashItem;
+    } else {
+      trash.unshift(newTrashItem);
     }
-    if (target.title) {
-      const norm = target.title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
-      addDeletedGameKey(`title:${norm}`);
-    }
-    if (target.gameConnection?.service && target.gameConnection?.serviceId) {
-      addDeletedGameKey(`${target.gameConnection.service}:${target.gameConnection.serviceId}`);
+    saveStoredTrash(trash);
+
+    // If a game is deleted by user, track its ID/title so subsequent syncs do not re-add it
+    if (target.type === 'game') {
+      if (target.external_id) {
+        addDeletedGameKey(target.external_id);
+      }
+      if (target.title) {
+        const norm = target.title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
+        addDeletedGameKey(`title:${norm}`);
+      }
+      if (target.gameConnection?.service && target.gameConnection?.serviceId) {
+        addDeletedGameKey(`${target.gameConnection.service}:${target.gameConnection.serviceId}`);
+      }
     }
   }
 
@@ -619,6 +667,90 @@ export function deleteMediaItem(id: string): void {
       console.error('Failed to prune sequels on deleteMediaItem', e);
     }
   }
+
+  return target || null;
+}
+
+export function restoreTrashItem(id: string): MediaItem | null {
+  const trash = getStoredTrash();
+  const targetEntry = trash.find((t) => t.id === id);
+  if (!targetEntry) return null;
+
+  // Remove from trash
+  const remainingTrash = trash.filter((t) => t.id !== id);
+  saveStoredTrash(remainingTrash);
+
+  // Restore to library
+  const currentMedia = getStoredMedia();
+  const filtered = currentMedia.filter((m) => m.id !== id);
+  const restoredItem: MediaItem = {
+    ...targetEntry.item,
+    updatedAt: new Date().toISOString(),
+  };
+  saveStoredMedia([restoredItem, ...filtered]);
+
+  // If game, unblock it
+  if (restoredItem.type === 'game') {
+    if (restoredItem.external_id) {
+      removeDeletedGameKey(restoredItem.external_id);
+    }
+    if (restoredItem.title) {
+      const norm = restoredItem.title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
+      removeDeletedGameKey(`title:${norm}`);
+    }
+    if (restoredItem.gameConnection?.service && restoredItem.gameConnection?.serviceId) {
+      removeDeletedGameKey(`${restoredItem.gameConnection.service}:${restoredItem.gameConnection.serviceId}`);
+    }
+  }
+
+  return restoredItem;
+}
+
+export function permanentlyDeleteTrashItem(id: string): void {
+  const trash = getStoredTrash();
+  const remaining = trash.filter((t) => t.id !== id);
+  saveStoredTrash(remaining);
+}
+
+export function clearTrash(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(TRASH_STORAGE_KEY);
+  } catch (e) {
+    console.error('Failed to clear trash', e);
+  }
+}
+
+export function restoreAllTrash(): MediaItem[] {
+  const trash = getStoredTrash();
+  if (trash.length === 0) return [];
+
+  const restoredItems: MediaItem[] = [];
+  const currentMedia = getStoredMedia();
+  const currentMap = new Map(currentMedia.map((m) => [m.id, m]));
+
+  for (const entry of trash) {
+    const item = { ...entry.item, updatedAt: new Date().toISOString() };
+    currentMap.set(item.id, item);
+    restoredItems.push(item);
+
+    if (item.type === 'game') {
+      if (item.external_id) {
+        removeDeletedGameKey(item.external_id);
+      }
+      if (item.title) {
+        const norm = item.title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
+        removeDeletedGameKey(`title:${norm}`);
+      }
+      if (item.gameConnection?.service && item.gameConnection?.serviceId) {
+        removeDeletedGameKey(`${item.gameConnection.service}:${item.gameConnection.serviceId}`);
+      }
+    }
+  }
+
+  saveStoredMedia(Array.from(currentMap.values()));
+  clearTrash();
+  return restoredItems;
 }
 
 export function dismissSequel(
