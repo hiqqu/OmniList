@@ -365,6 +365,18 @@ export default function Home() {
     }
   }, []);
 
+  // Whenever user switches to the Sequel Radar view, automatically clean stale sequels against current media
+  useEffect(() => {
+    if (currentView === 'sequel_radar' && isLoaded) {
+      const stored = getStoredSequels();
+      const cleaned = cleanStaleSequels(stored.length > 0 ? stored : sequels, media);
+      if (cleaned.length !== sequels.length) {
+        setSequels(cleaned);
+        saveStoredSequels(cleaned);
+      }
+    }
+  }, [currentView, isLoaded, media]);
+
   // Quick-Increment Handler (Optimistic UI Update)
   const handleQuickIncrement = (id: string) => {
     const item = media.find((m) => m.id === id);
