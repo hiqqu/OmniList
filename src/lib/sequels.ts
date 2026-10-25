@@ -21,6 +21,14 @@ export const COMPILATION_BUNDLES: { pattern: RegExp; coveredSequelMatches: strin
     coveredSequelMatches: ['arkham asylum', 'arkham city', 'arkham knight'],
   },
   {
+    pattern: /\b(?:return to arkham\s*-\s*arkham asylum)\b/i,
+    coveredSequelMatches: ['arkham asylum'],
+  },
+  {
+    pattern: /\b(?:return to arkham\s*-\s*arkham city)\b/i,
+    coveredSequelMatches: ['arkham city'],
+  },
+  {
     pattern: /\b(?:return to arkham)\b/i,
     coveredSequelMatches: ['arkham asylum', 'arkham city'],
   },
@@ -72,6 +80,11 @@ export function normalizeSequelMatchKey(title: string): string {
   s = s.replace(/\bstaffel\b/g, 'season');
   s = s.replace(/\bteil\b/g, 'part');
   s = s.replace(/\bband\b/g, 'part');
+  // Normalize word-based season designations (e.g. "Second Season" -> "season 2")
+  s = s.replace(/\b(?:second|2nd)\s+season\b/g, 'season 2');
+  s = s.replace(/\b(?:third|3rd)\s+season\b/g, 'season 3');
+  s = s.replace(/\b(?:fourth|4th)\s+season\b/g, 'season 4');
+  s = s.replace(/\b(?:fifth|5th)\s+season\b/g, 'season 5');
   return s.replace(/\s+/g, ' ').trim();
 }
 

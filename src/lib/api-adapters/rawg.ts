@@ -1441,9 +1441,25 @@ export class RAWGAdapter implements MediaAdapter {
       };
     }
 
-    // 7. God of War -> God of War Ragnarök
+    // 7a. God of War (2018) -> God of War Ragnarök
+    const isGow2018 =
+      item.external_id === 'playstation:gow-2018' ||
+      titleLower === 'god of war' ||
+      titleLower === 'god of war (2018)' ||
+      titleLower === 'god of war pc' ||
+      (titleLower.includes('god of war') &&
+        !titleLower.includes('iii') &&
+        !titleLower.includes(' 3') &&
+        !titleLower.includes('ii') &&
+        !titleLower.includes(' 2') &&
+        !titleLower.includes(' 1') &&
+        !titleLower.includes('ascension') &&
+        !titleLower.includes('chains') &&
+        !titleLower.includes('ghost') &&
+        !titleLower.includes('ragnar'));
+
     if (
-      (item.external_id === 'playstation:gow-2018' || (titleLower.includes('god of war') && !titleLower.includes('ragnar'))) &&
+      isGow2018 &&
       !titleLower.includes('ragnarok') &&
       !titleLower.includes('ragnarök')
     ) {
@@ -1464,6 +1480,32 @@ export class RAWGAdapter implements MediaAdapter {
         description: 'Kratos und Atreus reisen durch die Neun Welten vor Beginn von Ragnarök.',
         detectedAt: new Date().toISOString(),
         progressSuggestion: { current: 0, total: 40, unit: 'hours' },
+      };
+    }
+
+    // 7b. God of War III -> God of War (2018)
+    if (
+      titleLower.includes('god of war') &&
+      (titleLower.includes('iii') || titleLower.includes(' 3')) &&
+      !titleLower.includes('ragnar')
+    ) {
+      return {
+        id: `seq-gow-2018-${item.id}`,
+        parentMediaId: item.id,
+        parentMediaTitle: item.title,
+        parentMediaType: 'game',
+        parentCoverUrl: item.coverUrl,
+        sequelTitle: 'God of War',
+        sequelType: 'game',
+        sequelCoverUrl: 'https://lutris.net/media/igdb/cover_big/co1tmu.jpg',
+        releaseDate: '2018-04-20',
+        status: 'released',
+        badgeText: 'Jetzt verfügbar',
+        external_id: 'playstation:gow-2018',
+        franchise_id: 'playstation:franchise:gow',
+        description: 'Kratos hat den Göttern des Olymps den Rücken gekehrt und lebt im Reich der nordischen Götter und Monster.',
+        detectedAt: new Date().toISOString(),
+        progressSuggestion: { current: 0, total: 30, unit: 'hours' },
       };
     }
 
