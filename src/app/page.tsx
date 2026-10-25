@@ -44,13 +44,14 @@ import {
   getStoredTrash,
   restoreTrashItem,
   dismissSequel,
+  dismissAllSequels,
   acceptSequel,
   resetLibraryToDefault,
 } from '@/lib/storage';
-import { isSequelInLibrary, isSequelDismissed, normalizeSequelMatchKey, getDismissedSequelKeys } from '@/lib/sequels';
+import { isSequelInLibrary, isSequelDismissed, normalizeSequelMatchKey, getDismissedSequelKeys, cleanStaleSequels } from '@/lib/sequels';
 import { getKnownSeriesInfo } from '@/lib/api-adapters/tmdb';
 import { getUnitIncrement, getMediaStatusBadge, cn } from '@/lib/utils';
-import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search } from 'lucide-react';
+import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search, CheckCheck } from 'lucide-react';
 
 function getAchievementsPct(item: MediaItem): number {
   if (item.gameTracker?.achievements?.total && item.gameTracker.achievements.total > 0) {
@@ -314,13 +315,11 @@ export default function Home() {
     }
 
     const currentMediaItems = hasBackfill ? backfilledMedia : loadedMedia;
-    const unownedLoadedSequels = loadedSequels.filter(
-      (s) => !isSequelInLibrary(s, currentMediaItems) && !isSequelDismissed(s)
-    );
-    if (unownedLoadedSequels.length !== loadedSequels.length) {
-      saveStoredSequels(unownedLoadedSequels);
+    const cleanedLoadedSequels = cleanStaleSequels(loadedSequels, currentMediaItems);
+    if (cleanedLoadedSequels.length !== loadedSequels.length) {
+      saveStoredSequels(cleanedLoadedSequels);
     }
-    setSequels(unownedLoadedSequels);
+    setSequels(cleanedLoadedSequels);
     setIsLoaded(true);
 
     // Silent background auto-sync for connected game accounts (e.g. Steam)
@@ -728,6 +727,14 @@ export default function Home() {
     addToast('info', 'Fortsetzungsmeldung ignoriert');
   };
 
+  const handleDismissAllSequels = () => {
+    if (unownedSequels.length === 0) return;
+    dismissAllSequels(unownedSequels);
+    setSequels([]);
+    saveStoredSequels([]);
+    addToast('info', 'Radar bereinigt', 'Alle aktuellen Fortsetzungsvorschläge wurden dauerhaft ignoriert.');
+  };
+
   // Manual Check Sequels Sync via Route Handler
   const handleCheckSequels = async () => {
     setIsCheckingSequels(true);
@@ -750,58 +757,21 @@ export default function Home() {
         const detectedSequels: SequelNotification[] = data.sequels || [];
         const currentDismissed = new Set(getDismissedSequelKeys());
 
-        // Exclude sequels that are already in the media library or dismissed
-        const trulyNewSequels = detectedSequels.filter(
-          (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s, currentDismissed)
-        );
-
-        // Deduplicate newly detected sequels within this scan batch itself
-        const seenBatchKeys = new Set<string>();
-        const uniqueDetected: SequelNotification[] = [];
-        for (const s of trulyNewSequels) {
-          const titleKey = normalizeSequelMatchKey(s.sequelTitle);
-          const extKey = s.external_id ? s.external_id.trim().toLowerCase() : '';
-          const dedupeKey = extKey ? `ext:${extKey}` : `title:${titleKey}`;
-          if (!seenBatchKeys.has(dedupeKey)) {
-            seenBatchKeys.add(dedupeKey);
-            if (titleKey) seenBatchKeys.add(`title:${titleKey}`);
-            if (extKey) seenBatchKeys.add(`ext:${extKey}`);
-            uniqueDetected.push(s);
-          }
-        }
-
         const freshSequels = getStoredSequels();
-        const existingExternalIds = new Set(
-          freshSequels.map((s) => s.external_id?.trim().toLowerCase()).filter(Boolean)
-        );
-        const existingTitleKeys = new Set(
-          freshSequels.map((s) => normalizeSequelMatchKey(s.sequelTitle)).filter(Boolean)
-        );
+        const combined = [...detectedSequels, ...freshSequels];
+        const merged = cleanStaleSequels(combined, mediaToScan, currentDismissed);
 
-        const newDetections = uniqueDetected.filter((s) => {
-          if (s.external_id && existingExternalIds.has(s.external_id.trim().toLowerCase())) return false;
-          if (s.sequelTitle && existingTitleKeys.has(normalizeSequelMatchKey(s.sequelTitle))) return false;
-          return true;
-        });
+        const newCount = merged.filter((m) => !freshSequels.some((f) => f.id === m.id)).length;
+        setSequels(merged);
+        saveStoredSequels(merged);
 
-        if (newDetections.length > 0) {
-          const merged = [...newDetections, ...freshSequels].filter(
-            (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s, currentDismissed)
-          );
-          setSequels(merged);
-          saveStoredSequels(merged);
+        if (newCount > 0) {
           addToast(
             'success',
-            `${newDetections.length} neue Fortsetzung(en) gefunden!`,
+            `${newCount} neue Fortsetzung(en) gefunden!`,
             'Der Radar hat neue Releases für deine Bibliothek erkannt.'
           );
         } else {
-          // Clean existing sequels if any became owned or dismissed in the meantime
-          const cleaned = freshSequels.filter(
-            (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s, currentDismissed)
-          );
-          setSequels(cleaned);
-          saveStoredSequels(cleaned);
           addToast('info', 'Bibliothek aktuell', 'Keine neuen Fortsetzungen gefunden.');
         }
       }
@@ -1171,9 +1141,9 @@ export default function Home() {
     };
   }, [media]);
 
-  // Sequel Radar: exclude sequels already present in user's library or dismissed
+  // Sequel Radar: exclude sequels already present in user's library, dismissed, or stale/duplicate
   const unownedSequels = useMemo(() => {
-    return sequels.filter((s) => !isSequelInLibrary(s, media) && !isSequelDismissed(s));
+    return cleanStaleSequels(sequels, media);
   }, [sequels, media]);
 
   // Sequel Radar subcategories counts and filtered list
@@ -1900,6 +1870,16 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-center gap-3">
+                    {unownedSequels.length > 0 && (
+                      <button
+                        onClick={handleDismissAllSequels}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-[#F1F3F7] font-semibold text-xs border border-zinc-700 transition-all active:scale-95"
+                        title="Alle aktuellen Fortsetzungsvorschläge aus dem Radar entfernen"
+                      >
+                        <CheckCheck className="w-4 h-4 text-emerald-400" />
+                        <span>Radar bereinigen</span>
+                      </button>
+                    )}
                     <button
                       onClick={handleCheckSequels}
                       disabled={isCheckingSequels}

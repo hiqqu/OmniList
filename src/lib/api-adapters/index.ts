@@ -5,7 +5,7 @@ import { AniListAdapter } from './anilist';
 import { GoogleBooksAdapter, POPULAR_BOOKS_CATALOG } from './googlebooks';
 import { RAWGAdapter, POPULAR_GAMES_CATALOG } from './rawg';
 import { searchCache } from '../cache';
-import { isSequelInLibrary, isSequelDismissed } from '../sequels';
+import { isSequelInLibrary, isSequelDismissed, cleanStaleSequels } from '../sequels';
 
 const tmdbAdapter = new TMDBAdapter();
 const anilistAdapter = new AniListAdapter();
@@ -93,5 +93,5 @@ export async function checkSequelsForLibrary(
     }
   }
 
-  return notifications;
+  return cleanStaleSequels(notifications, items, dismissedSet);
 }

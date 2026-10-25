@@ -9,6 +9,7 @@ import {
   clearDismissedSequels,
   normalizeSequelMatchKey,
   getSequelTitleVariants,
+  cleanStaleSequels,
 } from './sequels';
 import { getNumberVariants } from './metacritic';
 
@@ -404,20 +405,10 @@ export function getStoredSequels(): SequelNotification[] {
 
     // Auto-remove orphan sequels whose parent media was deleted or is not in library,
     // AND auto-remove any sequel that is already owned/present in the user's collection,
-    // AND auto-remove any sequel that has been dismissed by the user!
+    // AND auto-remove any sequel that has been dismissed by the user,
+    // AND deduplicate and purge bogus historical pairings!
     const currentMedia = getStoredMedia();
-    const mediaIds = new Set(currentMedia.map((m) => m.id));
-    const mediaTitles = new Set(currentMedia.map((m) => m.title.toLowerCase()));
-    const dismissedSet = new Set(getDismissedSequelKeys());
-
-    const activeSequels = upgraded.filter((s) => {
-      const idMatch = s.parentMediaId ? mediaIds.has(s.parentMediaId) : false;
-      const titleMatch = s.parentMediaTitle ? mediaTitles.has(s.parentMediaTitle.toLowerCase()) : false;
-      const parentExists = idMatch || titleMatch;
-      const alreadyOwned = isSequelInLibrary(s, currentMedia);
-      const isDismissed = isSequelDismissed(s, dismissedSet);
-      return parentExists && !alreadyOwned && !isDismissed;
-    });
+    const activeSequels = cleanStaleSequels(upgraded, currentMedia);
 
     if (activeSequels.length !== parsed.length) {
       localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(activeSequels));
@@ -433,15 +424,25 @@ export function getStoredSequels(): SequelNotification[] {
 export function saveStoredSequels(sequels: SequelNotification[]): void {
   if (typeof window === 'undefined') return;
   try {
-    const dismissedSet = new Set(getDismissedSequelKeys());
     const currentMedia = getStoredMedia();
-    const valid = sequels.filter(
-      (s) => !isSequelDismissed(s, dismissedSet) && !isSequelInLibrary(s, currentMedia)
-    );
+    const valid = cleanStaleSequels(sequels, currentMedia);
     localStorage.setItem(SEQUELS_STORAGE_KEY, JSON.stringify(valid));
     localStorage.removeItem(LEGACY_SEQUELS_STORAGE_KEY);
   } catch (e) {
     console.error('Failed to save sequels to localStorage', e);
+  }
+}
+
+export function dismissAllSequels(sequels?: SequelNotification[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = sequels || getStoredSequels();
+    for (const s of list) {
+      dismissSequel(s);
+    }
+    saveStoredSequels([]);
+  } catch (e) {
+    console.error('Failed to dismiss all sequels', e);
   }
 }
 

@@ -85,6 +85,15 @@ export function normalizeSequelMatchKey(title: string): string {
   s = s.replace(/\b(?:third|3rd)\s+season\b/g, 'season 3');
   s = s.replace(/\b(?:fourth|4th)\s+season\b/g, 'season 4');
   s = s.replace(/\b(?:fifth|5th)\s+season\b/g, 'season 5');
+
+  // Anime Romaji <-> English canonical mappings
+  s = s.replace(/\bansatsu kyoushitsu\b/g, 'assassination classroom');
+  s = s.replace(/\bshingeki no kyojin\b/g, 'attack on titan');
+  s = s.replace(/\bkimetsu no yaiba\b/g, 'demon slayer');
+  s = s.replace(/\bboku no hero academia\b/g, 'my hero academia');
+  s = s.replace(/\bsousou no frieren\b/g, 'frieren');
+  s = s.replace(/\bore dake level up na ken\b/g, 'solo leveling');
+  s = s.replace(/\bmushoku tensei\b/g, 'jobless reincarnation');
   return s.replace(/\s+/g, ' ').trim();
 }
 
@@ -413,8 +422,20 @@ export function isSequelInLibrary(
       return true;
     }
 
-    // Shows and Anime Seasons: if the user's item has currentSeason or totalSeasons >= sequel season
+    // Shows and Anime Seasons: if the user's item has currentSeason or totalSeasons >= sequel season, or is completed
     if (item.type === 'show' || item.type === 'anime') {
+      const isCompleted = item.status === 'completed';
+      const isPastRelease = sequel.status === 'released';
+
+      // If user marked anime/show as completed, already-aired past seasons (like Assassination Classroom Season 2 from 2016) are finished
+      if (isCompleted && isPastRelease) {
+        const baseSeqTitle = seqClean.replace(/(?:season|staffel|part|teil)\s*\d+.*$/, '').trim();
+        const baseItemTitle = itemClean.replace(/(?:season|staffel|part|teil)\s*\d+.*$/, '').trim();
+        if (baseSeqTitle && baseItemTitle && (baseSeqTitle.includes(baseItemTitle) || baseItemTitle.includes(baseSeqTitle))) {
+          return true;
+        }
+      }
+
       const seasonMatch = seqClean.match(/season\s*(\d+)/);
       if (seasonMatch && seasonMatch[1]) {
         const targetSeason = parseInt(seasonMatch[1], 10);
@@ -422,7 +443,7 @@ export function isSequelInLibrary(
         const baseSeqTitle = seqClean.replace(/season\s*\d+.*$/, '').trim();
         const baseItemTitle = itemClean.replace(/season\s*\d+.*$/, '').trim();
         if (baseSeqTitle && baseItemTitle && (baseSeqTitle.includes(baseItemTitle) || baseItemTitle.includes(baseSeqTitle))) {
-          if (itemSeason >= targetSeason) {
+          if (itemSeason >= targetSeason || isCompleted) {
             return true;
           }
         }
@@ -500,4 +521,77 @@ export function isSequelInLibrary(
 
     return false;
   });
+}
+
+/**
+ * Cleans stale, duplicate, or invalid sequels from a list against the user's media library and dismiss list.
+ */
+export function cleanStaleSequels(
+  sequels: SequelNotification[],
+  library: MediaItem[],
+  dismissedSet?: Set<string>
+): SequelNotification[] {
+  if (!sequels || sequels.length === 0) return [];
+  const dismissed = dismissedSet || new Set(getDismissedSequelKeys());
+
+  const libraryTitles = new Set(
+    library.map((m) => normalizeSequelMatchKey(m.title)).filter(Boolean)
+  );
+  const libraryOrigTitles = new Set(
+    library.map((m) => normalizeSequelMatchKey(m.originalTitle || '')).filter(Boolean)
+  );
+  const libraryIds = new Set(library.map((m) => m.id));
+
+  const seenSequelTitleKeys = new Set<string>();
+  const cleaned: SequelNotification[] = [];
+
+  for (const s of sequels) {
+    if (!s) continue;
+
+    const pNorm = normalizeSequelMatchKey(s.parentMediaTitle || '');
+    const sNorm = normalizeSequelMatchKey(s.sequelTitle || '');
+
+    // 1. Check if dismissed by user
+    if (isSequelDismissed(s, dismissed)) {
+      continue;
+    }
+
+    // 2. Check if already owned / present in library
+    if (isSequelInLibrary(s, library)) {
+      continue;
+    }
+
+    // 3. Purge known invalid historical pairings (e.g. God of War III -> Ragnarök)
+    if (
+      pNorm.includes('god of war') &&
+      (pNorm.includes('iii') || pNorm.includes(' 3') || pNorm.endsWith(' 3') || pNorm.includes('three')) &&
+      sNorm.includes('ragnarok')
+    ) {
+      continue;
+    }
+
+    // 4. If parent no longer exists in library at all
+    if (s.parentMediaId && !libraryIds.has(s.parentMediaId)) {
+      if (!s.parentMediaTitle || (!libraryTitles.has(pNorm) && !libraryOrigTitles.has(pNorm))) {
+        continue;
+      }
+    }
+
+    // 5. If the sequel title itself is already an exact item title in the library
+    if (libraryTitles.has(sNorm) || libraryOrigTitles.has(sNorm)) {
+      continue;
+    }
+
+    // 6. Deduplicate by normalized sequel title (e.g. only one Batman Arkham City card)
+    if (sNorm) {
+      if (seenSequelTitleKeys.has(sNorm)) {
+        continue;
+      }
+      seenSequelTitleKeys.add(sNorm);
+    }
+
+    cleaned.push(s);
+  }
+
+  return cleaned;
 }
