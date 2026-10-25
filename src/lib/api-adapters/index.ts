@@ -5,7 +5,7 @@ import { AniListAdapter } from './anilist';
 import { GoogleBooksAdapter, POPULAR_BOOKS_CATALOG } from './googlebooks';
 import { RAWGAdapter, POPULAR_GAMES_CATALOG } from './rawg';
 import { searchCache } from '../cache';
-import { isSequelInLibrary } from '../sequels';
+import { isSequelInLibrary, isSequelDismissed } from '../sequels';
 
 const tmdbAdapter = new TMDBAdapter();
 const anilistAdapter = new AniListAdapter();
@@ -61,8 +61,15 @@ export async function searchMedia(query: string, type: MediaType): Promise<Searc
   return results;
 }
 
-export async function checkSequelsForLibrary(items: MediaItem[]): Promise<SequelNotification[]> {
+export async function checkSequelsForLibrary(
+  items: MediaItem[],
+  dismissedKeys?: string[]
+): Promise<SequelNotification[]> {
   const notifications: SequelNotification[] = [];
+  const dismissedSet =
+    dismissedKeys && dismissedKeys.length > 0
+      ? new Set(dismissedKeys.map((k) => k.trim().toLowerCase()))
+      : undefined;
 
   for (const item of items) {
     // Only check sequels for media that are in_progress or completed (as specified in prompt requirement 2)
@@ -73,8 +80,12 @@ export async function checkSequelsForLibrary(items: MediaItem[]): Promise<Sequel
     try {
       const adapter = getAdapter(item.type);
       const sequel = await adapter.checkSequels(item);
-      // Only suggest if sequel is NOT already in the user's collection
-      if (sequel && !isSequelInLibrary(sequel, items)) {
+      // Only suggest if sequel is NOT already in the user's collection AND NOT dismissed
+      if (
+        sequel &&
+        !isSequelInLibrary(sequel, items) &&
+        !isSequelDismissed(sequel, dismissedSet)
+      ) {
         notifications.push(sequel);
       }
     } catch (e) {

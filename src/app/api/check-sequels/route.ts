@@ -8,8 +8,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const items: MediaItem[] = body.items || [];
+    const dismissedKeys: string[] = body.dismissedKeys || [];
 
-    const sequels = await checkSequelsForLibrary(items);
+    const sequels = await checkSequelsForLibrary(items, dismissedKeys);
 
     return NextResponse.json({
       sequels,

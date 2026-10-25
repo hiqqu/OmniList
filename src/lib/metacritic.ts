@@ -8,12 +8,18 @@ export function normalizeMetacriticKey(title: string): string {
   return title
     .replace(/[™®©℗℠]/g, '')
     .replace(/[’‘`´]/g, "'")
+    // Keep 's attached before turning punctuation into space: marvel's -> marvels, drake's -> drakes
+    .replace(/'s\b/gi, 's')
+    .replace(/'/g, '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/\((?:ps5|ps4|pc|xbox|switch|playstation|steam)[^)]*\)/gi, '')
-    .replace(/\b(ps4\s*&\s*ps5|ps5\s*&\s*ps4|playstation\s*5|playstation\s*4|ps5|ps4|nintendo switch)\b/gi, '')
-    .replace(/\b(game of the year edition|goty|digital deluxe edition|deluxe edition|definitive edition|remastered|enhanced edition|complete edition|director'?s cut|special edition|standard edition|gold edition|premium edition|anniversary edition|legendary edition|standard version|intergrade|legacy of thieves collection|scholar of the first sin|royal edition|collection)\b/gi, '')
+    // Strip platform / console / media tags in parens or brackets including PS3, PS2, Vita, Xbox 360, etc.
+    .replace(/\((?:ps5|ps4|ps3|ps2|ps1|psx|psp|ps\s*vita|psvita|pc|xbox|xbox\s*360|xbox\s*one|series\s*[xs]|switch|nintendo|playstation|steam|gog|epic|erweiterung|expansion|dlc)[^)]*\)/gi, '')
+    .replace(/\[(?:ps5|ps4|ps3|ps2|ps1|psx|psp|ps\s*vita|psvita|pc|xbox|xbox\s*360|xbox\s*one|series\s*[xs]|switch|nintendo|playstation|steam|gog|epic|erweiterung|expansion|dlc)[^\]]*\]/gi, '')
+    .replace(/\b(ps4\s*&\s*ps5|ps5\s*&\s*ps4|playstation\s*5|playstation\s*4|playstation\s*3|ps5|ps4|ps3|ps2|psp|ps\s*vita|psvita|xbox\s*360|xbox\s*one|nintendo switch)\b/gi, '')
+    // Strip common edition / collection words so they don't break title matching
+    .replace(/\b(game of the year edition|goty|digital deluxe edition|deluxe edition|definitive edition|remastered|enhanced edition|complete edition|directors cut|director'?s cut|special edition|standard edition|gold edition|premium edition|anniversary edition|legendary edition|standard version|intergrade|legacy of thieves collection|scholar of the first sin|royal edition|launch edition|day one edition|erweiterung|expansion|dlc)\b/gi, '')
     .replace(/\s*\(\d{4}\)/g, '')
     .replace(/[:\-_—–―,.'!?/\\()]/g, ' ')
     .replace(/\s+/g, ' ')

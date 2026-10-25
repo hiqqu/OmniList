@@ -8,6 +8,7 @@ import {
   getDismissedSequelKeys,
   clearDismissedSequels,
   normalizeSequelMatchKey,
+  getSequelTitleVariants,
 } from './sequels';
 import { getNumberVariants } from './metacritic';
 
@@ -763,17 +764,28 @@ export function dismissSequel(
   const current = getStoredSequels();
   const targetId = typeof sequelOrId === 'string' ? sequelOrId : sequelOrId?.id;
   const targetExtId = (typeof sequelOrId === 'object' ? sequelOrId.external_id : extraExternalId)?.trim().toLowerCase();
+  const targetFranchiseId = (typeof sequelOrId === 'object' ? sequelOrId.franchise_id : undefined)?.trim().toLowerCase();
+  const targetParentMediaId = (typeof sequelOrId === 'object' ? sequelOrId.parentMediaId : undefined)?.trim();
+  const targetParentTitle = (typeof sequelOrId === 'object' ? sequelOrId.parentMediaTitle : undefined)?.trim();
   const targetTitle = typeof sequelOrId === 'object' ? sequelOrId.sequelTitle : extraTitle;
-  const targetNormTitle = targetTitle ? normalizeSequelMatchKey(targetTitle) : '';
 
   // Gather all unique keys for blacklist to prevent any resurrection
   const keysToDismiss: string[] = [];
-  if (targetId) keysToDismiss.push(targetId);
+  if (targetId) keysToDismiss.push(targetId.trim().toLowerCase());
   if (targetExtId) keysToDismiss.push(targetExtId);
-  if (targetNormTitle) {
-    keysToDismiss.push(targetNormTitle);
-    for (const v of getNumberVariants(targetNormTitle)) {
+  if (targetFranchiseId) keysToDismiss.push(targetFranchiseId);
+
+  if (targetTitle) {
+    const variants = getSequelTitleVariants(targetTitle);
+    for (const v of variants) {
       keysToDismiss.push(v);
+      if (targetParentMediaId) {
+        keysToDismiss.push(`parent:${targetParentMediaId}:${v}`);
+      }
+      if (targetParentTitle) {
+        const pNorm = normalizeSequelMatchKey(targetParentTitle);
+        if (pNorm) keysToDismiss.push(`parenttitle:${pNorm}:${v}`);
+      }
     }
   }
 
@@ -781,14 +793,16 @@ export function dismissSequel(
   for (const s of current) {
     const idMatch = targetId ? s.id === targetId : false;
     const extMatch = targetExtId && s.external_id ? s.external_id.trim().toLowerCase() === targetExtId : false;
-    const titleMatch = targetNormTitle && s.sequelTitle ? normalizeSequelMatchKey(s.sequelTitle) === targetNormTitle : false;
+    const titleMatch = targetTitle && s.sequelTitle ? normalizeSequelMatchKey(s.sequelTitle) === normalizeSequelMatchKey(targetTitle) : false;
     if (idMatch || extMatch || titleMatch) {
-      if (s.id) keysToDismiss.push(s.id);
+      if (s.id) keysToDismiss.push(s.id.trim().toLowerCase());
       if (s.external_id) keysToDismiss.push(s.external_id.trim().toLowerCase());
+      if (s.franchise_id) keysToDismiss.push(s.franchise_id.trim().toLowerCase());
+      if (s.parentMediaId && s.sequelTitle) {
+        keysToDismiss.push(`parent:${s.parentMediaId}:${normalizeSequelMatchKey(s.sequelTitle)}`);
+      }
       if (s.sequelTitle) {
-        const norm = normalizeSequelMatchKey(s.sequelTitle);
-        keysToDismiss.push(norm);
-        for (const v of getNumberVariants(norm)) {
+        for (const v of getSequelTitleVariants(s.sequelTitle)) {
           keysToDismiss.push(v);
         }
       }

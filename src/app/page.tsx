@@ -47,7 +47,7 @@ import {
   acceptSequel,
   resetLibraryToDefault,
 } from '@/lib/storage';
-import { isSequelInLibrary, isSequelDismissed, normalizeSequelMatchKey } from '@/lib/sequels';
+import { isSequelInLibrary, isSequelDismissed, normalizeSequelMatchKey, getDismissedSequelKeys } from '@/lib/sequels';
 import { getKnownSeriesInfo } from '@/lib/api-adapters/tmdb';
 import { getUnitIncrement, getMediaStatusBadge, cn } from '@/lib/utils';
 import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search } from 'lucide-react';
@@ -735,19 +735,24 @@ export default function Home() {
 
     try {
       const mediaToScan = getStoredMedia().length > 0 ? getStoredMedia() : media;
+      const dismissedKeys = getDismissedSequelKeys();
       const res = await fetch('/api/check-sequels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: mediaToScan }),
+        body: JSON.stringify({
+          items: mediaToScan,
+          dismissedKeys,
+        }),
       });
 
       if (res.ok) {
         const data = await res.json();
         const detectedSequels: SequelNotification[] = data.sequels || [];
+        const currentDismissed = new Set(getDismissedSequelKeys());
 
         // Exclude sequels that are already in the media library or dismissed
         const trulyNewSequels = detectedSequels.filter(
-          (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s)
+          (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s, currentDismissed)
         );
 
         // Deduplicate newly detected sequels within this scan batch itself
@@ -781,7 +786,7 @@ export default function Home() {
 
         if (newDetections.length > 0) {
           const merged = [...newDetections, ...freshSequels].filter(
-            (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s)
+            (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s, currentDismissed)
           );
           setSequels(merged);
           saveStoredSequels(merged);
@@ -793,7 +798,7 @@ export default function Home() {
         } else {
           // Clean existing sequels if any became owned or dismissed in the meantime
           const cleaned = freshSequels.filter(
-            (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s)
+            (s) => !isSequelInLibrary(s, mediaToScan) && !isSequelDismissed(s, currentDismissed)
           );
           setSequels(cleaned);
           saveStoredSequels(cleaned);

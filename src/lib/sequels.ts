@@ -5,6 +5,146 @@ export const DISMISSED_SEQUELS_STORAGE_KEY = 'omnilist_dismissed_sequels_v1';
 export const LEGACY_DISMISSED_SEQUELS_STORAGE_KEY = 'omnitrack_dismissed_sequels_v1';
 
 /**
+ * Compilation and trilogy bundles that include multiple titles in a franchise.
+ */
+export const COMPILATION_BUNDLES: { pattern: RegExp; coveredSequelMatches: string[] }[] = [
+  {
+    pattern: /\b(?:nathan drake collection|uncharted collection)\b/i,
+    coveredSequelMatches: ['uncharted 1', 'uncharted 2', 'uncharted 3', 'among thieves', 'drakes deception', 'drakes schicksal'],
+  },
+  {
+    pattern: /\b(?:legacy of thieves)\b/i,
+    coveredSequelMatches: ['uncharted 4', 'thiefs end', 'lost legacy'],
+  },
+  {
+    pattern: /\b(?:arkham collection)\b/i,
+    coveredSequelMatches: ['arkham asylum', 'arkham city', 'arkham knight'],
+  },
+  {
+    pattern: /\b(?:return to arkham)\b/i,
+    coveredSequelMatches: ['arkham asylum', 'arkham city'],
+  },
+  {
+    pattern: /\b(?:master chief collection)\b/i,
+    coveredSequelMatches: ['halo 1', 'halo 2', 'halo 3', 'halo 4', 'reach', 'odst'],
+  },
+  {
+    pattern: /\b(?:mass effect legendary)\b/i,
+    coveredSequelMatches: ['mass effect 1', 'mass effect 2', 'mass effect 3'],
+  },
+  {
+    pattern: /\b(?:bioshock (?:the )?collection)\b/i,
+    coveredSequelMatches: ['bioshock 1', 'bioshock 2', 'bioshock infinite'],
+  },
+  {
+    pattern: /\b(?:dark souls trilogy)\b/i,
+    coveredSequelMatches: ['dark souls 1', 'dark souls 2', 'dark souls 3'],
+  },
+  {
+    pattern: /\b(?:witcher trilogy)\b/i,
+    coveredSequelMatches: ['witcher 1', 'witcher 2', 'witcher 3'],
+  },
+  {
+    pattern: /\b(?:crash bandicoot n(?:\.|\s*)sane trilogy)\b/i,
+    coveredSequelMatches: ['crash bandicoot 1', 'crash bandicoot 2', 'crash bandicoot 3'],
+  },
+  {
+    pattern: /\b(?:spyro reignited trilogy)\b/i,
+    coveredSequelMatches: ['spyro 1', 'spyro 2', 'spyro 3'],
+  },
+  {
+    pattern: /\b(?:1 5 2 5 remix|kingdom hearts hd)\b/i,
+    coveredSequelMatches: ['kingdom hearts 1', 'kingdom hearts 2'],
+  },
+];
+
+/**
+ * Normalizes a title for robust sequel matching across editions, Roman numerals, and languages.
+ */
+export function normalizeSequelMatchKey(title: string): string {
+  if (!title) return '';
+  let s = normalizeMetacriticKey(title);
+  // Remove publisher / studio / platform prefixes (handles marvels with or without trailing s)
+  s = s.replace(/^(?:marvels?|disneys?|the)\s+/, '');
+  // Normalize Grand Theft Auto <-> GTA
+  s = s.replace(/\bgrand theft auto\b/g, 'gta');
+  // Normalize German/English series designations
+  s = s.replace(/\bstaffel\b/g, 'season');
+  s = s.replace(/\bteil\b/g, 'part');
+  s = s.replace(/\bband\b/g, 'part');
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Generates comprehensive title variants for a sequel, including base title (before subtitle),
+ * subtitle alone, Roman/Arabic number variants, and parenthetical-stripped forms.
+ */
+export function getSequelTitleVariants(title: string): string[] {
+  if (!title) return [];
+  const variants = new Set<string>();
+  const norm = normalizeSequelMatchKey(title);
+  if (norm) {
+    variants.add(norm);
+    for (const v of getNumberVariants(norm)) {
+      variants.add(v);
+    }
+  }
+
+  // Common franchise-only words that should NOT match standalone without a number or subtitle
+  const genericFranchiseNames = new Set([
+    'batman',
+    'spider man',
+    'spiderman',
+    'uncharted',
+    'witcher',
+    'god of war',
+    'last of us',
+    'the last of us',
+    'dune',
+    'frieren',
+    'solo leveling',
+    'jujutsu kaisen',
+    'stranger things',
+    'arcane',
+    'severance',
+    'gta',
+    'elden ring',
+    'hollow knight',
+  ]);
+
+  // Split only on colon, em-dash, en-dash, or hyphen surrounded by whitespace (NOT inside words like Spider-Man)
+  const parts = title.split(/[:—–]|\s+-\s+/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    const main = normalizeSequelMatchKey(parts[0]);
+    if (main && main.length > 2 && (!genericFranchiseNames.has(main) || /\b(?:\d+|ii|iii|iv|v|vi|part|season)\b/.test(main))) {
+      variants.add(main);
+      for (const v of getNumberVariants(main)) {
+        variants.add(v);
+      }
+    }
+    const sub = normalizeSequelMatchKey(parts.slice(1).join(' '));
+    if (sub && sub.length > 2 && !genericFranchiseNames.has(sub)) {
+      variants.add(sub);
+      for (const v of getNumberVariants(sub)) {
+        variants.add(v);
+      }
+    }
+  }
+
+  // Strip parenthetical notes like (Staffel 2), (PS5), (Erweiterung)
+  const parenStripped = title.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '');
+  const parenClean = normalizeSequelMatchKey(parenStripped);
+  if (parenClean && parenClean.length > 2 && (!genericFranchiseNames.has(parenClean) || /\b(?:\d+|ii|iii|iv|v|vi|part|season)\b/.test(parenClean))) {
+    variants.add(parenClean);
+    for (const v of getNumberVariants(parenClean)) {
+      variants.add(v);
+    }
+  }
+
+  return Array.from(variants);
+}
+
+/**
  * Returns all dismissed sequel keys from persistent storage.
  */
 export function getDismissedSequelKeys(): string[] {
@@ -71,50 +211,47 @@ export function isSequelDismissed(
   const set = dismissedSet || new Set(getDismissedSequelKeys());
   if (set.size === 0) return false;
 
-  // 1. Check direct ID
+  // 1. Direct ID
   if (sequel.id && set.has(sequel.id.trim().toLowerCase())) {
     return true;
   }
 
-  // 2. Check external_id
+  // 2. Direct external_id
   if (sequel.external_id && set.has(sequel.external_id.trim().toLowerCase())) {
     return true;
   }
 
-  // 3. Check normalized sequel title & variants
-  const cleanTitle = normalizeSequelMatchKey(sequel.sequelTitle);
-  if (cleanTitle) {
-    if (set.has(cleanTitle)) return true;
-    for (const v of getNumberVariants(cleanTitle)) {
-      if (set.has(v)) return true;
-    }
-  }
-
-  // 4. Franchise ID if present
+  // 3. Franchise ID
   if (sequel.franchise_id && set.has(sequel.franchise_id.trim().toLowerCase())) {
     return true;
   }
 
-  return false;
-}
+  // 4. Parent ID combination
+  if (sequel.parentMediaId) {
+    const norm = normalizeSequelMatchKey(sequel.sequelTitle);
+    if (set.has(`parent:${sequel.parentMediaId}:${norm}`)) {
+      return true;
+    }
+  }
 
-/**
- * Normalizes a title for robust sequel matching across editions, Roman numerals, and languages.
- */
-export function normalizeSequelMatchKey(title: string): string {
-  if (!title) return '';
-  let s = normalizeMetacriticKey(title);
-  // Remove publisher / studio / platform prefixes
-  s = s.replace(/^marvels\s+/, '');
-  s = s.replace(/^the\s+/, '');
-  s = s.replace(/^disneys\s+/, '');
-  // Normalize Grand Theft Auto <-> GTA
-  s = s.replace(/\bgrand theft auto\b/g, 'gta');
-  // Normalize German/English series designations
-  s = s.replace(/\bstaffel\b/g, 'season');
-  s = s.replace(/\bteil\b/g, 'part');
-  s = s.replace(/\bband\b/g, 'part');
-  return s.replace(/\s+/g, ' ').trim();
+  // 5. Parent Title combination
+  if (sequel.parentMediaTitle) {
+    const pNorm = normalizeSequelMatchKey(sequel.parentMediaTitle);
+    const sNorm = normalizeSequelMatchKey(sequel.sequelTitle);
+    if (pNorm && sNorm && set.has(`parenttitle:${pNorm}:${sNorm}`)) {
+      return true;
+    }
+  }
+
+  // 6. Title and all generated variants
+  const variants = getSequelTitleVariants(sequel.sequelTitle);
+  for (const v of variants) {
+    if (set.has(v)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -128,7 +265,7 @@ export function isSequelInLibrary(
 
   const seqExtId = sequel.external_id?.toLowerCase().trim();
   const seqClean = normalizeSequelMatchKey(sequel.sequelTitle);
-  const seqVariants = new Set<string>([seqClean, ...getNumberVariants(seqClean)]);
+  const seqVariants = new Set<string>(getSequelTitleVariants(sequel.sequelTitle));
 
   return library.some((item) => {
     // Media types must be compatible
@@ -153,7 +290,16 @@ export function isSequelInLibrary(
       }
     }
 
-    // 2. Direct clean title match & Roman/Arabic number variants
+    // 2. Compilation and bundle matching
+    for (const bundle of COMPILATION_BUNDLES) {
+      if (bundle.pattern.test(item.title) || (item.originalTitle && bundle.pattern.test(item.originalTitle))) {
+        if (bundle.coveredSequelMatches.some((token) => seqClean.includes(token))) {
+          return true;
+        }
+      }
+    }
+
+    // 3. Direct clean title match & Roman/Arabic number variants
     const itemClean = normalizeSequelMatchKey(item.title);
     if (!itemClean) return false;
 
@@ -168,7 +314,15 @@ export function isSequelInLibrary(
       }
     }
 
-    // 3. Known franchise specific matching rules:
+    // Check item's own title variants against sequel variants
+    const itemVariants = getSequelTitleVariants(item.title);
+    for (const iv of itemVariants) {
+      if (seqVariants.has(iv)) {
+        return true;
+      }
+    }
+
+    // 4. Known franchise specific matching rules:
     // Batman Arkham
     if (seqClean.includes('arkham knight') && itemClean.includes('arkham knight')) return true;
     if (seqClean.includes('arkham city') && itemClean.includes('arkham city')) return true;
@@ -210,7 +364,9 @@ export function isSequelInLibrary(
     if (seqClean.includes('ragnarok') && itemClean.includes('ragnarok')) return true;
 
     // Elden Ring Shadow of the Erdtree
-    if (seqClean.includes('shadow of the erdtree') && itemClean.includes('shadow of the erdtree')) return true;
+    if (seqClean.includes('shadow of the erdtree') || seqClean.includes('erdtree')) {
+      if (itemClean.includes('shadow of the erdtree') || itemClean.includes('erdtree')) return true;
+    }
 
     // The Witcher
     if (
@@ -244,12 +400,28 @@ export function isSequelInLibrary(
       return true;
     }
 
+    // Shows and Anime Seasons: if the user's item has currentSeason or totalSeasons >= sequel season
+    if (item.type === 'show' || item.type === 'anime') {
+      const seasonMatch = seqClean.match(/season\s*(\d+)/);
+      if (seasonMatch && seasonMatch[1]) {
+        const targetSeason = parseInt(seasonMatch[1], 10);
+        const itemSeason = Math.max(item.progress?.currentSeason || 1, item.progress?.totalSeasons || 1);
+        const baseSeqTitle = seqClean.replace(/season\s*\d+.*$/, '').trim();
+        const baseItemTitle = itemClean.replace(/season\s*\d+.*$/, '').trim();
+        if (baseSeqTitle && baseItemTitle && (baseSeqTitle.includes(baseItemTitle) || baseItemTitle.includes(baseSeqTitle))) {
+          if (itemSeason >= targetSeason) {
+            return true;
+          }
+        }
+      }
+    }
+
     // Anime Staffeln / Seasons
     if (seqClean.includes('frieren') && seqClean.includes('season 2')) {
       if (itemClean.includes('frieren') && (itemClean.includes('season 2') || itemClean.includes('2'))) return true;
     }
-    if (seqClean.includes('jujutsu kaisen') && seqClean.includes('season 2')) {
-      if (itemClean.includes('jujutsu kaisen') && (itemClean.includes('season 2') || itemClean.includes('2'))) return true;
+    if (seqClean.includes('jujutsu kaisen') && (seqClean.includes('season 2') || seqClean.includes('season 3'))) {
+      if (itemClean.includes('jujutsu kaisen') && (itemClean.includes('season 3') || itemClean.includes('3'))) return true;
     }
     if (seqClean.includes('demon slayer') && (seqClean.includes('mugen train') || seqClean.includes('season 2'))) {
       if (itemClean.includes('demon slayer') && (itemClean.includes('mugen train') || itemClean.includes('season 2') || itemClean.includes('2'))) return true;
