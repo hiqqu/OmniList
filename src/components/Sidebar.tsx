@@ -47,6 +47,8 @@ interface SidebarProps {
   onCheckSequels: () => void;
   onResetLibrary: () => void;
   onOpenSyncModal?: () => void;
+  onQuickGamingSync?: () => void;
+  isQuickSyncing?: boolean;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   className?: string;
@@ -72,6 +74,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCheckSequels,
   onResetLibrary,
   onOpenSyncModal,
+  onQuickGamingSync,
+  isQuickSyncing = false,
   isMobileOpen = false,
   onCloseMobile,
   className,
@@ -512,6 +516,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Footer Actions */}
       <div className="p-3 border-t border-[#282D37] space-y-2 bg-[#181B22]/50">
+        {onQuickGamingSync && (
+          <button
+            onClick={() => handleItemClick(() => onQuickGamingSync())}
+            disabled={isQuickSyncing}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs font-semibold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 transition-all active:scale-95 shadow-sm disabled:opacity-50"
+            title="Gleicht Spielzeiten, Erfolge und neue Titel von Steam, PSN & GOG ab"
+          >
+            <RefreshCw className={cn('w-3.5 h-3.5 text-purple-400', isQuickSyncing && 'animate-spin')} />
+            <span>{isQuickSyncing ? 'Gleicht ab...' : 'Gaming-Sync (Schnellabgleich)'}</span>
+          </button>
+        )}
+
         {onOpenSyncModal && (
           <button
             onClick={() => handleItemClick(() => onOpenSyncModal())}

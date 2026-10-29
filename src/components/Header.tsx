@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Plus, X, Cloud, Menu, Radar } from 'lucide-react';
+import { Search, Plus, X, Cloud, Menu, Radar, RefreshCw } from 'lucide-react';
 import { GalaxySortKey, GalaxyGroupKey, GalaxyFilterState, MediaType } from '@/types/media';
 import { GogSortDropdown } from './GogSortDropdown';
 import { GogFilterDropdown } from './GogFilterDropdown';
@@ -26,6 +26,8 @@ interface HeaderProps {
   onOpenAddModal: () => void;
   onOpenAddModalWithQuery?: (query: string) => void;
   onOpenSyncModal?: () => void;
+  onQuickGamingSync?: () => void;
+  isQuickSyncing?: boolean;
   onOpenMobileMenu?: () => void;
   totalFilteredCount: number;
 }
@@ -47,6 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAddModal,
   onOpenAddModalWithQuery,
   onOpenSyncModal,
+  onQuickGamingSync,
+  isQuickSyncing = false,
   onOpenMobileMenu,
   totalFilteredCount,
 }) => {
@@ -134,6 +138,20 @@ export const Header: React.FC<HeaderProps> = ({
             onDirectionToggle={onDirectionToggle}
             onGroupChange={onGroupChange}
           />
+
+          {/* Gaming Quick-Sync Button */}
+          {onQuickGamingSync && (
+            <button
+              type="button"
+              onClick={onQuickGamingSync}
+              disabled={isQuickSyncing}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#181B22] hover:bg-zinc-800 text-purple-300 hover:text-purple-200 border border-purple-500/30 hover:border-purple-500/50 text-xs font-semibold transition-all active:scale-95 shrink-0 disabled:opacity-50 shadow-sm"
+              title="Schnellabgleich: Prüft Steam, PSN & GOG auf neue Spiele, Spielzeiten und Erfolge"
+            >
+              <RefreshCw className={cn('w-3.5 h-3.5 text-purple-400', isQuickSyncing && 'animate-spin')} />
+              <span className="hidden md:inline">{isQuickSyncing ? 'Gleicht ab...' : 'Gaming-Sync'}</span>
+            </button>
+          )}
 
           {/* Cloud-Sync & Backup Button */}
           {onOpenSyncModal && (

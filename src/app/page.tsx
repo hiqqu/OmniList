@@ -33,6 +33,7 @@ import {
   GalaxyFilterState,
 } from '@/types/media';
 import { runBackgroundAutoSync } from '@/lib/auto-sync';
+import { runQuickGamingSync, hasConnectedGamingAccounts } from '@/lib/gaming-sync';
 import {
   getStoredMedia,
   saveStoredMedia,
@@ -134,6 +135,7 @@ export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
+  const [isQuickGamingSyncing, setIsQuickGamingSyncing] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
   const [trashCount, setTrashCount] = useState(0);
@@ -824,6 +826,40 @@ export default function Home() {
     }
   };
 
+  const handleQuickGamingSync = async () => {
+    if (isQuickGamingSyncing) return;
+
+    if (!hasConnectedGamingAccounts()) {
+      addToast(
+        'info',
+        'Keine Gaming-Accounts verknüpft',
+        'Bitte hinterlege deine Steam-, PSN- oder GOG-Daten unter "Geräte-Sync & Backup", um den Schnellabgleich zu nutzen.'
+      );
+      handleOpenSyncModal('gaming');
+      return;
+    }
+
+    setIsQuickGamingSyncing(true);
+    addToast('info', 'Gaming-Sync aktiv', 'Prüfe verknüpfte Plattformen auf neue Spiele, Spielzeiten & Erfolge...');
+
+    try {
+      const res = await runQuickGamingSync(media, unownedSequels);
+      if (res.updatedCount > 0 || res.newGamesCount > 0) {
+        setMedia(res.updatedMedia);
+        setSequels(res.validSequels);
+        addToast('success', 'Gaming-Sync erfolgreich', res.message);
+      } else if (res.success) {
+        addToast('info', 'Bibliotheken aktuell', res.message);
+      } else {
+        addToast('error', 'Gaming-Sync fehlgeschlagen', res.message);
+      }
+    } catch (err: any) {
+      addToast('error', 'Fehler beim Gaming-Sync', err?.message || 'Verbindung fehlgeschlagen');
+    } finally {
+      setIsQuickGamingSyncing(false);
+    }
+  };
+
   // Instant local full-text search (< 10 ms) and filtering with Galaxy multi-criteria filters
   const filteredAndSortedMedia = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -1257,6 +1293,8 @@ export default function Home() {
         onCheckSequels={handleCheckSequels}
         onResetLibrary={handleResetLibrary}
         onOpenSyncModal={() => handleOpenSyncModal('cloud')}
+        onQuickGamingSync={handleQuickGamingSync}
+        isQuickSyncing={isQuickGamingSyncing}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
@@ -1289,6 +1327,8 @@ export default function Home() {
           onOpenAddModal={() => handleOpenAddModal(selectedType !== 'all' ? selectedType : undefined)}
           onOpenAddModalWithQuery={(q) => handleOpenAddModal(selectedType !== 'all' ? selectedType : undefined, q)}
           onOpenSyncModal={() => handleOpenSyncModal('cloud')}
+          onQuickGamingSync={handleQuickGamingSync}
+          isQuickSyncing={isQuickGamingSyncing}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           totalFilteredCount={filteredAndSortedMedia.length}
         />

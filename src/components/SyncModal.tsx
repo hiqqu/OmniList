@@ -29,6 +29,7 @@ import { isGameDeleted, getDeletedGameKeys, clearDeletedGameKeys } from '@/lib/s
 import { isAutoSyncEnabled, setAutoSyncEnabled } from '@/lib/auto-sync';
 import { getMediaMetacriticScore } from '@/lib/metacritic';
 import { isSequelInLibrary, isSequelDismissed, getDismissedSequelKeys, addDismissedSequelKey } from '@/lib/sequels';
+import { getKnownGamePresets } from '@/lib/game-presets';
 
 interface SyncModalProps {
   isOpen: boolean;
@@ -95,7 +96,7 @@ interface GogGameItem {
   };
 }
 
-function getKnownGamePresets(title: string): { summary?: string; genres?: string[]; creator?: string } {
+function getKnownGamePresetsLocal(title: string): { summary?: string; genres?: string[]; creator?: string } {
   const norm = title.toLowerCase();
   if (norm.includes('arkham knight')) {
     return {
