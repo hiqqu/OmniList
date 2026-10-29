@@ -30,11 +30,57 @@ function normalizePsnTitle(name?: string): string {
     .toLowerCase()
     .replace(/[®™©]/g, '')
     .replace(/\b(ps4|ps5|playstation 4|playstation 5|ps4™ & ps5™|ps4 & ps5)\b/gi, '')
-    .replace(/\b(game of the year edition|goty|deluxe edition|definitive edition|remastered|director's cut|standard edition)\b/gi, '')
+    .replace(/\b(game of the year edition|goty|deluxe edition|definitive edition|complete edition|remastered|director's cut|standard edition)\b/gi, '')
     .replace(/\s*\([^)]*\)/g, '')
     .replace(/[:\-_—–,.'!?/]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+const SEQUEL_TOKENS = new Set([
+  '2', 'ii', 'two', '3', 'iii', 'three', '4', 'iv', 'four', '5', 'v', 'five',
+  '6', 'vi', '7', 'vii', '8', 'viii', 'ragnarok', 'origins', 'knight',
+  'city', 'asylum', 'valhalla', 'mirage', 'syndicate', 'unity', 'revelations',
+  'brotherhood', 'zero dawn', 'forbidden west', 'part i', 'part ii', 'miles morales'
+]);
+
+function isSafePsnTitleMatch(normTrophy: string, normPt: string): boolean {
+  if (!normTrophy || !normPt) return false;
+  if (normTrophy === normPt) return true;
+
+  const wordsTrophy = normTrophy.split(' ').filter(Boolean);
+  const wordsPt = normPt.split(' ').filter(Boolean);
+
+  const [shorter, longer] =
+    wordsTrophy.length <= wordsPt.length ? [wordsTrophy, wordsPt] : [wordsPt, wordsTrophy];
+
+  if (shorter.length < 2 && shorter.join(' ').length < 12) {
+    return false;
+  }
+
+  for (let i = 0; i <= longer.length - shorter.length; i++) {
+    let match = true;
+    for (let j = 0; j < shorter.length; j++) {
+      if (longer[i + j] !== shorter[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      const longerStr = longer.join(' ');
+      const isBundle = /\b(collection|bundle|trilogy|anthology|return to)\b/i.test(longerStr);
+      if (isBundle) return true;
+
+      const remainingWords = [...longer.slice(0, i), ...longer.slice(i + shorter.length)];
+      const hasSequelToken = remainingWords.some((w) => SEQUEL_TOKENS.has(w));
+      if (hasSequelToken) return false;
+
+      const ratio = shorter.length / longer.length;
+      return ratio >= 0.75;
+    }
+  }
+
+  return false;
 }
 
 export async function POST(req: NextRequest) {
@@ -87,17 +133,30 @@ export async function POST(req: NextRequest) {
 
     // ACTION: get-games (titles, trophies & playtime)
     if (action === 'get-games') {
-      // 1. Fetch played games with exact playtime from PSN game list
+      // 1. Fetch played games with exact playtime from PSN game list (with pagination up to 800 titles)
       let playedTitlesList: any[] = [];
       const playedTitlesMap = new Map<string, { playtimeHours: number; lastPlayed?: string; pt: any }>();
 
       try {
-        const playedRes = await getUserPlayedGames(authorization, 'me', {
-          limit: 200,
-          offset: 0,
-          categories: 'ps4_game,ps5_native_game,pspc_game,unknown',
-        });
-        playedTitlesList = (playedRes as any)?.titles || [];
+        let offset = 0;
+        const pageSize = 200;
+        let hasMore = true;
+
+        while (hasMore && offset < 800) {
+          const playedRes = await getUserPlayedGames(authorization, 'me', {
+            limit: pageSize,
+            offset,
+            categories: 'ps4_game,ps5_native_game,pspc_game,unknown',
+          });
+          const pageTitles = (playedRes as any)?.titles || [];
+          playedTitlesList.push(...pageTitles);
+
+          if (pageTitles.length < pageSize || !(playedRes as any)?.nextOffset) {
+            hasMore = false;
+          } else {
+            offset = (playedRes as any).nextOffset;
+          }
+        }
 
         for (const pt of playedTitlesList) {
           const hours = parseIsoDurationToHours(pt.playDuration);
@@ -132,10 +191,10 @@ export async function POST(req: NextRequest) {
         console.warn('Could not fetch exact PSN playtime via getUserPlayedGames:', err);
       }
 
-      // 2. Fetch trophy titles
+      // 2. Fetch trophy titles (up to 800 titles)
       let trophyTitles: any[] = [];
       try {
-        const trophyResponse = await getUserTitles(authorization, 'me', { limit: 200 });
+        const trophyResponse = await getUserTitles(authorization, 'me', { limit: 800 });
         trophyTitles = trophyResponse.trophyTitles || [];
       } catch (tErr) {
         console.warn('Could not fetch PSN trophy titles:', tErr);
@@ -152,16 +211,11 @@ export async function POST(req: NextRequest) {
           playedTitlesMap.get(t.trophyTitleName?.toLowerCase().trim()) ||
           playedTitlesMap.get(normTrophy);
 
-        // Fuzzy match if not exact
+        // Safe fuzzy match if not exact
         if (!playedInfo && normTrophy) {
           for (const pt of playedTitlesList) {
             const normPt = normalizePsnTitle(pt.name || pt.localizedName || pt.concept?.name || '');
-            if (
-              normPt &&
-              (normPt === normTrophy ||
-                normPt.includes(normTrophy) ||
-                normTrophy.includes(normPt))
-            ) {
+            if (normPt && isSafePsnTitleMatch(normTrophy, normPt)) {
               playedInfo = {
                 playtimeHours: parseIsoDurationToHours(pt.playDuration),
                 lastPlayed: pt.lastPlayedDateTime,
