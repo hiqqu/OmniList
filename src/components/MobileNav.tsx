@@ -7,7 +7,9 @@ import {
   Plus,
   Radar,
   Cloud,
+  User,
 } from 'lucide-react';
+import { AuthSession } from '@/types/account';
 import { cn } from '@/lib/utils';
 
 interface MobileNavProps {
@@ -18,6 +20,7 @@ interface MobileNavProps {
   onOpenSyncModal: () => void;
   sequelCount: number;
   isFilterActive?: boolean;
+  authSession?: AuthSession | null;
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({
@@ -28,6 +31,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   onOpenSyncModal,
   sequelCount,
   isFilterActive = false,
+  authSession,
 }) => {
   return (
     <nav
@@ -137,17 +141,25 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           <span className="text-[10px] mt-1 tracking-tight">Radar</span>
         </button>
 
-        {/* Tab 5: Sync & Backup */}
+        {/* Tab 5: Account & Sync */}
         <button
           type="button"
           onClick={onOpenSyncModal}
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all relative min-w-[56px] text-zinc-400 hover:text-zinc-200"
-          title="Sync & Backup"
+          className={cn(
+            'flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all relative min-w-[56px]',
+            authSession ? 'text-purple-300' : 'text-zinc-400 hover:text-zinc-200'
+          )}
+          title={authSession ? `Account: ${authSession.user.username}` : 'Account & Sync'}
         >
           <div className="relative">
-            <Cloud className="w-5 h-5 text-emerald-400" />
+            <User className={cn('w-5 h-5', authSession ? 'text-purple-400' : 'text-zinc-400')} />
+            {authSession && (
+              <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#12141A] animate-pulse" />
+            )}
           </div>
-          <span className="text-[10px] mt-1 tracking-tight">Sync</span>
+          <span className="text-[10px] mt-1 tracking-tight truncate max-w-[56px]">
+            {authSession ? authSession.user.username : 'Account'}
+          </span>
         </button>
       </div>
     </nav>

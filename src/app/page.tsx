@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Sidebar,
 } from '@/components/Sidebar';
@@ -10,7 +10,9 @@ import { MediaCard } from '@/components/MediaCard';
 import { SequelCard } from '@/components/SequelCard';
 import { AddMediaDialog } from '@/components/AddMediaDialog';
 import { EditMediaModal } from '@/components/EditMediaModal';
-import { SyncModal } from '@/components/SyncModal';
+import { AccountModal } from '@/components/AccountModal';
+import { AuthSession } from '@/types/account';
+import { getStoredAuthSession, fetchCurrentAccount, syncPushToAccount } from '@/lib/auth';
 import { StatsBar } from '@/components/StatsBar';
 import {
   ImportResult,
@@ -131,8 +133,10 @@ export default function Home() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addModalInitialTab, setAddModalInitialTab] = useState<MediaType | undefined>(undefined);
   const [addModalInitialQuery, setAddModalInitialQuery] = useState<string>('');
+  const [authSession, setAuthSession] = useState<AuthSession | null>(null);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
-  const [syncModalTab, setSyncModalTab] = useState<'cloud' | 'gaming' | 'file'>('cloud');
+  const [syncModalTab, setSyncModalTab] = useState<'account' | 'gaming' | 'backup'>('account');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [isCheckingSequels, setIsCheckingSequels] = useState(false);
@@ -146,7 +150,7 @@ export default function Home() {
     setIsSyncModalOpen(true);
   };
 
-  const handleOpenSyncModal = (tab: 'cloud' | 'gaming' | 'file' = 'cloud') => {
+  const handleOpenSyncModal = (tab: 'account' | 'gaming' | 'backup' = 'account') => {
     setSyncModalTab(tab);
     setIsSyncModalOpen(true);
   };
@@ -391,6 +395,56 @@ export default function Home() {
       );
     }
   }, []);
+
+  // Check auth session on mount and pull latest cloud data
+  useEffect(() => {
+    const session = getStoredAuthSession();
+    if (session) {
+      setAuthSession(session);
+      fetchCurrentAccount()
+        .then((res) => {
+          if (res && res.data && res.data.media && res.data.media.length > 0) {
+            const local = getStoredMedia();
+            if (local.length === 0) {
+              saveStoredMedia(res.data.media);
+              setMedia(res.data.media);
+              if (res.data.sequels) {
+                saveStoredSequels(res.data.sequels);
+                setSequels(res.data.sequels);
+              }
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  // Automatic Background Cloud Sync on changes (Debounced)
+  const isInitialLoadRef = useRef(true);
+  useEffect(() => {
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+    if (!authSession || !isLoaded) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsCloudSyncing(true);
+        await syncPushToAccount({
+          media,
+          sequels,
+          trash: getStoredTrash(),
+        });
+      } catch (err) {
+        console.warn('Auto cloud sync failed:', err);
+      } finally {
+        setIsCloudSyncing(false);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [media, sequels, authSession, isLoaded]);
 
   // Whenever user switches to the Sequel Radar view, automatically clean stale sequels against current media
   useEffect(() => {
@@ -1332,9 +1386,10 @@ export default function Home() {
         isCheckingSequels={isCheckingSequels}
         onCheckSequels={handleCheckSequels}
         onResetLibrary={handleResetLibrary}
-        onOpenSyncModal={() => handleOpenSyncModal('cloud')}
+        onOpenSyncModal={() => handleOpenSyncModal('account')}
         onQuickGamingSync={handleQuickGamingSync}
         isQuickSyncing={isQuickGamingSyncing}
+        authSession={authSession}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
@@ -1366,7 +1421,7 @@ export default function Home() {
           activeType={selectedType}
           onOpenAddModal={() => handleOpenAddModal(selectedType !== 'all' ? selectedType : undefined)}
           onOpenAddModalWithQuery={(q) => handleOpenAddModal(selectedType !== 'all' ? selectedType : undefined, q)}
-          onOpenSyncModal={() => handleOpenSyncModal('cloud')}
+          onOpenSyncModal={() => handleOpenSyncModal('account')}
           onQuickGamingSync={handleQuickGamingSync}
           isQuickSyncing={isQuickGamingSyncing}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
@@ -2132,8 +2187,8 @@ export default function Home() {
         onDelete={handleDeleteMedia}
       />
 
-      {/* Cloud-Sync & Gaming-Accounts Modal */}
-      <SyncModal
+      {/* Account & Cloud-Sync Modal */}
+      <AccountModal
         isOpen={isSyncModalOpen}
         onClose={() => setIsSyncModalOpen(false)}
         media={media}
@@ -2141,6 +2196,9 @@ export default function Home() {
         onApplySync={handleApplySync}
         addToast={addToast}
         initialTab={syncModalTab}
+        authSession={authSession}
+        onAuthChange={setAuthSession}
+        isCloudSyncing={isCloudSyncing}
       />
 
       {/* Recycle Bin / Trash Modal */}
@@ -2170,9 +2228,10 @@ export default function Home() {
         }}
         onOpenMobileDrawer={() => setIsMobileMenuOpen((prev) => !prev)}
         onOpenAddModal={() => handleOpenAddModal()}
-        onOpenSyncModal={() => handleOpenSyncModal('cloud')}
+        onOpenSyncModal={() => handleOpenSyncModal('account')}
         sequelCount={unownedSequels.length}
         isFilterActive={isFilterActive}
+        authSession={authSession}
       />
     </div>
   );

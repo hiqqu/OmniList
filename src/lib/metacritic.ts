@@ -3,7 +3,7 @@ import { MediaItem } from '@/types/media';
 /**
  * Normalizes title for fuzzy Metacritic matching
  */
-export function normalizeMetacriticKey(title: string): string {
+export function normalizeMetacriticKey(title?: string): string {
   if (!title) return '';
   return title
     .replace(/[™®©℗℠]/g, '')
@@ -748,7 +748,17 @@ export const KNOWN_ID_METACRITIC: Record<string, number> = {
 /**
  * Resolves the Metacritic score for a given MediaItem
  */
-export function getMediaMetacriticScore(item: MediaItem): number | null {
+export function getMediaMetacriticScore(item: {
+  title?: string;
+  metacritic?: number | null;
+  external_id?: string;
+  gameConnection?: {
+    service?: string;
+    serviceId?: string;
+    [key: string]: any;
+  } | null;
+  [key: string]: any;
+}): number | null {
   // 1. Explicitly stored on item
   if (typeof item.metacritic === 'number' && item.metacritic > 0 && item.metacritic <= 100) {
     return Math.round(item.metacritic);

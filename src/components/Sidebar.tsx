@@ -23,8 +23,10 @@ import {
   Download,
   Infinity,
   Trash2,
+  User,
 } from 'lucide-react';
 import { MediaType, MediaStatus } from '@/types/media';
+import { AuthSession } from '@/types/account';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -49,6 +51,7 @@ interface SidebarProps {
   onOpenSyncModal?: () => void;
   onQuickGamingSync?: () => void;
   isQuickSyncing?: boolean;
+  authSession?: AuthSession | null;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   className?: string;
@@ -76,6 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSyncModal,
   onQuickGamingSync,
   isQuickSyncing = false,
+  authSession,
   isMobileOpen = false,
   onCloseMobile,
   className,
@@ -531,10 +535,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {onOpenSyncModal && (
           <button
             onClick={() => handleItemClick(() => onOpenSyncModal())}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all active:scale-95 shadow-sm"
+            className={cn(
+              "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition-all active:scale-95 shadow-sm border",
+              authSession
+                ? "bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border-purple-500/30"
+                : "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30"
+            )}
+            title={authSession ? `Angemeldet als ${authSession.user.username} - Auto-Sync aktiv` : "Account erstellen oder anmelden"}
           >
-            <Cloud className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Geräte-Sync &amp; Backup</span>
+            {authSession ? (
+              <>
+                <User className="w-3.5 h-3.5 text-purple-400" />
+                <span className="truncate max-w-[130px] font-bold">{authSession.user.username}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" title="Cloud-Sync aktiv" />
+              </>
+            ) : (
+              <>
+                <User className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Account &amp; Sync</span>
+              </>
+            )}
           </button>
         )}
 
