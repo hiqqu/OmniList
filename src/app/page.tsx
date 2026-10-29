@@ -53,7 +53,7 @@ import {
 import { isSequelInLibrary, isSequelDismissed, normalizeSequelMatchKey, getDismissedSequelKeys, cleanStaleSequels } from '@/lib/sequels';
 import { getKnownSeriesInfo } from '@/lib/api-adapters/tmdb';
 import { getUnitIncrement, getMediaStatusBadge, cn } from '@/lib/utils';
-import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search, CheckCheck } from 'lucide-react';
+import { Radar, Plus, Sparkles, RefreshCw, Layers, Library, Film, BookOpen, Gamepad2, X, PackageCheck, Search, CheckCheck, Clock } from 'lucide-react';
 
 function getAchievementsPct(item: MediaItem): number {
   if (item.gameTracker?.achievements?.total && item.gameTracker.achievements.total > 0) {
@@ -80,12 +80,24 @@ function getPlaytimeHours(item: MediaItem): number {
 }
 
 function getLastPlayedTime(item: MediaItem): number {
+  const playtime = getPlaytimeHours(item);
+
+  // 1. Direct platform lastPlayed session timestamp (Steam, PSN, GOG)
   if (item.gameConnection?.lastPlayed) {
     const t = new Date(item.gameConnection.lastPlayed).getTime();
-    if (!isNaN(t)) return t;
+    if (!isNaN(t) && t > 0) return t;
   }
-  const t = new Date(item.updatedAt).getTime();
-  return isNaN(t) ? 0 : t;
+
+  // 2. If the game has recorded playtime (> 0 hours), check update/creation timestamps
+  if (playtime > 0) {
+    const updated = new Date(item.updatedAt).getTime();
+    if (!isNaN(updated) && updated > 0) return updated;
+    const created = new Date(item.createdAt).getTime();
+    if (!isNaN(created) && created > 0) return created;
+  }
+
+  // 3. Unplayed games without playtime activity are ranked at 0 (bottom)
+  return 0;
 }
 
 function getReleaseDateTime(item: MediaItem): number {
@@ -114,6 +126,7 @@ export default function Home() {
   const [filters, setFilters] = useState<GalaxyFilterState>({
     platforms: [],
     consoles: [],
+    activity: [],
     ratings: [],
     tags: [],
     statuses: [],
@@ -167,6 +180,7 @@ export default function Home() {
     setFilters({
       platforms: [],
       consoles: [],
+      activity: [],
       ratings: [],
       tags: [],
       statuses: [],
@@ -930,6 +944,22 @@ export default function Home() {
         }
       }
 
+      // Activity & Playtime filter (from Galaxy multi-select filter - only applies to games)
+      if (filters.activity && filters.activity.length > 0) {
+        if (item.type !== 'game') return false;
+        const playtime = getPlaytimeHours(item);
+        const hasPlaytime = playtime > 0;
+        const lastPlayedTime = getLastPlayedTime(item);
+
+        const matchesActivity = filters.activity.some((act) => {
+          if (act === 'has_playtime') return hasPlaytime;
+          if (act === 'recent_activity') return lastPlayedTime > 0;
+          if (act === 'unplayed') return !hasPlaytime;
+          return false;
+        });
+        if (!matchesActivity) return false;
+      }
+
       // Media types filter (when browsing all media)
       if (filters.types && filters.types.length > 0) {
         if (!filters.types.includes(item.type)) {
@@ -1077,6 +1107,11 @@ export default function Home() {
           const lpA = getLastPlayedTime(a);
           const lpB = getLastPlayedTime(b);
           diff = lpB - lpA;
+          if (diff === 0) {
+            const timeA = getPlaytimeHours(a);
+            const timeB = getPlaytimeHours(b);
+            diff = timeB - timeA;
+          }
           break;
         }
         case 'platform': {
@@ -1380,15 +1415,41 @@ export default function Home() {
                 {/* Aktive Filter-Pills & Shortcuts */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {selectedType === 'game' && (
-                    <button
-                      type="button"
-                      onClick={handleOpenGamingSync}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 transition-all active:scale-95 shadow-sm"
-                      title="Spiele aus Steam, PlayStation Network oder GOG synchronisieren"
-                    >
-                      <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Steam / PSN / GOG Sync</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleOpenGamingSync}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 transition-all active:scale-95 shadow-sm"
+                        title="Spiele aus Steam, PlayStation Network oder GOG synchronisieren"
+                      >
+                        <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Steam / PSN / GOG Sync</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (sortBy === 'last_played' && sortDirection === 'desc') {
+                            setSortBy('title');
+                            setSortDirection('asc');
+                          } else {
+                            setSortBy('last_played');
+                            setSortDirection('desc');
+                          }
+                        }}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm border',
+                          sortBy === 'last_played'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
+                            : 'bg-[#181B22] hover:bg-zinc-800 text-zinc-300 hover:text-white border-[#282D37]'
+                        )}
+                        title="Sortiert Spiele nach neuester Aktivität und Spielzeit-Zuwachs (absteigend)"
+                      >
+                        <Clock className={cn('w-3.5 h-3.5', sortBy === 'last_played' ? 'text-amber-400' : 'text-zinc-400')} />
+                        <span>{sortBy === 'last_played' ? 'Neueste Spielzeit zuerst (aktiv)' : 'Nach neuester Spielzeit sortieren'}</span>
+                        {sortBy === 'last_played' && <span className="text-[10px] text-amber-400 ml-0.5">✓</span>}
+                      </button>
+                    </>
                   )}
 
                   {/* Active Galaxy Platforms Pills */}
@@ -1679,6 +1740,33 @@ export default function Home() {
                         title={`Medientyp "${label}" entfernen`}
                       >
                         <span>Typ: {label}</span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+
+                  {/* Active Galaxy Activity Pills */}
+                  {(filters.activity || []).map((act) => {
+                    const label =
+                      act === 'recent_activity'
+                        ? 'Zuletzt gespielt / Spielzeit erhalten'
+                        : act === 'has_playtime'
+                        ? 'Gespielt (> 0 Std.)'
+                        : 'Noch unberührt (0 Std.)';
+                    return (
+                      <button
+                        key={act}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            activity: (prev.activity || []).filter((x) => x !== act),
+                          }))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 transition-colors shadow-sm"
+                        title={`Aktivitäts-Filter "${label}" entfernen`}
+                      >
+                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{label}</span>
                         <X className="w-3.5 h-3.5" />
                       </button>
                     );

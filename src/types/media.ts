@@ -26,6 +26,7 @@ export interface GalaxyFilterState {
   // Videospiele
   platforms: string[]; // 'steam' | 'psn' | 'gog' | 'epic' | 'other'
   consoles: string[]; // 'PS5' | 'PS4' | 'PS3' | 'PC' | 'other'
+  activity?: string[]; // 'has_playtime' | 'recent_activity' | 'unplayed'
 
   // Gemeinsame Filter
   ratings: string[]; // '90' | '80' | '70' | 'stars5' | 'stars4' | 'stars3'

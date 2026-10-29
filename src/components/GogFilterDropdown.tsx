@@ -20,6 +20,7 @@ interface GogFilterDropdownProps {
 }
 
 export type FilterCategory =
+  | 'activity'
   | 'platform'
   | 'consoles'
   | 'rating'
@@ -33,6 +34,12 @@ export type FilterCategory =
   | 'types';
 
 // Options definitions
+const ACTIVITY_OPTIONS = [
+  { id: 'recent_activity', label: 'Zuletzt gespielt / Spielzeit erhalten' },
+  { id: 'has_playtime', label: 'Gespielt (> 0 Std. Spielzeit)' },
+  { id: 'unplayed', label: 'Noch unberührt (0 Std. Spielzeit)' },
+];
+
 const PLATFORM_OPTIONS = [
   { id: 'steam', label: 'Steam' },
   { id: 'psn', label: 'PlayStation' },
@@ -191,6 +198,7 @@ export const GogFilterDropdown: React.FC<GogFilterDropdownProps> = ({
     switch (activeType) {
       case 'game':
         return [
+          { id: 'activity', label: 'Spielzeit & Aktivität', count: (filters.activity || []).length },
           { id: 'platform', label: 'Plattformen', count: filters.platforms.length },
           { id: 'consoles', label: 'Konsolen & Systeme', count: filters.consoles.length },
           { id: 'status', label: 'Status', count: filters.statuses.length },
@@ -262,6 +270,7 @@ export const GogFilterDropdown: React.FC<GogFilterDropdownProps> = ({
       ...filters,
       platforms: [...filters.platforms],
       consoles: [...filters.consoles],
+      activity: [...(filters.activity || [])],
       ratings: [...filters.ratings],
       tags: [...filters.tags],
       statuses: [...filters.statuses],
@@ -280,7 +289,8 @@ export const GogFilterDropdown: React.FC<GogFilterDropdownProps> = ({
       return Array.from(set);
     };
 
-    if (category === 'platform') nextFilters.platforms = toggleInArray(nextFilters.platforms);
+    if (category === 'activity') nextFilters.activity = toggleInArray(nextFilters.activity || []);
+    else if (category === 'platform') nextFilters.platforms = toggleInArray(nextFilters.platforms);
     else if (category === 'consoles') nextFilters.consoles = toggleInArray(nextFilters.consoles);
     else if (category === 'rating') nextFilters.ratings = toggleInArray(nextFilters.ratings);
     else if (category === 'tags') nextFilters.tags = toggleInArray(nextFilters.tags);
@@ -300,6 +310,24 @@ export const GogFilterDropdown: React.FC<GogFilterDropdownProps> = ({
   // Render options list for right pane
   const renderOptions = () => {
     switch (activeCategory) {
+      case 'activity':
+        return (
+          <div className="space-y-1">
+            <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-2 py-0.5 mb-1">
+              Spielzeit &amp; Aktivität ({filters.activity?.length || 0} gewählt)
+            </div>
+            {ACTIVITY_OPTIONS.map((opt) =>
+              renderCheckbox(
+                'activity',
+                opt.id,
+                opt.label,
+                (filters.activity || []).includes(opt.id),
+                'bg-amber-600 border-amber-500'
+              )
+            )}
+          </div>
+        );
+
       case 'platform':
         return (
           <div className="space-y-1">

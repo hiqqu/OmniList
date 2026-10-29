@@ -152,6 +152,7 @@ export async function runQuickGamingSync(
             const newPlaytime = sg.playtimeHours;
             const newAchCount = ach ? ach.current : currentAchCount;
 
+            const hasPlaytimeIncreased = newPlaytime > currentPlaytime;
             if (newPlaytime !== currentPlaytime || (ach && newAchCount !== currentAchCount)) {
               updatedCount++;
             }
@@ -164,7 +165,7 @@ export async function runQuickGamingSync(
                 service: 'steam' as const,
                 serviceId: String(sg.appid),
                 serviceName: 'Steam',
-                lastPlayed: sg.lastPlayed || item.gameConnection?.lastPlayed,
+                lastPlayed: sg.lastPlayed || (hasPlaytimeIncreased ? new Date().toISOString() : item.gameConnection?.lastPlayed),
               },
               progress: {
                 ...item.progress,
@@ -303,6 +304,7 @@ export async function runQuickGamingSync(
             const newPlaytime = pg.playtimeHours;
             const newTrophies = t.current ?? 0;
 
+            const hasPlaytimeIncreased = newPlaytime > currentPlaytime;
             if (newPlaytime !== currentPlaytime || newTrophies !== currentTrophies) {
               updatedCount++;
             }
@@ -316,7 +318,7 @@ export async function runQuickGamingSync(
                 serviceId: pg.id,
                 serviceName: 'PlayStation Network',
                 platform: pg.platform || item.gameConnection?.platform || 'PS5',
-                lastPlayed: pg.lastPlayed || item.gameConnection?.lastPlayed,
+                lastPlayed: pg.lastPlayed || (hasPlaytimeIncreased ? new Date().toISOString() : item.gameConnection?.lastPlayed),
               },
               progress: {
                 ...item.progress,
@@ -461,6 +463,7 @@ export async function runQuickGamingSync(
             const newPlaytime = gg.playtimeHours;
             const newAchCount = ach ? ach.current : currentAchCount;
 
+            const hasPlaytimeIncreased = newPlaytime > currentPlaytime;
             if (newPlaytime !== currentPlaytime || (ach && newAchCount !== currentAchCount)) {
               updatedCount++;
             }
@@ -475,7 +478,7 @@ export async function runQuickGamingSync(
                 serviceName: 'GOG Galaxy',
                 accountUsername: gogUsername,
                 playtimeMinutes: gg.playtimeMinutes,
-                lastPlayed: gg.lastPlayed || item.gameConnection?.lastPlayed,
+                lastPlayed: gg.lastPlayed || (hasPlaytimeIncreased ? new Date().toISOString() : item.gameConnection?.lastPlayed),
               },
               progress: {
                 ...item.progress,

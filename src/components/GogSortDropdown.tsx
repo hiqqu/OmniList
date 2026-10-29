@@ -23,26 +23,25 @@ interface GogSortDropdownProps {
 }
 
 const SORT_OPTIONS: { id: GalaxySortKey; label: string }[] = [
-  { id: 'achievements', label: 'Achievements %' },
-  { id: 'critics_rating', label: 'Critics rating' },
-  { id: 'date_added', label: 'Date added' },
-  { id: 'game_time', label: 'Game time' },
+  { id: 'last_played', label: 'Zuletzt gespielt (Neueste Spielzeit)' },
+  { id: 'game_time', label: 'Spielzeit gesamt (Meiste Stunden)' },
+  { id: 'date_added', label: 'Hinzugefügt am (Eintragsdatum)' },
+  { id: 'achievements', label: 'Erfolge % (Achievements)' },
+  { id: 'critics_rating', label: 'Metacritic-Score' },
+  { id: 'rating', label: 'Eigene Bewertung' },
+  { id: 'title', label: 'Titel (Alphabetisch)' },
+  { id: 'release_date', label: 'Erscheinungsdatum' },
   { id: 'genre', label: 'Genre' },
-  { id: 'last_played', label: 'Last played' },
-  { id: 'platform', label: 'Platform' },
-  { id: 'rating', label: 'Rating' },
-  { id: 'release_date', label: 'Release date' },
-  { id: 'size_on_disk', label: 'Size on disk' },
+  { id: 'platform', label: 'Plattform' },
   { id: 'tags', label: 'Tags' },
-  { id: 'title', label: 'Title' },
 ];
 
 const GROUP_OPTIONS: { id: GalaxyGroupKey; label: string }[] = [
-  { id: 'none', label: "Don't group" },
-  { id: 'platform', label: 'Platform' },
+  { id: 'none', label: 'Nicht gruppieren' },
+  { id: 'platform', label: 'Plattform' },
   { id: 'status', label: 'Status' },
   { id: 'genre', label: 'Genre' },
-  { id: 'release_year', label: 'Release year' },
+  { id: 'release_year', label: 'Erscheinungsjahr' },
 ];
 
 export const GogSortDropdown: React.FC<GogSortDropdownProps> = ({
@@ -73,8 +72,8 @@ export const GogSortDropdown: React.FC<GogSortDropdownProps> = ({
     };
   }, [isOpen]);
 
-  const currentSortLabel = SORT_OPTIONS.find((s) => s.id === sortBy)?.label || 'Title';
-  const currentGroupLabel = GROUP_OPTIONS.find((g) => g.id === groupBy)?.label || "Don't group";
+  const currentSortLabel = SORT_OPTIONS.find((s) => s.id === sortBy)?.label || 'Titel';
+  const currentGroupLabel = GROUP_OPTIONS.find((g) => g.id === groupBy)?.label || 'Nicht gruppieren';
 
   return (
     <div className={cn('relative inline-block text-left', className)} ref={containerRef}>
@@ -90,7 +89,7 @@ export const GogSortDropdown: React.FC<GogSortDropdownProps> = ({
           title="Sortier- und Gruppierungsmenü öffnen"
         >
           <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-          <span className="text-zinc-500 hidden sm:inline">Sort:</span>
+          <span className="text-zinc-500 hidden sm:inline">Sortierung:</span>
           <span className="font-semibold text-[#F1F3F7]">{currentSortLabel}</span>
           {groupBy !== 'none' && (
             <span className="hidden lg:inline text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
