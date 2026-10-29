@@ -23,13 +23,13 @@ interface GogSortDropdownProps {
 }
 
 const SORT_OPTIONS: { id: GalaxySortKey; label: string }[] = [
-  { id: 'last_played', label: 'Zuletzt gespielt (Neueste Spielzeit)' },
-  { id: 'game_time', label: 'Spielzeit gesamt (Meiste Stunden)' },
-  { id: 'date_added', label: 'Hinzugefügt am (Eintragsdatum)' },
-  { id: 'achievements', label: 'Erfolge % (Achievements)' },
+  { id: 'last_played', label: 'Zuletzt gespielt' },
+  { id: 'game_time', label: 'Spielzeit gesamt' },
+  { id: 'date_added', label: 'Hinzugefügt am' },
+  { id: 'achievements', label: 'Erfolge %' },
   { id: 'critics_rating', label: 'Metacritic-Score' },
   { id: 'rating', label: 'Eigene Bewertung' },
-  { id: 'title', label: 'Titel (Alphabetisch)' },
+  { id: 'title', label: 'Titel' },
   { id: 'release_date', label: 'Erscheinungsdatum' },
   { id: 'genre', label: 'Genre' },
   { id: 'platform', label: 'Plattform' },
@@ -105,7 +105,7 @@ export const GogSortDropdown: React.FC<GogSortDropdownProps> = ({
           type="button"
           onClick={onDirectionToggle}
           className="px-2 py-1.5 hover:text-white text-zinc-400 transition-colors"
-          title={sortDirection === 'asc' ? 'Aufsteigend (Klick für Absteigend)' : 'Absteigend (Klick für Aufsteigend)'}
+          title={sortDirection === 'asc' ? 'Aufsteigend' : 'Absteigend'}
         >
           {sortDirection === 'asc' ? (
             <ArrowUp className="w-3.5 h-3.5 text-zinc-200" />

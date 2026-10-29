@@ -617,7 +617,7 @@ export const AddMediaDialog: React.FC<AddMediaDialogProps> = ({
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm'
                     : 'bg-[#0F1117] text-zinc-400 hover:text-zinc-200 border-[#282D37]'
                 )}
-                title="Im Besitz (kann mit jedem Status kombiniert werden)"
+                title="Im Besitz"
               >
                 <PackageCheck className={cn('w-3.5 h-3.5', isOwned ? 'text-emerald-400' : 'text-zinc-500')} />
                 <span>+ Im Besitz</span>

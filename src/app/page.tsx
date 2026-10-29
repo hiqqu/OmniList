@@ -514,7 +514,7 @@ export default function Home() {
       addToast(
         'info',
         item.title,
-        nextIsLive ? 'Als Live-Service-Spiel markiert (ersetzt Kampagnen-Status)' : 'Live-Service-Modus deaktiviert'
+        nextIsLive ? 'Als Live-Service-Spiel markiert' : 'Live-Service-Modus deaktiviert'
       );
     }
   };
@@ -576,7 +576,7 @@ export default function Home() {
         'info',
         item.title,
         newDone
-          ? 'Alle Erfolge (100% Achievements) als freigeschaltet markiert'
+          ? 'Alle Erfolge als freigeschaltet markiert'
           : 'Erfolgs-Status zurückgesetzt'
       );
     }
@@ -715,7 +715,7 @@ export default function Home() {
 
     let statusLabel = 'deiner Mediensammlung';
     if (isGame && isAchievements) {
-      statusLabel = '„Alle Achievements (100%)“';
+      statusLabel = '„Alle Erfolge“';
     } else if (isGame && is100) {
       statusLabel = '„100% Meisterung“';
     } else if (created.status === 'in_progress') {
@@ -1579,7 +1579,7 @@ export default function Home() {
                         ? '2000er'
                         : e === '1990s'
                         ? '90er'
-                        : 'Klassiker (<1990)';
+                        : 'Klassiker';
                     return (
                       <button
                         key={e}
@@ -1716,10 +1716,10 @@ export default function Home() {
                   {(filters.activity || []).map((act) => {
                     const label =
                       act === 'recent_activity'
-                        ? 'Zuletzt gespielt / Spielzeit erhalten'
+                        ? 'Zuletzt gespielt'
                         : act === 'has_playtime'
-                        ? 'Gespielt (> 0 Std.)'
-                        : 'Noch unberührt (0 Std.)';
+                        ? 'Gespielt'
+                        : 'Noch unberührt';
                     return (
                       <button
                         key={act}

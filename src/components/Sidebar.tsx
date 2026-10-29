@@ -506,7 +506,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </button>
                 <p className="px-3 mt-1.5 text-[10px] text-zinc-500 leading-tight">
-                  Kombinierbar mit jedem Status (z. B. Geplant + Im Besitz)
+                  Kombinierbar mit jedem Status
                 </p>
               </div>
             )}
@@ -524,7 +524,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="Gleicht Spielzeiten, Erfolge und neue Titel von Steam, PSN & GOG ab"
           >
             <RefreshCw className={cn('w-3.5 h-3.5 text-purple-400', isQuickSyncing && 'animate-spin')} />
-            <span>{isQuickSyncing ? 'Gleicht ab...' : 'Gaming-Sync (Schnellabgleich)'}</span>
+            <span>{isQuickSyncing ? 'Gleicht ab...' : 'Gaming-Sync'}</span>
           </button>
         )}
 

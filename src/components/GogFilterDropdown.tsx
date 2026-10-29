@@ -35,9 +35,9 @@ export type FilterCategory =
 
 // Options definitions
 const ACTIVITY_OPTIONS = [
-  { id: 'recent_activity', label: 'Zuletzt gespielt / Spielzeit erhalten' },
-  { id: 'has_playtime', label: 'Gespielt (> 0 Std. Spielzeit)' },
-  { id: 'unplayed', label: 'Noch unberührt (0 Std. Spielzeit)' },
+  { id: 'recent_activity', label: 'Zuletzt gespielt' },
+  { id: 'has_playtime', label: 'Gespielt' },
+  { id: 'unplayed', label: 'Noch unberührt' },
 ];
 
 const PLATFORM_OPTIONS = [
@@ -52,54 +52,54 @@ const CONSOLE_OPTIONS = [
   { id: 'PS5', label: 'PS5' },
   { id: 'PS4', label: 'PS4' },
   { id: 'PS3', label: 'PS3' },
-  { id: 'PC', label: 'PC (Windows)' },
+  { id: 'PC', label: 'PC' },
   { id: 'other', label: 'Andere Systeme' },
 ];
 
 const RATING_OPTIONS = [
-  { id: '90', label: '90+ Score (Meisterwerk)' },
-  { id: '80', label: '80+ Score (Herausragend)' },
-  { id: '70', label: '70+ Score (Gut)' },
-  { id: 'stars5', label: '5 Sterne (Eigene Wertung)' },
+  { id: '90', label: '90+ Score' },
+  { id: '80', label: '80+ Score' },
+  { id: '70', label: '70+ Score' },
+  { id: 'stars5', label: '5 Sterne' },
   { id: 'stars4', label: '4+ Sterne' },
   { id: 'stars3', label: '3+ Sterne' },
 ];
 
 const OWNERSHIP_OPTIONS = [
-  { id: 'owned', label: 'Im Besitz (Gekauft / Physisch / Digital)' },
-  { id: 'wishlist', label: 'Wunschliste / Noch nicht im Besitz' },
+  { id: 'owned', label: 'Im Besitz' },
+  { id: 'wishlist', label: 'Wunschliste' },
 ];
 
 const ERA_OPTIONS = [
-  { id: '2020s', label: '2020er (Aktuell)' },
+  { id: '2020s', label: '2020er' },
   { id: '2010s', label: '2010er' },
   { id: '2000s', label: '2000er' },
   { id: '1990s', label: '90er' },
-  { id: 'classic', label: 'Klassiker (Vor 1990)' },
+  { id: 'classic', label: 'Klassiker' },
 ];
 
 const FORMAT_OPTIONS_SHOW = [
-  { id: 'miniseries', label: 'Miniserie (1 Staffel)' },
-  { id: 'compact', label: 'Kompakt (2 - 4 Staffeln)' },
-  { id: 'longrunning', label: 'Langläufer (5+ Staffeln)' },
+  { id: 'miniseries', label: 'Miniserie' },
+  { id: 'compact', label: '2 - 4 Staffeln' },
+  { id: 'longrunning', label: '5+ Staffeln' },
 ];
 
 const FORMAT_OPTIONS_ANIME = [
   { id: 'anime_tv', label: 'TV-Serie' },
-  { id: 'anime_movie', label: 'Film (Movie)' },
+  { id: 'anime_movie', label: 'Film' },
   { id: 'anime_ova', label: 'OVA / Special' },
 ];
 
 const BOOK_FORMAT_OPTIONS = [
-  { id: 'physical', label: 'Physisch (Hardcover / Taschenbuch)' },
-  { id: 'ebook', label: 'E-Book (Kindle / ePub)' },
-  { id: 'audiobook', label: 'Hörbuch (Audible / Audio)' },
+  { id: 'physical', label: 'Physisch' },
+  { id: 'ebook', label: 'E-Book' },
+  { id: 'audiobook', label: 'Hörbuch' },
 ];
 
 const PAGE_LENGTH_OPTIONS = [
-  { id: 'short', label: 'Kurz (< 200 Seiten)' },
-  { id: 'medium', label: 'Standard (200 - 500 Seiten)' },
-  { id: 'long', label: 'Epischer Wälzer (> 500 Seiten)' },
+  { id: 'short', label: '< 200 Seiten' },
+  { id: 'medium', label: '200 - 500 Seiten' },
+  { id: 'long', label: '> 500 Seiten' },
 ];
 
 const TYPE_OPTIONS = [
@@ -150,35 +150,35 @@ export const GogFilterDropdown: React.FC<GogFilterDropdownProps> = ({
         ];
       case 'movie':
         return [
-          { id: 'completed', label: 'Gesehen (Beendet)' },
+          { id: 'completed', label: 'Gesehen' },
           { id: 'in_progress', label: 'Am Schauen' },
-          { id: 'planned', label: 'Watchlist (Geplant)' },
+          { id: 'planned', label: 'Watchlist' },
           { id: 'paused', label: 'Pausiert' },
           { id: 'dropped', label: 'Abgebrochen' },
         ];
       case 'show':
         return [
           { id: 'in_progress', label: 'Aktuell am Schauen' },
-          { id: 'planned', label: 'Watchlist (Geplant)' },
+          { id: 'planned', label: 'Watchlist' },
           { id: 'completed', label: 'Komplett geschaut' },
-          { id: 'paused', label: 'Pausiert (Warte auf neue Staffel)' },
+          { id: 'paused', label: 'Pausiert' },
           { id: 'dropped', label: 'Abgebrochen' },
         ];
       case 'anime':
         return [
-          { id: 'in_progress', label: 'Watching (Gerade dabei)' },
-          { id: 'planned', label: 'Plan to Watch (Geplant)' },
-          { id: 'completed', label: 'Completed (Beendet)' },
-          { id: 'paused', label: 'On Hold (Pausiert)' },
-          { id: 'dropped', label: 'Dropped (Abgebrochen)' },
+          { id: 'in_progress', label: 'Watching' },
+          { id: 'planned', label: 'Plan to Watch' },
+          { id: 'completed', label: 'Completed' },
+          { id: 'paused', label: 'On Hold' },
+          { id: 'dropped', label: 'Dropped' },
         ];
       case 'book':
         return [
           { id: 'in_progress', label: 'Lese ich aktuell' },
-          { id: 'planned', label: 'TBR / Leseliste (Geplant)' },
-          { id: 'completed', label: 'Gelesen (Beendet)' },
+          { id: 'planned', label: 'Leseliste' },
+          { id: 'completed', label: 'Gelesen' },
           { id: 'paused', label: 'Pausiert' },
-          { id: 'dropped', label: 'Abgebrochen (DNF)' },
+          { id: 'dropped', label: 'Abgebrochen' },
         ];
       case 'all':
       default:

@@ -696,7 +696,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               {isLiveService ? (
                 <span
                   className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 shadow-sm"
-                  title="Live-Service / Endlostitel (keine Kampagne)"
+                  title="Live-Service / Endlostitel"
                 >
                   <Infinity className="w-2.5 h-2.5 text-cyan-400" />
                   <span>Endlos</span>
@@ -758,7 +758,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 title={
                   achievements && achievements.total > 0
                     ? `${isPsn ? 'Trophäen' : 'Erfolge'}: ${achievements.current} von ${achievements.total} (${achievementPercentage}%)`
-                    : "Klicken zum Umschalten: Alle Erfolge (100% Achievements)"
+                    : "Klicken zum Umschalten: Alle Erfolge"
                 }
               >
                 <Trophy className={cn("w-3 h-3 shrink-0", isGameAchievementsDone ? "text-amber-400" : "text-zinc-400")} />
