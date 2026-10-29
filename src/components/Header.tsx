@@ -137,6 +137,7 @@ export const Header: React.FC<HeaderProps> = ({
             onSortChange={onSortChange}
             onDirectionToggle={onDirectionToggle}
             onGroupChange={onGroupChange}
+            activeType={activeType}
           />
 
           {/* Counter Pill */}
