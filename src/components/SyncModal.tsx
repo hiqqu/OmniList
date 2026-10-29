@@ -68,6 +68,7 @@ interface PsnGameItem {
   platform?: string;
   coverUrl?: string;
   playtimeHours: number;
+  lastPlayed?: string;
   trophies: {
     current: number;
     total: number;
@@ -822,7 +823,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             serviceId: pg.id,
             serviceName: 'PlayStation Network',
             platform: pg.platform || item.gameConnection?.platform || 'PS5',
-            lastPlayed: undefined,
+            lastPlayed: pg.lastPlayed || item.gameConnection?.lastPlayed,
           },
           progress: {
             ...item.progress,
@@ -887,6 +888,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             serviceId: pg.id,
             serviceName: 'PlayStation Network',
             platform: pg.platform || 'PS5',
+            lastPlayed: pg.lastPlayed,
           },
           summary: preset.summary || undefined,
           genres: preset.genres || ['Videospiel', pg.platform || 'PlayStation'],

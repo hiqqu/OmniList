@@ -167,6 +167,25 @@ export function getStoredMedia(): MediaItem[] {
         };
       }
 
+      // Sanitize false 'lastPlayed' generated during sync for games not actually played today
+      if (
+        item.type === 'game' &&
+        item.gameConnection?.lastPlayed &&
+        (
+          item.title.toLowerCase().includes('disco elysium') ||
+          (item.gameConnection.service === 'psn' && item.gameConnection.lastPlayed.startsWith('2026-10-29'))
+        )
+      ) {
+        hasMigrated = true;
+        item = {
+          ...item,
+          gameConnection: {
+            ...item.gameConnection,
+            lastPlayed: undefined,
+          },
+        };
+      }
+
       // Migrate games: remove artificial max playtime and initialize gameTracker
       if (item.type === 'game') {
         let changed = false;

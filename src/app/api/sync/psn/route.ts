@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
           platform: t.trophyTitlePlatform || 'PS5',
           coverUrl: t.trophyTitleIconUrl,
           playtimeHours,
-          lastPlayed: playedInfo?.lastPlayed,
+          lastPlayed: playedInfo?.lastPlayed || t.lastUpdatedDateTime,
           trophies: {
             current: currentTrophies,
             total: totalTrophies,

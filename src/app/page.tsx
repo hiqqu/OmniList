@@ -80,23 +80,11 @@ function getPlaytimeHours(item: MediaItem): number {
 }
 
 function getLastPlayedTime(item: MediaItem): number {
-  const playtime = getPlaytimeHours(item);
-
-  // 1. Direct platform lastPlayed session timestamp (Steam, PSN, GOG)
+  // Only valid, verified session timestamps from connected gaming platforms (Steam, PSN, GOG)
   if (item.gameConnection?.lastPlayed) {
     const t = new Date(item.gameConnection.lastPlayed).getTime();
     if (!isNaN(t) && t > 0) return t;
   }
-
-  // 2. If the game has recorded playtime (> 0 hours), check update/creation timestamps
-  if (playtime > 0) {
-    const updated = new Date(item.updatedAt).getTime();
-    if (!isNaN(updated) && updated > 0) return updated;
-    const created = new Date(item.createdAt).getTime();
-    if (!isNaN(created) && created > 0) return created;
-  }
-
-  // 3. Unplayed games without playtime activity are ranked at 0 (bottom)
   return 0;
 }
 
