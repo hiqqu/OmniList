@@ -44,7 +44,6 @@ const PLATFORM_OPTIONS = [
   { id: 'steam', label: 'Steam' },
   { id: 'psn', label: 'PlayStation' },
   { id: 'gog', label: 'GOG.com' },
-  { id: 'epic', label: 'Epic Games' },
   { id: 'other', label: 'Andere Plattformen' },
 ];
 

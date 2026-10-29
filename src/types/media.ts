@@ -24,7 +24,7 @@ export type GalaxyGroupKey = 'none' | 'platform' | 'status' | 'genre' | 'release
 
 export interface GalaxyFilterState {
   // Videospiele
-  platforms: string[]; // 'steam' | 'psn' | 'gog' | 'epic' | 'other'
+  platforms: string[]; // 'steam' | 'psn' | 'gog' | 'other'
   consoles: string[]; // 'PS5' | 'PS4' | 'PS3' | 'PC' | 'other'
   activity?: string[]; // 'has_playtime' | 'recent_activity' | 'unplayed'
 

@@ -140,11 +140,11 @@ export function getItemPlatform(item: MediaItem): ConnectedGameService | null {
   return null;
 }
 
-export type GalaxyPlatformFilter = 'steam' | 'psn' | 'gog' | 'epic' | 'other';
+export type GalaxyPlatformFilter = 'steam' | 'psn' | 'gog' | 'other';
 
 /**
  * Resolves full platform category matching GOG Galaxy filter options:
- * 'steam' | 'psn' | 'gog' | 'epic' | 'other'
+ * 'steam' | 'psn' | 'gog' | 'other'
  */
 export function resolveGamePlatform(item: MediaItem): GalaxyPlatformFilter {
   const service = getItemPlatform(item);
@@ -153,7 +153,6 @@ export function resolveGamePlatform(item: MediaItem): GalaxyPlatformFilter {
   const ext = (item.external_id || '').toLowerCase();
   const pub = (item.publisher || '').toLowerCase();
 
-  if (ext.startsWith('epic:') || pub.includes('epic')) return 'epic';
   if (pub === 'steam') return 'steam';
   if (pub.includes('playstation')) return 'psn';
   if (pub.includes('gog')) return 'gog';
@@ -175,7 +174,7 @@ export function resolveGameConsole(item: MediaItem): 'PS5' | 'PS4' | 'PS3' | 'PC
   }
 
   const p = resolveGamePlatform(item);
-  if (p === 'steam' || p === 'gog' || p === 'epic') return 'PC';
+  if (p === 'steam' || p === 'gog') return 'PC';
   if (p === 'psn') return 'PS5';
 
   const title = (item.title || '').toUpperCase();
