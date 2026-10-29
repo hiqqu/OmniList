@@ -105,7 +105,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'sequel_radar'>('dashboard');
   const [selectedType, setSelectedType] = useState<MediaType | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<MediaStatus | 'all'>('all');
-  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'steam' | 'psn' | 'gog' | 'epic' | 'other'>('all');
+  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'steam' | 'psn' | 'gog' | 'other'>('all');
   const [onlyOwned, setOnlyOwned] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<GalaxySortKey>(selectedType === 'game' ? 'last_played' : 'title');
@@ -1184,7 +1184,6 @@ export default function Home() {
         { id: 'steam', label: 'Steam' },
         { id: 'psn', label: 'PlayStation' },
         { id: 'gog', label: 'GOG.com' },
-        { id: 'epic', label: 'Epic' },
         { id: 'other', label: 'Andere Plattformen' },
       ];
       for (const p of platformOrder) {
@@ -1248,7 +1247,6 @@ export default function Home() {
       steam: games.filter((m) => resolveGamePlatform(m) === 'steam').length,
       psn: games.filter((m) => resolveGamePlatform(m) === 'psn').length,
       gog: games.filter((m) => resolveGamePlatform(m) === 'gog').length,
-      epic: games.filter((m) => resolveGamePlatform(m) === 'epic').length,
       other: games.filter((m) => resolveGamePlatform(m) === 'other').length,
     };
   }, [media]);
@@ -1428,8 +1426,6 @@ export default function Home() {
                         ? 'PlayStation'
                         : p === 'gog'
                         ? 'GOG.com'
-                        : p === 'epic'
-                        ? 'Epic'
                         : 'Andere';
                     return (
                       <button
@@ -1823,7 +1819,6 @@ export default function Home() {
                     { id: 'steam' as const, label: 'Steam', count: platformCounts.steam, iconColor: 'text-sky-400', activeStyle: 'bg-sky-500/20 border-sky-500/50 text-sky-200 shadow-sm shadow-sky-950/20' },
                     { id: 'psn' as const, label: 'PlayStation', count: platformCounts.psn, iconColor: 'text-blue-400', activeStyle: 'bg-blue-500/20 border-blue-500/50 text-blue-200 shadow-sm shadow-blue-950/20' },
                     { id: 'gog' as const, label: 'GOG Galaxy', count: platformCounts.gog, iconColor: 'text-purple-400', activeStyle: 'bg-purple-500/20 border-purple-500/50 text-purple-200 shadow-sm shadow-purple-950/20' },
-                    { id: 'epic' as const, label: 'Epic', count: platformCounts.epic, iconColor: 'text-zinc-300', activeStyle: 'bg-zinc-700/40 border-zinc-500 text-zinc-100 shadow-sm' },
                     { id: 'other' as const, label: 'Andere', count: platformCounts.other, iconColor: 'text-zinc-400', activeStyle: 'bg-zinc-700/40 border-zinc-500 text-zinc-200 shadow-sm' },
                   ].map((tab) => {
                     const isAll = tab.id === 'all';
