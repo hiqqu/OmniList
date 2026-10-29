@@ -9,7 +9,7 @@ import {
   ArrowDown,
   Layers,
 } from 'lucide-react';
-import { GalaxySortKey, GalaxyGroupKey } from '@/types/media';
+import { GalaxySortKey, GalaxyGroupKey, MediaType } from '@/types/media';
 import { cn } from '@/lib/utils';
 
 interface GogSortDropdownProps {
@@ -19,26 +19,27 @@ interface GogSortDropdownProps {
   onSortChange: (sort: GalaxySortKey) => void;
   onDirectionToggle: () => void;
   onGroupChange: (group: GalaxyGroupKey) => void;
+  activeType?: MediaType | 'all';
   className?: string;
 }
 
-const SORT_OPTIONS: { id: GalaxySortKey; label: string }[] = [
-  { id: 'last_played', label: 'Zuletzt gespielt' },
-  { id: 'game_time', label: 'Spielzeit gesamt' },
+const ALL_SORT_OPTIONS: { id: GalaxySortKey; label: string; gamesOnly?: boolean }[] = [
+  { id: 'last_played', label: 'Zuletzt gespielt', gamesOnly: true },
+  { id: 'game_time', label: 'Spielzeit gesamt', gamesOnly: true },
   { id: 'date_added', label: 'Hinzugefügt am' },
-  { id: 'achievements', label: 'Erfolge %' },
+  { id: 'achievements', label: 'Erfolge %', gamesOnly: true },
   { id: 'critics_rating', label: 'Metacritic-Score' },
   { id: 'rating', label: 'Eigene Bewertung' },
   { id: 'title', label: 'Titel' },
   { id: 'release_date', label: 'Erscheinungsdatum' },
   { id: 'genre', label: 'Genre' },
-  { id: 'platform', label: 'Plattform' },
+  { id: 'platform', label: 'Plattform', gamesOnly: true },
   { id: 'tags', label: 'Tags' },
 ];
 
-const GROUP_OPTIONS: { id: GalaxyGroupKey; label: string }[] = [
+const ALL_GROUP_OPTIONS: { id: GalaxyGroupKey; label: string; gamesOnly?: boolean }[] = [
   { id: 'none', label: 'Nicht gruppieren' },
-  { id: 'platform', label: 'Plattform' },
+  { id: 'platform', label: 'Plattform', gamesOnly: true },
   { id: 'status', label: 'Status' },
   { id: 'genre', label: 'Genre' },
   { id: 'release_year', label: 'Erscheinungsjahr' },
@@ -51,6 +52,7 @@ export const GogSortDropdown: React.FC<GogSortDropdownProps> = ({
   onSortChange,
   onDirectionToggle,
   onGroupChange,
+  activeType = 'all',
   className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -72,8 +74,16 @@ export const GogSortDropdown: React.FC<GogSortDropdownProps> = ({
     };
   }, [isOpen]);
 
-  const currentSortLabel = SORT_OPTIONS.find((s) => s.id === sortBy)?.label || 'Titel';
-  const currentGroupLabel = GROUP_OPTIONS.find((g) => g.id === groupBy)?.label || 'Nicht gruppieren';
+  const isGameActive = activeType === 'game';
+  const sortOptions = isGameActive
+    ? ALL_SORT_OPTIONS
+    : ALL_SORT_OPTIONS.filter((s) => !s.gamesOnly);
+  const groupOptions = isGameActive
+    ? ALL_GROUP_OPTIONS
+    : ALL_GROUP_OPTIONS.filter((g) => !g.gamesOnly);
+
+  const currentSortLabel = sortOptions.find((s) => s.id === sortBy)?.label || 'Titel';
+  const currentGroupLabel = groupOptions.find((g) => g.id === groupBy)?.label || 'Nicht gruppieren';
 
   return (
     <div className={cn('relative inline-block text-left', className)} ref={containerRef}>
@@ -133,7 +143,7 @@ export const GogSortDropdown: React.FC<GogSortDropdownProps> = ({
                 </button>
               </div>
               <div className="max-h-[360px] overflow-y-auto scrollbar-thin">
-                {SORT_OPTIONS.map((opt) => {
+                {sortOptions.map((opt) => {
                   const isSelected = sortBy === opt.id;
                   return (
                     <button
@@ -166,7 +176,7 @@ export const GogSortDropdown: React.FC<GogSortDropdownProps> = ({
                 <span>Group by</span>
               </div>
               <div className="space-y-0.5">
-                {GROUP_OPTIONS.map((opt) => {
+                {groupOptions.map((opt) => {
                   const isSelected = groupBy === opt.id;
                   return (
                     <button

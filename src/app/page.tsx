@@ -177,9 +177,12 @@ export default function Home() {
     if (type === 'game') {
       setSortBy('last_played');
       setSortDirection('desc');
-    } else if (sortBy === 'last_played') {
+    } else if (['last_played', 'game_time', 'achievements', 'platform'].includes(sortBy)) {
       setSortBy('title');
       setSortDirection('asc');
+    }
+    if (type !== 'game' && groupBy === 'platform') {
+      setGroupBy('none');
     }
   };
 
