@@ -108,8 +108,8 @@ export default function Home() {
   const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'steam' | 'psn' | 'gog' | 'epic' | 'other'>('all');
   const [onlyOwned, setOnlyOwned] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<GalaxySortKey>('title');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState<GalaxySortKey>(selectedType === 'game' ? 'last_played' : 'title');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(selectedType === 'game' ? 'desc' : 'asc');
   const [groupBy, setGroupBy] = useState<GalaxyGroupKey>('none');
   const [filters, setFilters] = useState<GalaxyFilterState>({
     platforms: [],
@@ -164,6 +164,21 @@ export default function Home() {
     return Array.from(tagSet).sort();
   }, [media, selectedType]);
 
+  const handleSelectType = (type: MediaType | 'all') => {
+    setSelectedType(type);
+    if (type !== 'all' && type !== 'game') {
+      setSelectedPlatform('all');
+    }
+    // Default-Sortierung: Nur bei Spielen 'last_played' (desc), sonst 'title' (asc)
+    if (type === 'game') {
+      setSortBy('last_played');
+      setSortDirection('desc');
+    } else if (sortBy === 'last_played') {
+      setSortBy('title');
+      setSortDirection('asc');
+    }
+  };
+
   const handleResetFilters = () => {
     setFilters({
       platforms: [],
@@ -182,6 +197,13 @@ export default function Home() {
     setSelectedPlatform('all');
     setSelectedStatus('all');
     setOnlyOwned(false);
+    if (selectedType === 'game') {
+      setSortBy('last_played');
+      setSortDirection('desc');
+    } else {
+      setSortBy('title');
+      setSortDirection('asc');
+    }
   };
 
   const isFilterActive =
@@ -1290,19 +1312,14 @@ export default function Home() {
         currentView={currentView}
         onSelectView={setCurrentView}
         selectedType={selectedType}
-        onSelectType={(type) => {
-          setSelectedType(type);
-          if (type !== 'all' && type !== 'game') {
-            setSelectedPlatform('all');
-          }
-        }}
+        onSelectType={handleSelectType}
         selectedStatus={selectedStatus}
         onSelectStatus={setSelectedStatus}
         selectedPlatform={selectedPlatform}
         onSelectPlatform={(platform) => {
           setSelectedPlatform(platform);
           if (platform !== 'all' && selectedType !== 'game') {
-            setSelectedType('game');
+            handleSelectType('game');
           }
         }}
         platformCounts={platformCounts}
@@ -1402,44 +1419,6 @@ export default function Home() {
 
                 {/* Aktive Filter-Pills & Shortcuts */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  {selectedType === 'game' && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleOpenGamingSync}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 transition-all active:scale-95 shadow-sm"
-                        title="Spiele aus Steam, PlayStation Network oder GOG synchronisieren"
-                      >
-                        <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />
-                        <span>Steam / PSN / GOG Sync</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (sortBy === 'last_played' && sortDirection === 'desc') {
-                            setSortBy('title');
-                            setSortDirection('asc');
-                          } else {
-                            setSortBy('last_played');
-                            setSortDirection('desc');
-                          }
-                        }}
-                        className={cn(
-                          'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all active:scale-95 shadow-sm border',
-                          sortBy === 'last_played'
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
-                            : 'bg-[#181B22] hover:bg-zinc-800 text-zinc-300 hover:text-white border-[#282D37]'
-                        )}
-                        title="Sortiert Spiele nach neuester Aktivität und Spielzeit-Zuwachs (absteigend)"
-                      >
-                        <Clock className={cn('w-3.5 h-3.5', sortBy === 'last_played' ? 'text-amber-400' : 'text-zinc-400')} />
-                        <span>{sortBy === 'last_played' ? 'Neueste Spielzeit zuerst (aktiv)' : 'Nach neuester Spielzeit sortieren'}</span>
-                        {sortBy === 'last_played' && <span className="text-[10px] text-amber-400 ml-0.5">✓</span>}
-                      </button>
-                    </>
-                  )}
-
                   {/* Active Galaxy Platforms Pills */}
                   {filters.platforms.map((p) => {
                     const label =
