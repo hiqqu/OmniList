@@ -43,6 +43,7 @@ import {
   deleteMediaItem,
   getStoredTrash,
   restoreTrashItem,
+  addSequelToTrash,
   dismissSequel,
   dismissAllSequels,
   acceptSequel,
@@ -648,8 +649,14 @@ export default function Home() {
     setTrashCount(getStoredTrash().length);
   };
 
-  const handleAllRestored = (restoredItems: MediaItem[]) => {
+  const handleSequelRestored = (restoredSequel: SequelNotification) => {
+    setSequels(getStoredSequels());
+    setTrashCount(getStoredTrash().length);
+  };
+
+  const handleAllRestored = () => {
     setMedia(getStoredMedia());
+    setSequels(getStoredSequels());
     setTrashCount(0);
   };
 
@@ -725,6 +732,10 @@ export default function Home() {
   const handleDismissSequel = (sequelOrId: SequelNotification | string) => {
     const sequelObj = typeof sequelOrId === 'object' ? sequelOrId : sequels.find((s) => s.id === sequelOrId);
     dismissSequel(sequelObj || sequelOrId);
+    if (sequelObj) {
+      addSequelToTrash(sequelObj);
+      setTrashCount(getStoredTrash().length);
+    }
     const targetId = typeof sequelOrId === 'string' ? sequelOrId : sequelOrId?.id;
     const targetTitle = sequelObj ? normalizeSequelMatchKey(sequelObj.sequelTitle) : '';
     setSequels((prev) => {
@@ -736,15 +747,23 @@ export default function Home() {
       saveStoredSequels(filtered);
       return filtered;
     });
-    addToast('info', 'Fortsetzungsmeldung ignoriert');
+    addToast(
+      'info',
+      'In den Papierkorb verschoben',
+      `"${sequelObj?.sequelTitle || 'Fortsetzung'}" kann im Papierkorb wiederhergestellt werden.`
+    );
   };
 
   const handleDismissAllSequels = () => {
     if (unownedSequels.length === 0) return;
+    for (const s of unownedSequels) {
+      addSequelToTrash(s);
+    }
     dismissAllSequels(unownedSequels);
     setSequels([]);
     saveStoredSequels([]);
-    addToast('info', 'Radar bereinigt', 'Alle aktuellen Fortsetzungsvorschläge wurden dauerhaft ignoriert.');
+    setTrashCount(getStoredTrash().length);
+    addToast('info', 'In den Papierkorb verschoben', `${unownedSequels.length} Fortsetzungsvorschläge wurden in den Papierkorb verschoben.`);
   };
 
   // Manual Check Sequels Sync via Route Handler
@@ -2034,9 +2053,12 @@ export default function Home() {
         isOpen={isTrashModalOpen}
         onClose={() => {
           setIsTrashModalOpen(false);
+          setMedia(getStoredMedia());
+          setSequels(getStoredSequels());
           setTrashCount(getStoredTrash().length);
         }}
         onItemRestored={handleItemRestored}
+        onSequelRestored={handleSequelRestored}
         onAllRestored={handleAllRestored}
         addToast={addToast}
       />

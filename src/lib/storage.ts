@@ -5,6 +5,7 @@ import {
   isSequelInLibrary,
   isSequelDismissed,
   addDismissedSequelKey,
+  removeDismissedSequelKey,
   getDismissedSequelKeys,
   clearDismissedSequels,
   normalizeSequelMatchKey,
@@ -580,7 +581,9 @@ export function isGameDeleted(externalId?: string, title?: string): boolean {
 
 export interface TrashItem {
   id: string;
-  item: MediaItem;
+  itemType?: 'media' | 'sequel';
+  item?: MediaItem;
+  sequel?: SequelNotification;
   deletedAt: string;
 }
 
@@ -610,6 +613,66 @@ export function saveStoredTrash(items: TrashItem[]): void {
   }
 }
 
+export function addSequelToTrash(sequel: SequelNotification): void {
+  if (typeof window === 'undefined' || !sequel) return;
+  const trash = getStoredTrash();
+  const existingIndex = trash.findIndex(
+    (t) => t.id === sequel.id || (t.sequel && t.sequel.id === sequel.id)
+  );
+  const newTrashItem: TrashItem = {
+    id: sequel.id,
+    itemType: 'sequel',
+    sequel,
+    deletedAt: new Date().toISOString(),
+  };
+  if (existingIndex >= 0) {
+    trash[existingIndex] = newTrashItem;
+  } else {
+    trash.unshift(newTrashItem);
+  }
+  saveStoredTrash(trash);
+}
+
+export function restoreTrashSequel(id: string): SequelNotification | null {
+  const trash = getStoredTrash();
+  const targetEntry = trash.find((t) => t.id === id);
+  if (!targetEntry || !targetEntry.sequel) return null;
+
+  const sequel = targetEntry.sequel;
+
+  // 1. Remove from trash
+  const remainingTrash = trash.filter((t) => t.id !== id);
+  saveStoredTrash(remainingTrash);
+
+  // 2. Remove keys from dismissed blacklist so Sequel Radar shows it again
+  const keysToRemove: string[] = [];
+  if (sequel.id) keysToRemove.push(sequel.id);
+  if (sequel.external_id) keysToRemove.push(sequel.external_id);
+  if (sequel.franchise_id) keysToRemove.push(sequel.franchise_id);
+  if (sequel.sequelTitle) {
+    for (const v of getSequelTitleVariants(sequel.sequelTitle)) {
+      keysToRemove.push(v);
+      if (sequel.parentMediaId) keysToRemove.push(`parent:${sequel.parentMediaId}:${v}`);
+      if (sequel.parentMediaTitle) {
+        const pNorm = normalizeSequelMatchKey(sequel.parentMediaTitle);
+        if (pNorm) keysToRemove.push(`parenttitle:${pNorm}:${v}`);
+      }
+    }
+  }
+  removeDismissedSequelKey(keysToRemove);
+
+  // 3. Put back in stored sequels if not already there
+  const currentSequels = getStoredSequels();
+  const exists = currentSequels.some(
+    (s) => s.id === sequel.id || normalizeSequelMatchKey(s.sequelTitle) === normalizeSequelMatchKey(sequel.sequelTitle)
+  );
+  if (!exists) {
+    saveStoredSequels([sequel, ...currentSequels]);
+  }
+
+  return sequel;
+}
+
 export function deleteMediaItem(id: string): MediaItem | null {
   const current = getStoredMedia();
   const target = current.find((m) => m.id === id);
@@ -621,6 +684,7 @@ export function deleteMediaItem(id: string): MediaItem | null {
     const existingIndex = trash.findIndex((t) => t.id === id);
     const newTrashItem: TrashItem = {
       id: target.id,
+      itemType: 'media',
       item: target,
       deletedAt: new Date().toISOString(),
     };
@@ -678,6 +742,14 @@ export function restoreTrashItem(id: string): MediaItem | null {
   const targetEntry = trash.find((t) => t.id === id);
   if (!targetEntry) return null;
 
+  // If this item is a sequel, delegate to restoreTrashSequel
+  if (targetEntry.itemType === 'sequel' || targetEntry.sequel) {
+    restoreTrashSequel(id);
+    return null;
+  }
+
+  if (!targetEntry.item) return null;
+
   // Remove from trash
   const remainingTrash = trash.filter((t) => t.id !== id);
   saveStoredTrash(remainingTrash);
@@ -723,36 +795,73 @@ export function clearTrash(): void {
   }
 }
 
-export function restoreAllTrash(): MediaItem[] {
+export function restoreAllTrash(): { media: MediaItem[]; sequels: SequelNotification[] } {
   const trash = getStoredTrash();
-  if (trash.length === 0) return [];
+  if (trash.length === 0) return { media: [], sequels: [] };
 
-  const restoredItems: MediaItem[] = [];
+  const restoredMedia: MediaItem[] = [];
+  const restoredSequels: SequelNotification[] = [];
+
   const currentMedia = getStoredMedia();
   const currentMap = new Map(currentMedia.map((m) => [m.id, m]));
+  const currentSequels = getStoredSequels();
+  const sequelSet = new Set(currentSequels.map((s) => s.id));
+
+  const allSequelDismissKeysToRemove: string[] = [];
 
   for (const entry of trash) {
-    const item = { ...entry.item, updatedAt: new Date().toISOString() };
-    currentMap.set(item.id, item);
-    restoredItems.push(item);
+    if (entry.itemType === 'sequel' || entry.sequel) {
+      const s = entry.sequel;
+      if (s) {
+        if (!sequelSet.has(s.id)) {
+          currentSequels.push(s);
+          sequelSet.add(s.id);
+        }
+        restoredSequels.push(s);
 
-    if (item.type === 'game') {
-      if (item.external_id) {
-        removeDeletedGameKey(item.external_id);
+        if (s.id) allSequelDismissKeysToRemove.push(s.id);
+        if (s.external_id) allSequelDismissKeysToRemove.push(s.external_id);
+        if (s.franchise_id) allSequelDismissKeysToRemove.push(s.franchise_id);
+        if (s.sequelTitle) {
+          for (const v of getSequelTitleVariants(s.sequelTitle)) {
+            allSequelDismissKeysToRemove.push(v);
+            if (s.parentMediaId) allSequelDismissKeysToRemove.push(`parent:${s.parentMediaId}:${v}`);
+            if (s.parentMediaTitle) {
+              const pNorm = normalizeSequelMatchKey(s.parentMediaTitle);
+              if (pNorm) allSequelDismissKeysToRemove.push(`parenttitle:${pNorm}:${v}`);
+            }
+          }
+        }
       }
-      if (item.title) {
-        const norm = item.title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
-        removeDeletedGameKey(`title:${norm}`);
-      }
-      if (item.gameConnection?.service && item.gameConnection?.serviceId) {
-        removeDeletedGameKey(`${item.gameConnection.service}:${item.gameConnection.serviceId}`);
+    } else if (entry.item) {
+      const item = { ...entry.item, updatedAt: new Date().toISOString() };
+      currentMap.set(item.id, item);
+      restoredMedia.push(item);
+
+      if (item.type === 'game') {
+        if (item.external_id) {
+          removeDeletedGameKey(item.external_id);
+        }
+        if (item.title) {
+          const norm = item.title.toLowerCase().replace(/[:\-_—–,.'!?/]/g, ' ').replace(/\s+/g, ' ').trim();
+          removeDeletedGameKey(`title:${norm}`);
+        }
+        if (item.gameConnection?.service && item.gameConnection?.serviceId) {
+          removeDeletedGameKey(`${item.gameConnection.service}:${item.gameConnection.serviceId}`);
+        }
       }
     }
   }
 
+  if (allSequelDismissKeysToRemove.length > 0) {
+    removeDismissedSequelKey(allSequelDismissKeysToRemove);
+  }
+
   saveStoredMedia(Array.from(currentMap.values()));
+  saveStoredSequels(currentSequels);
   clearTrash();
-  return restoredItems;
+
+  return { media: restoredMedia, sequels: restoredSequels };
 }
 
 export function dismissSequel(

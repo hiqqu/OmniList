@@ -212,6 +212,25 @@ export function addDismissedSequelKey(keys: string | string[]): void {
 }
 
 /**
+ * Removes keys from the persistent dismissed sequel blacklist.
+ */
+export function removeDismissedSequelKey(keys: string | string[]): void {
+  if (typeof window === 'undefined' || !keys) return;
+  try {
+    const keyArray = Array.isArray(keys) ? keys : [keys];
+    const keysToRemove = new Set(
+      keyArray.map((k) => (typeof k === 'string' ? k.trim().toLowerCase() : '')).filter(Boolean)
+    );
+    const existing = getDismissedSequelKeys();
+    const updated = existing.filter((k) => !keysToRemove.has(k.toLowerCase().trim()));
+    localStorage.setItem(DISMISSED_SEQUELS_STORAGE_KEY, JSON.stringify(updated));
+    localStorage.removeItem(LEGACY_DISMISSED_SEQUELS_STORAGE_KEY);
+  } catch (e) {
+    console.error('Failed to remove dismissed sequel key', e);
+  }
+}
+
+/**
  * Clears the dismissed sequel blacklist.
  */
 export function clearDismissedSequels(): void {

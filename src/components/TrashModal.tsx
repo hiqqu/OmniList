@@ -6,22 +6,21 @@ import {
   Trash2,
   RotateCcw,
   Search,
-  AlertTriangle,
-  CheckCircle2,
   Film,
   Tv,
   Gamepad2,
   BookOpen,
   Sparkles,
   Clock,
-  Layers,
   Inbox,
+  Radar,
 } from 'lucide-react';
-import { MediaItem, MediaType } from '@/types/media';
+import { MediaItem, MediaType, SequelNotification } from '@/types/media';
 import {
   TrashItem,
   getStoredTrash,
   restoreTrashItem,
+  restoreTrashSequel,
   permanentlyDeleteTrashItem,
   clearTrash,
   restoreAllTrash,
@@ -33,7 +32,8 @@ interface TrashModalProps {
   isOpen: boolean;
   onClose: () => void;
   onItemRestored: (restoredItem: MediaItem) => void;
-  onAllRestored?: (restoredItems: MediaItem[]) => void;
+  onSequelRestored?: (restoredSequel: SequelNotification) => void;
+  onAllRestored?: (restoredMedia: MediaItem[], restoredSequels: SequelNotification[]) => void;
   addToast?: (type: 'success' | 'info' | 'warning' | 'error', title: string, description?: string) => void;
 }
 
@@ -41,12 +41,13 @@ export const TrashModal: React.FC<TrashModalProps> = ({
   isOpen,
   onClose,
   onItemRestored,
+  onSequelRestored,
   onAllRestored,
   addToast,
 }) => {
   const [trashList, setTrashList] = useState<TrashItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<MediaType | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<MediaType | 'all' | 'media' | 'sequel'>('all');
   const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
@@ -60,15 +61,31 @@ export const TrashModal: React.FC<TrashModalProps> = ({
 
   const filteredTrash = useMemo(() => {
     return trashList.filter((entry) => {
-      if (typeFilter !== 'all' && entry.item.type !== typeFilter) {
+      const isSequel = entry.itemType === 'sequel' || Boolean(entry.sequel);
+      const mediaType: MediaType = isSequel ? (entry.sequel?.sequelType || 'game') : (entry.item?.type || 'game');
+      const title = isSequel ? (entry.sequel?.sequelTitle || '') : (entry.item?.title || '');
+      const parentTitle = isSequel ? (entry.sequel?.parentMediaTitle || '') : '';
+      const genres = !isSequel ? entry.item?.genres : undefined;
+
+      if (typeFilter === 'media' && isSequel) return false;
+      if (typeFilter === 'sequel' && !isSequel) return false;
+      if (
+        typeFilter !== 'all' &&
+        typeFilter !== 'media' &&
+        typeFilter !== 'sequel' &&
+        mediaType !== typeFilter
+      ) {
         return false;
       }
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const titleMatch = entry.item.title.toLowerCase().includes(q);
-        const genreMatch = entry.item.genres?.some((g) => g.toLowerCase().includes(q));
-        if (!titleMatch && !genreMatch) return false;
+        const titleMatch = title.toLowerCase().includes(q);
+        const parentMatch = parentTitle.toLowerCase().includes(q);
+        const genreMatch = genres?.some((g) => g.toLowerCase().includes(q));
+        if (!titleMatch && !parentMatch && !genreMatch) return false;
       }
+
       return true;
     });
   }, [trashList, typeFilter, searchQuery]);
@@ -86,6 +103,21 @@ export const TrashModal: React.FC<TrashModalProps> = ({
     }
   };
 
+  const handleRestoreSequel = (id: string, sequel: SequelNotification) => {
+    const restored = restoreTrashSequel(id);
+    if (restored) {
+      setTrashList((prev) => prev.filter((t) => t.id !== id));
+      onSequelRestored?.(restored);
+      if (addToast) {
+        addToast(
+          'success',
+          'Fortsetzung wiederhergestellt',
+          `"${restored.sequelTitle}" ist wieder im Sequel Radar verfügbar.`
+        );
+      }
+    }
+  };
+
   const handlePermanentDeleteSingle = (id: string, title: string) => {
     permanentlyDeleteTrashItem(id);
     setTrashList((prev) => prev.filter((t) => t.id !== id));
@@ -95,17 +127,21 @@ export const TrashModal: React.FC<TrashModalProps> = ({
   };
 
   const handleRestoreAllItems = () => {
-    const restored = restoreAllTrash();
+    const { media, sequels } = restoreAllTrash();
     setTrashList([]);
     if (onAllRestored) {
-      onAllRestored(restored);
+      onAllRestored(media, sequels);
     } else {
-      for (const item of restored) {
-        onItemRestored(item);
-      }
+      for (const item of media) onItemRestored(item);
+      for (const s of sequels) onSequelRestored?.(s);
     }
+    const totalCount = media.length + sequels.length;
     if (addToast) {
-      addToast('success', 'Alle wiederhergestellt', `${restored.length} Medien wurden zur Sammlung zurückgeholt.`);
+      addToast(
+        'success',
+        'Alle wiederhergestellt',
+        `${totalCount} Einträge (${media.length} Medien, ${sequels.length} Fortsetzungen) wurden zurückgeholt.`
+      );
     }
   };
 
@@ -165,7 +201,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-zinc-400">
-                Einzelne gelöschte Einträge wiederherstellen oder dauerhaft entfernen
+                Gelöschte Medieneinträge und ignorierte Fortsetzungen wiederherstellen oder dauerhaft entfernen
               </p>
             </div>
           </div>
@@ -189,7 +225,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Im Papierkorb nach Titel oder Genre suchen..."
+                placeholder="Im Papierkorb nach Titel, Genre oder Fortsetzung suchen..."
                 className="w-full bg-[#181B22] border border-[#282D37] focus:border-zinc-500 rounded-full pl-9 pr-8 py-2 text-xs text-[#F1F3F7] placeholder-zinc-500 focus:outline-none transition-all shadow-inner"
               />
               {searchQuery && (
@@ -205,28 +241,29 @@ export const TrashModal: React.FC<TrashModalProps> = ({
             {/* Filter Chips & Bulk Action Buttons */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
-                {(['all', 'game', 'movie', 'show', 'anime', 'book'] as const).map((t) => (
+                {(
+                  [
+                    { id: 'all', label: 'Alle' },
+                    { id: 'media', label: 'Sammlung' },
+                    { id: 'sequel', label: 'Fortsetzungen' },
+                    { id: 'game', label: 'Spiele' },
+                    { id: 'movie', label: 'Filme' },
+                    { id: 'show', label: 'Serien' },
+                    { id: 'anime', label: 'Anime' },
+                    { id: 'book', label: 'Bücher' },
+                  ] as const
+                ).map((tf) => (
                   <button
-                    key={t}
-                    onClick={() => setTypeFilter(t)}
+                    key={tf.id}
+                    onClick={() => setTypeFilter(tf.id)}
                     className={cn(
                       'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all shrink-0',
-                      typeFilter === t
+                      typeFilter === tf.id
                         ? 'bg-zinc-100 text-zinc-950 border-white'
                         : 'bg-zinc-800/80 text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-700/60'
                     )}
                   >
-                    {t === 'all'
-                      ? 'Alle'
-                      : t === 'game'
-                      ? 'Spiele'
-                      : t === 'movie'
-                      ? 'Filme'
-                      : t === 'show'
-                      ? 'Serien'
-                      : t === 'anime'
-                      ? 'Anime'
-                      : 'Bücher'}
+                    {tf.label}
                   </button>
                 ))}
               </div>
@@ -280,7 +317,7 @@ export const TrashModal: React.FC<TrashModalProps> = ({
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-[#F1F3F7]">Der Papierkorb ist leer</h4>
                 <p className="text-xs text-zinc-500 max-w-sm">
-                  Gelöschte Filme, Serien, Spiele, Anime oder Bücher werden hier sicher aufbewahrt und können jederzeit wiederhergestellt werden.
+                  Gelöschte Filme, Serien, Spiele, Anime, Bücher oder ignorierte Fortsetzungen werden hier aufbewahrt und können jederzeit wiederhergestellt werden.
                 </p>
               </div>
             </div>
@@ -291,9 +328,15 @@ export const TrashModal: React.FC<TrashModalProps> = ({
             </div>
           ) : (
             filteredTrash.map((entry) => {
+              const isSequel = entry.itemType === 'sequel' || Boolean(entry.sequel);
               const item = entry.item;
-              const typeBadge = getMediaTypeBadge(item.type);
-              const statusBadge = getMediaStatusBadge(item.status);
+              const sequel = entry.sequel;
+
+              const title = isSequel ? (sequel?.sequelTitle || 'Unbekannte Fortsetzung') : (item?.title || 'Unbekannt');
+              const mediaType: MediaType = isSequel ? (sequel?.sequelType || 'game') : (item?.type || 'game');
+              const typeBadge = getMediaTypeBadge(mediaType);
+              const statusBadge = !isSequel && item ? getMediaStatusBadge(item.status) : null;
+              const coverUrl = isSequel ? (sequel?.sequelCoverUrl || sequel?.parentCoverUrl) : item?.coverUrl;
 
               return (
                 <div
@@ -304,18 +347,22 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     {/* Thumbnail */}
                     <div className="relative w-12 h-16 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-700/60 shrink-0">
-                      {item.coverUrl ? (
+                      {coverUrl ? (
                         <img
-                          src={item.coverUrl}
-                          alt={item.title}
+                          src={coverUrl}
+                          alt={title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = getMediaCoverFallback(item);
+                            if (item) {
+                              (e.target as HTMLImageElement).src = getMediaCoverFallback(item);
+                            } else {
+                              (e.target as HTMLImageElement).src = '';
+                            }
                           }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                          {getTypeIcon(item.type)}
+                          {getTypeIcon(mediaType)}
                         </div>
                       )}
                     </div>
@@ -331,21 +378,28 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                             typeBadge.borderClass
                           )}
                         >
-                          {getTypeIcon(item.type)}
+                          {getTypeIcon(mediaType)}
                           {typeBadge.label}
                         </span>
 
-                        <span
-                          className={cn(
-                            'px-2 py-0.5 rounded-full text-[10px] font-bold border border-zinc-700/60',
-                            statusBadge.colorClass,
-                            statusBadge.bgClass
-                          )}
-                        >
-                          {statusBadge.label}
-                        </span>
+                        {isSequel ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30 flex items-center gap-1 shadow-sm">
+                            <Radar className="w-2.5 h-2.5 text-rose-400" />
+                            <span>Sequel Radar</span>
+                          </span>
+                        ) : statusBadge ? (
+                          <span
+                            className={cn(
+                              'px-2 py-0.5 rounded-full text-[10px] font-bold border border-zinc-700/60',
+                              statusBadge.colorClass,
+                              statusBadge.bgClass
+                            )}
+                          >
+                            {statusBadge.label}
+                          </span>
+                        ) : null}
 
-                        {item.progress && typeof item.progress.total === 'number' && item.progress.total > 0 && (
+                        {!isSequel && item?.progress && typeof item.progress.total === 'number' && item.progress.total > 0 && (
                           <span className="text-[10px] text-zinc-400 flex items-center gap-1 font-mono">
                             <Clock className="w-3 h-3 text-zinc-500" />
                             {item.progress.current} / {item.progress.total}{' '}
@@ -360,12 +414,17 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                         )}
                       </div>
 
-                      <h4 className="text-sm font-bold text-[#F1F3F7] truncate" title={item.title}>
-                        {item.title}
+                      <h4 className="text-sm font-bold text-[#F1F3F7] truncate" title={title}>
+                        {title}
                       </h4>
 
                       <p className="text-[11px] text-zinc-500 flex items-center gap-1">
-                        Gelöscht am {formatDeletionDate(entry.deletedAt)}
+                        {isSequel && sequel?.parentMediaTitle && (
+                          <span className="text-zinc-400">
+                            Fortsetzung zu: <strong className="text-zinc-300">{sequel.parentMediaTitle}</strong> •
+                          </span>
+                        )}
+                        <span>Gelöscht am {formatDeletionDate(entry.deletedAt)}</span>
                       </p>
                     </div>
                   </div>
@@ -373,16 +432,22 @@ export const TrashModal: React.FC<TrashModalProps> = ({
                   {/* Right: Actions */}
                   <div className="flex items-center gap-2 justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#282D37]">
                     <button
-                      onClick={() => handleRestoreSingle(entry.id)}
+                      onClick={() => {
+                        if (isSequel && sequel) {
+                          handleRestoreSequel(entry.id, sequel);
+                        } else {
+                          handleRestoreSingle(entry.id);
+                        }
+                      }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-all active:scale-95 shadow-sm"
-                      title="Wieder zur Mediensammlung hinzufügen"
+                      title={isSequel ? 'Wieder im Sequel Radar anzeigen' : 'Wieder zur Mediensammlung hinzufügen'}
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Wiederherstellen</span>
                     </button>
 
                     <button
-                      onClick={() => handlePermanentDeleteSingle(entry.id, item.title)}
+                      onClick={() => handlePermanentDeleteSingle(entry.id, title)}
                       className="p-1.5 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                       title="Endgültig löschen"
                       aria-label="Endgültig löschen"

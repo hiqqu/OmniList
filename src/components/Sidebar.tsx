@@ -525,15 +525,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {onOpenTrashModal && (
           <button
             onClick={() => handleItemClick(() => onOpenTrashModal())}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-full text-xs font-semibold bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all active:scale-95 shadow-sm"
-            title="Gelöschte Medien anzeigen und wiederherstellen"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full text-xs font-semibold bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all active:scale-95 shadow-sm"
+            title="Gelöschte Medien & Fortsetzungen anzeigen und wiederherstellen"
           >
-            <div className="flex items-center gap-2">
-              <Trash2 className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Papierkorb</span>
-            </div>
+            <Trash2 className="w-3.5 h-3.5 text-zinc-400" />
+            <span>Papierkorb</span>
             {trashCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-700 text-zinc-200">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-700 text-zinc-200">
                 {trashCount}
               </span>
             )}
